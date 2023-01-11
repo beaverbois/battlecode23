@@ -1,4 +1,4 @@
-package JonV1;
+package EfficientRandom;
 
 import battlecode.common.*;
 
