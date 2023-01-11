@@ -1,6 +1,6 @@
 # Battlecode 2023 Scaffold
 
-This is the Battlecode 2023 scaffold, containing an `examplefuncsplayer`. Read https://play.battlecode.org/getting-started!
+This is the Battlecode 2023 scaffold, containing an `Example`. Read https://play.battlecode.org/getting-started!
 
 ### Project Structure
 
@@ -9,9 +9,9 @@ This is the Battlecode 2023 scaffold, containing an `examplefuncsplayer`. Read h
 - `build.gradle`
     The Gradle build file used to build and run players.
 - `src/`
-    Player source code.
+    Common.Player source code.
 - `test/`
-    Player test code.
+    Common.Player test code.
 - `client/`
     Contains the client. The proper executable can be found in this folder (don't move this!)
 - `build/`
@@ -27,8 +27,8 @@ This is the Battlecode 2023 scaffold, containing an `examplefuncsplayer`. Read h
 
 ### How to get started
 
-You are free to directly edit `examplefuncsplayer`.
-However, we recommend you make a new bot by copying `examplefuncsplayer` to a new package under the `src` folder.
+You are free to directly edit `Example`.
+However, we recommend you make a new bot by copying `Example` to a new package under the `src` folder.
 
 ### Useful Commands
 
