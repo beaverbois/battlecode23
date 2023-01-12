@@ -4,6 +4,9 @@ import battlecode.common.*;
 
 import java.util.*;
 
+import static Util.Util.intToLoc;
+import static Util.Util.locToInt;
+
 /**
  * RobotPlayer is the class that describes your main robot strategy.
  * The run() method inside this class is like your main function: this is what we'll call once your robot
@@ -97,8 +100,8 @@ public strictfp class RobotPlayer {
             allHQ = new MapLocation[rc.readSharedArray(0)];
             allOpposingHQ = new MapLocation[allHQ.length];
             for(int i = 0; i < allHQ.length; i++) {
-                allHQ[i] = toMap(rc.readSharedArray(i+1));
-                allOpposingHQ[i] = toMap(rc.readSharedArray(i+allHQ.length+1));
+                allHQ[i] = intToLoc(rc.readSharedArray(i+1));
+                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i+allHQ.length+1));
             }
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;
@@ -162,7 +165,7 @@ public strictfp class RobotPlayer {
      */
     static void runHeadquarters(RobotController rc) throws GameActionException {
         //Make scout carriers every 5 turns.
-        for(int i = 0; i < allHQ.length; i++) allOpposingHQ[i] = toMap(rc.readSharedArray(allHQ.length + i + 1));
+        for(int i = 0; i < allHQ.length; i++) allOpposingHQ[i] = intToLoc(rc.readSharedArray(allHQ.length + i + 1));
         if(turnCount % 2 == 0) rc.writeSharedArray(31, 1);
         else if(turnCount % 2 == 1) rc.writeSharedArray(31, 0);
         // Pick a direction to build in.
@@ -207,13 +210,13 @@ public strictfp class RobotPlayer {
 
         for(int i = 0; i < allHQ.length; i++) {
             int read = rc.readSharedArray(allHQ.length + i + 1);
-            if(read != 0 && read != fromMap(allOpposingHQ[i])) {
-                if(fromMap(allOpposingHQ[i]) == 0) allOpposingHQ[i] = toMap(read);
+            if(read != 0 && read != locToInt(allOpposingHQ[i])) {
+                if(locToInt(allOpposingHQ[i]) == 0) allOpposingHQ[i] = intToLoc(read);
                     //Doesn't account for the case of 3+ HQ where the
                     //robot has 2 new known HQ and another reports an HQ.
                 else if(i < allHQ.length - 1) {
                     allOpposingHQ[i+1] = allOpposingHQ[i];
-                    allOpposingHQ[i] = toMap(read);
+                    allOpposingHQ[i] = intToLoc(read);
                 }
             }
         }
@@ -225,13 +228,13 @@ public strictfp class RobotPlayer {
         RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
-                int pos = fromMap(enemy.getLocation());
+                int pos = locToInt(enemy.getLocation());
                 int numHQ = allHQ.length;
                 for (int i = 0; i < numHQ; i++) {
-                    int val = fromMap(allOpposingHQ[i]);
+                    int val = locToInt(allOpposingHQ[i]);
                     if (val == pos) break;
                     if (val == 0) {
-                        allOpposingHQ[i] = toMap(pos);
+                        allOpposingHQ[i] = intToLoc(pos);
                         cstate = CarrierState.REPORTING;
                         break;
                     }
@@ -245,13 +248,13 @@ public strictfp class RobotPlayer {
         if(cstate == CarrierState.REPORTING && rc.canWriteSharedArray(0, 0)) {
             if(enemyLoc != null) {
                 //For now trying "dumb" writing, where it will override.
-                rc.writeSharedArray(20, fromMap(enemyLoc));
+                rc.writeSharedArray(20, locToInt(enemyLoc));
                 enemyLoc = null;
             }
             //Update shared array with enemy HQ, currently may have problems with overwriting HQ.
             for(int i = 0; i < allHQ.length; i++)
-                if(fromMap(allOpposingHQ[i]) != 0)
-                    rc.writeSharedArray(allHQ.length+i+1, fromMap(allOpposingHQ[i]));
+                if(locToInt(allOpposingHQ[i]) != 0)
+                    rc.writeSharedArray(allHQ.length+i+1, locToInt(allOpposingHQ[i]));
             cstate = CarrierState.FARMING;
         }
 
@@ -387,13 +390,13 @@ public strictfp class RobotPlayer {
 
         for(int i = 0; i < allHQ.length; i++) {
             int read = rc.readSharedArray(allHQ.length + i + 1);
-            if(read != 0 && read != fromMap(allOpposingHQ[i])) {
-                if(fromMap(allOpposingHQ[i]) == 0) allOpposingHQ[i] = toMap(read);
+            if(read != 0 && read != locToInt(allOpposingHQ[i])) {
+                if(locToInt(allOpposingHQ[i]) == 0) allOpposingHQ[i] = intToLoc(read);
                 //Doesn't account for the case of 3+ HQ where the
                 //robot has 2 new known HQ and another reports an HQ.
                 else if(i < allHQ.length - 1) {
                     allOpposingHQ[i+1] = allOpposingHQ[i];
-                    allOpposingHQ[i] = toMap(read);
+                    allOpposingHQ[i] = intToLoc(read);
                 }
             }
         }
@@ -406,13 +409,13 @@ public strictfp class RobotPlayer {
 
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
-                int pos = fromMap(enemy.getLocation());
+                int pos = locToInt(enemy.getLocation());
                 int numHQ = allHQ.length;
                 for (int i = 0; i < numHQ; i++) {
-                    int val = fromMap(allOpposingHQ[i]);
+                    int val = locToInt(allOpposingHQ[i]);
                     if (val == pos) break;
                     if (val == 0) {
-                        allOpposingHQ[i] = toMap(pos);
+                        allOpposingHQ[i] = intToLoc(pos);
                         lstate = LauncherState.REPORTING;
                         break;
                     }
@@ -423,8 +426,8 @@ public strictfp class RobotPlayer {
         if(lstate == LauncherState.REPORTING && rc.canWriteSharedArray(0, 0)) {
             //Update shared array with enemy HQ, currently may have problems with overwriting HQ.
             for(int i = 0; i < allHQ.length; i++)
-                if(fromMap(allOpposingHQ[i]) != 0)
-                    rc.writeSharedArray(allHQ.length+i+1, fromMap(allOpposingHQ[i]));
+                if(locToInt(allOpposingHQ[i]) != 0)
+                    rc.writeSharedArray(allHQ.length+i+1, locToInt(allOpposingHQ[i]));
             lstate = LauncherState.RUSHING;
         }
 
@@ -463,11 +466,11 @@ public strictfp class RobotPlayer {
 
         //Move towards closest enemy HQ if exists. If not, move randomly.
         if(lstate == LauncherState.RUSHING && rc.isMovementReady()) {
-            if (fromMap(allOpposingHQ[0]) != 0) {
+            if (locToInt(allOpposingHQ[0]) != 0) {
                 //We know at least one enemy HQ exists.
                 int count = 1;
                 for (; count < allOpposingHQ.length; count++)
-                    if (fromMap(allOpposingHQ[count]) == 0) break;
+                    if (locToInt(allOpposingHQ[count]) == 0) break;
                 MapLocation[] knownOppHQ = new MapLocation[count];
                 System.arraycopy(allOpposingHQ, 0, knownOppHQ, 0, count);
                 MapLocation closeHQ = closest(me, knownOppHQ);
@@ -478,7 +481,7 @@ public strictfp class RobotPlayer {
                 }
                 if (rc.canMove(dir)) rc.move(dir);
             } else if(rc.readSharedArray(20) != 0) {
-                MapLocation pos = toMap(rc.readSharedArray(20));
+                MapLocation pos = intToLoc(rc.readSharedArray(20));
                 int randDir = rng.nextInt(directions.length);
                 Direction dir = towards(me, pos);
                 for (int j = 0; j < directions.length && !rc.canMove(dir); j++) {
@@ -529,14 +532,5 @@ public strictfp class RobotPlayer {
             }
         }
         return close;
-    }
-
-    static MapLocation toMap(int raw) {
-        return new MapLocation(raw / 60, raw % 60);
-    }
-
-    //Just writing this, don't think it's worth using.
-    static int fromMap(MapLocation pos) {
-        return pos.x * 60 + pos.y;
     }
 }
