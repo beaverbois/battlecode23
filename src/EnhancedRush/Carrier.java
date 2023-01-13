@@ -3,6 +3,8 @@ package EnhancedRush;
 import battlecode.common.*;
 
 import static EnhancedRush.RobotPlayer.*;
+import static EnhancedRush.RobotPlayer.directions;
+import static EnhancedRush.RobotPlayer.rng;
 import static Util.Util.*;
 
 public class Carrier {

@@ -2,41 +2,66 @@ package Util;
 
 import battlecode.common.*;
 
+import java.util.Random;
+
 /**
  * Public utility class
  */
 public class Util {
 
+    public static int numWellsStored = 4;
     public static int wellIndexMin = 0;
     public static int wellIndexMax = 3;
+
+    public static int numWellsFound = 0;
+
+    public static final int codingMultiplier = 100; // originally GameConstants.MAP_MAX_WIDTH
     public static MapLocation intToLoc(int raw) {
-        return new MapLocation(raw / GameConstants.MAP_MAX_WIDTH, raw % GameConstants.MAP_MAX_HEIGHT);
+        return new MapLocation(raw / codingMultiplier, raw % codingMultiplier);
     }
 
+    // Maps (x,y) to "xy"
     public static int locToInt(MapLocation pos) {
-        return pos.x * GameConstants.MAP_MAX_WIDTH + pos.y;
+        return pos.x * codingMultiplier + pos.y;
     }
 
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
         // search until we find an available index to write
+        //TODO: Check if can write array
         int index;
         for (index = wellIndexMin; index <= wellIndexMax; index++) {
             if (rc.readSharedArray(index) == 0) {
                 String val = "" + type.resourceID + locToInt(loc);
                 rc.writeSharedArray(index, Integer.parseInt(val));
+                numWellsFound++;
                 return;
             }
         }
     }
 
-//    public static Well readWell(RobotController rc, int index) throws IndexOutOfBoundsException, GameActionException {
-//        if (index < wellIndexMin || index > wellIndexMax) throw new IndexOutOfBoundsException("Well index out of bounds");
-//        String val = String.valueOf(rc.readSharedArray(index));
-//        int type = Integer.parseInt(String.valueOf(val.charAt(0)));
-//        MapLocation loc = intToLoc(Integer.parseInt(val.substring(1)));
-//
-//        return new Well(loc, ResourceType.values()[type]);
-//    }
+    public static MapLocation getWellLocation(RobotController rc, int index) throws IndexOutOfBoundsException, GameActionException {
+        if (index < wellIndexMin || index > wellIndexMax) throw new IndexOutOfBoundsException("Well index out of bounds");
+        if (numWellsFound == 0) return null;
+        //TODO: Check if can read array
+        String val = String.valueOf(rc.readSharedArray(index));
+        MapLocation loc = intToLoc(Integer.parseInt(val.substring(1)));
+
+        return loc;
+    }
+
+    public static ResourceType getWellType(RobotController rc, int index) throws GameActionException {
+        if (index < wellIndexMin || index > wellIndexMax) throw new IndexOutOfBoundsException("Well index out of bounds");
+        if (numWellsFound == 0) return null;
+        //TODO: Check if can read array
+        String val = String.valueOf(rc.readSharedArray(index));
+        int type = Integer.parseInt(String.valueOf(val.charAt(0)));
+
+        return ResourceType.values()[type];
+    }
+
+    public static int getNumWellsFound() {
+        return numWellsFound;
+    }
 
     //Movement methods
     public static int distance(MapLocation pos, MapLocation target) {
