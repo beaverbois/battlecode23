@@ -10,7 +10,7 @@ import java.util.List;
 import static FarmFirst.Headquarters.hqIndex;
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
-import static Util.Util.*;
+import static Utilities.Util.*;
 
 public class Carrier {
     enum CarrierState {

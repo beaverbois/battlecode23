@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
-import static Util.Util.*;
+import static Utilities.Util.*;
 
 public class Headquarters {
     public static int hqIndex = 4;

@@ -1,4 +1,4 @@
-package Util;
+package Utilities;
 
 import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;

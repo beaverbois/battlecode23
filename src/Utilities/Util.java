@@ -1,8 +1,6 @@
-package Util;
+package Utilities;
 
 import battlecode.common.*;
-
-import java.util.Random;
 
 /**
  * Public utility class

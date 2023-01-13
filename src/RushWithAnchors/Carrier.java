@@ -1,10 +1,13 @@
-package EnhancedRush;
+package RushWithAnchors;
 
 import battlecode.common.*;
+import battlecode.world.Island;
 
-import static EnhancedRush.RobotPlayer.*;
-import static EnhancedRush.RobotPlayer.directions;
-import static EnhancedRush.RobotPlayer.rng;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static RushWithAnchors.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Carrier {
@@ -13,7 +16,8 @@ public class Carrier {
         FARMING,
         RETURNING,
         SCOUTING,
-        REPORTING
+        REPORTING,
+        ISLANDS
     }
     static CarrierState cstate = CarrierState.FARMING;
     static MapLocation enemyLoc;
@@ -25,14 +29,11 @@ public class Carrier {
         turnStart(rc);
 
         switch(cstate) {
-            case FARMING: farming(rc);
-            break;
-            case SCOUTING: scouting(rc);
-            break;
-            case REPORTING: reporting(rc);
-            break;
-            case RETURNING: returning(rc);
-            break;
+            case FARMING: farming(rc); break;
+            case SCOUTING: scouting(rc); break;
+            case REPORTING: reporting(rc); break;
+            case RETURNING: returning(rc); break;
+            case ISLANDS: islands(rc); break;
         }
     }
 
@@ -131,8 +132,42 @@ public class Carrier {
 
         if (weight == 0) cstate = CarrierState.FARMING;
         else if(rc.isMovementReady()) {
-            System.out.println("Returning");
             moveTowards(rc, headquarters);
+        }
+    }
+
+    private static void islands(RobotController rc) throws GameActionException {
+        turnStart(rc);
+
+        if(rc.getAnchor() == null && rc.senseIsland(pos) != -1) return;
+
+        int[] islands = rc.senseNearbyIslands();
+        Set<MapLocation> islandLocs = new HashSet<>();
+        for (int id : islands) {
+            MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
+            islandLocs.addAll(Arrays.asList(thisIslandLocs));
+        }
+        if(pos.isAdjacentTo(headquarters) && rc.getAnchor() == null) {
+            if(rc.canTakeAnchor(headquarters, Anchor.STANDARD)) rc.takeAnchor(headquarters, Anchor.STANDARD);
+        }
+        if (islandLocs.size() > 0) {
+            int index = 0;
+            MapLocation islandLocation = islandLocs.iterator().next();
+            if(rc.getAnchor() == null) {
+                rc.setIndicatorString("Moving my anchor towards " + islandLocation);
+                moveTowards(rc, islandLocation);
+            } else {
+                while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
+                if(!islandLocs.iterator().hasNext()) moveAway(rc, corner);
+                System.out.println("Moving my anchor towards " + islandLocation);
+                moveTowards(rc, islandLocation);
+                if (rc.canPlaceAnchor()) {
+                    rc.placeAnchor();
+                }
+            }
+
+        } else if (rc.isMovementReady()){
+            moveAway(rc, corner);
         }
     }
 

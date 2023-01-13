@@ -1,10 +1,8 @@
-package EnhancedRush;
+package RushWithAnchors;
 
 import battlecode.common.*;
 
-import static EnhancedRush.RobotPlayer.*;
-import static EnhancedRush.RobotPlayer.directions;
-import static EnhancedRush.RobotPlayer.rng;
+import static RushWithAnchors.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Launcher {

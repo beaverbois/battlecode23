@@ -4,8 +4,8 @@ import battlecode.common.*;
 
 import java.util.*;
 
-import static Util.Util.intToLoc;
-import static Util.Util.locToInt;
+import static Utilities.Util.intToLoc;
+import static Utilities.Util.locToInt;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

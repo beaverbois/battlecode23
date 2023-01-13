@@ -1,4 +1,4 @@
-package EnhancedRush;
+package RushWithAnchors;
 
 import battlecode.common.*;
 
@@ -91,7 +91,6 @@ public strictfp class RobotPlayer {
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + allHQ.length + 1));
             }
             headquarters = closest(rc.getLocation(), allHQ);
-            System.out.println("HQ: " + headquarters);
             corner = headquarters;
         }
 
@@ -99,6 +98,10 @@ public strictfp class RobotPlayer {
             //Using last index to convey role info to new bots, can do operations to
             //compress multiple robots into one slot.
             if (rc.readSharedArray(31) == 1) Carrier.cstate = Carrier.CarrierState.SCOUTING;
+            else if (rc.readSharedArray(31) == 2) {
+                Carrier.cstate = Carrier.CarrierState.ISLANDS;
+                System.out.println("Islands! " + Carrier.cstate);
+            }
         }
 
         while (true) {
