@@ -4,8 +4,7 @@ import battlecode.common.*;
 
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
-import static Util.Util.getWellLocation;
-import static Util.Util.locToInt;
+import static Util.Util.*;
 
 public class Headquarters {
     public static int hqIndex = 4;
@@ -39,8 +38,8 @@ public class Headquarters {
             }
         }
         else {
-             // If no wells have been found, spawn carrier in random direction
-            if (getWellLocation(rc, 0) == null) {
+             // If not all wells have been found, spawn carrier in random direction
+            if (getNumWellsFound(rc) < numWellsStored) {
                 Direction dir = directions[rng.nextInt(directions.length)];
                 MapLocation newLoc = rc.getLocation().add(dir);
                 if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
@@ -49,7 +48,7 @@ public class Headquarters {
             } else {
                 // Spawn carriers towards well
                 // TODO: alternating well types
-                Direction dir = hqLocation.directionTo(getWellLocation(rc, 0));
+                Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
                 MapLocation newLoc = hqLocation.add(dir);
                 if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
                     rc.buildRobot(RobotType.CARRIER, newLoc);
