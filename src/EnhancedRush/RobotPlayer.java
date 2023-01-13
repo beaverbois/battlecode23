@@ -83,7 +83,6 @@ public strictfp class RobotPlayer {
             rc.writeSharedArray(0, ++numHQ);
             //Write position in #HQ index as x * 60 + y.
             rc.writeSharedArray(numHQ, headquarters.x * 60 + headquarters.y);
-            System.out.println("Num HQ: " + rc.readSharedArray(0));
         } else {
             allHQ = new MapLocation[rc.readSharedArray(0)];
             allOpposingHQ = new MapLocation[allHQ.length];
@@ -92,6 +91,7 @@ public strictfp class RobotPlayer {
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + allHQ.length + 1));
             }
             headquarters = closest(rc.getLocation(), allHQ);
+            System.out.println("HQ: " + headquarters);
             corner = headquarters;
         }
 

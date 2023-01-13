@@ -1,10 +1,6 @@
 package Util;
 
 import battlecode.common.*;
-import battlecode.world.Well;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Public utility class
@@ -33,14 +29,14 @@ public class Util {
         }
     }
 
-    public static Well readWell(RobotController rc, int index) throws IndexOutOfBoundsException, GameActionException {
-        if (index < wellIndexMin || index > wellIndexMax) throw new IndexOutOfBoundsException("Well index out of bounds");
-        String val = String.valueOf(rc.readSharedArray(index));
-        int type = Integer.parseInt(String.valueOf(val.charAt(0)));
-        MapLocation loc = intToLoc(Integer.parseInt(val.substring(1)));
-
-        return new Well(loc, ResourceType.values()[type]);
-    }
+//    public static Well readWell(RobotController rc, int index) throws IndexOutOfBoundsException, GameActionException {
+//        if (index < wellIndexMin || index > wellIndexMax) throw new IndexOutOfBoundsException("Well index out of bounds");
+//        String val = String.valueOf(rc.readSharedArray(index));
+//        int type = Integer.parseInt(String.valueOf(val.charAt(0)));
+//        MapLocation loc = intToLoc(Integer.parseInt(val.substring(1)));
+//
+//        return new Well(loc, ResourceType.values()[type]);
+//    }
 
     //Movement methods
     public static int distance(MapLocation pos, MapLocation target) {

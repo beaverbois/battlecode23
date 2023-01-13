@@ -14,9 +14,6 @@ public class Carrier {
         REPORTING
     }
     static CarrierState cstate = CarrierState.FARMING;
-
-    static MapLocation headquarters = new MapLocation(0, 0);
-    static MapLocation corner = new MapLocation(-1, -1);
     static MapLocation enemyLoc;
     static MapLocation pos;
 
@@ -114,9 +111,7 @@ public class Carrier {
                 for (int i = 0; i < wells.length; i++) wellLoc[i] = wells[i].getMapLocation();
                 moveTowards(rc, closest(pos, wellLoc));
             } else {
-                int dist = distance(pos, corner);
                 moveAway(rc, corner);
-                if(distance(pos, headquarters) < dist) corner = pos;
             }
         }
     }
@@ -176,6 +171,7 @@ public class Carrier {
         else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
             rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
         else {
+            corner = pos;
             moveRandom(rc);
         }
     }

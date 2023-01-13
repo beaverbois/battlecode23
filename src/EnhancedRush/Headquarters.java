@@ -8,7 +8,6 @@ import static Util.Util.intToLoc;
 public class Headquarters {
     static void run(RobotController rc) throws GameActionException {
         //Make scout carriers every 5 turns.
-        for(int i = 0; i < allHQ.length; i++) allOpposingHQ[i] = intToLoc(rc.readSharedArray(allHQ.length + i + 1));
         if(turnCount % 2 == 0) rc.writeSharedArray(31, 1);
         else if(turnCount % 2 == 1) rc.writeSharedArray(31, 0);
         // Pick a direction to build in.

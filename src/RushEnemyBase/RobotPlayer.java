@@ -96,7 +96,9 @@ public strictfp class RobotPlayer {
             //Write position in #HQ index as x * 60 + y.
             rc.writeSharedArray(numHQ, headquarters.x * 60 + headquarters.y);
             System.out.println("Num HQ: " + rc.readSharedArray(0));
-        } else {
+            allHQ = new MapLocation[numHQ];
+        }
+        else {
             allHQ = new MapLocation[rc.readSharedArray(0)];
             allOpposingHQ = new MapLocation[allHQ.length];
             for(int i = 0; i < allHQ.length; i++) {
@@ -165,7 +167,6 @@ public strictfp class RobotPlayer {
      */
     static void runHeadquarters(RobotController rc) throws GameActionException {
         //Make scout carriers every 5 turns.
-        for(int i = 0; i < allHQ.length; i++) allOpposingHQ[i] = intToLoc(rc.readSharedArray(allHQ.length + i + 1));
         if(turnCount % 2 == 0) rc.writeSharedArray(31, 1);
         else if(turnCount % 2 == 1) rc.writeSharedArray(31, 0);
         // Pick a direction to build in.
@@ -454,7 +455,7 @@ public strictfp class RobotPlayer {
                 }
             }
             if (rc.canAttack(target)) {
-                rc.setIndicatorString("Attacking");        
+                rc.setIndicatorString("Attacking");
                 rc.attack(target);
                 if(rc.isMovementReady() && lstate != LauncherState.REPORTING) {
                     if(rc.canMove(towards(me, target))) {
