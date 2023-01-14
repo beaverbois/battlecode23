@@ -1,7 +1,6 @@
 package RushWithAnchors;
 
 import battlecode.common.*;
-import battlecode.world.Island;
 
 import java.util.Arrays;
 import java.util.HashSet;

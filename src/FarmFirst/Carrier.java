@@ -2,15 +2,13 @@ package FarmFirst;
 
 import battlecode.common.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static FarmFirst.Headquarters.hqIndex;
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
-import static Utilities.Util.*;
+import static Utilities.CarrierSync.*;
+import static Utilities.Util.intToLoc;
 
 public class Carrier {
     enum CarrierState {
@@ -29,12 +27,16 @@ public class Carrier {
     static final int maxCollectionCycles = 4; // Max is 6 for 1 move/turn after collecting
     static int numCycles = 0;
     static List<Direction> shuffledDir;
-
+    public static ResourceType targetType = null;
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
+            // this will run when the bot is created
             state = CarrierState.SCOUTING;
-            hqLocation = intToLoc(rc.readSharedArray(hqIndex)); //TODO: eventually make nicer
+            hqLocation = intToLoc(rc.readSharedArray(hqIndex));
+            //TODO: handle null case of getAssignment
+            targetType = getCarrierAssignment(rc);
+
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
             Collections.shuffle(shuffledDir) ;
         }
@@ -48,11 +50,18 @@ public class Carrier {
                         stateLock = true;
                     }
                     else {
-                        // if we have discovered all wells, pick a random well from our list
-                        //TODO: This should be more distributed, not random
-                        int index = wellIndexMin + rng.nextInt(numWellsStored);
-                        targetWellLocation = getWellLocation(rc, index);
-                        targetWellType = getWellType(rc, index);
+                        // if we have discovered all wells, assemble a list of wells with our targetType and pick a random one
+//                        int index = wellIndexMin + rng.nextInt(numWellsStored);
+                        //TODO: this is bytecode heavy
+                        ArrayList<Integer> targetWellIndices = new ArrayList<>();
+                        for (int i = 0; i < numWellsStored; i++) {
+                            int n = wellIndexMin + i;
+                            if (getWellType(rc, n) == targetType) targetWellIndices.add(n);
+                        }
+                        rng.nextInt();
+
+//                        targetWellLocation = getWellLocation(rc, index);
+//                        targetWellType = getWellType(rc, index);
                         state = CarrierState.MOVING;
                         break;
                     }
@@ -77,7 +86,8 @@ public class Carrier {
                     }
                 }
 
-                if (rc.senseNearbyWells().length > 0) {
+                WellInfo[] wells = rc.senseNearbyWells((targetType));
+                if (wells.length > 0) {
                     targetWellLocation = rc.senseNearbyWells()[0].getMapLocation();
                     targetWellType = rc.senseNearbyWells()[0].getResourceType();
                     state = CarrierState.MOVING;
@@ -98,6 +108,7 @@ public class Carrier {
                     List<Direction> shuffledDirWell = new ArrayList<>(Arrays.asList(Direction.allDirections()));
                     Collections.shuffle(shuffledDirWell) ;
 
+                    //TODO: Randomized movements with priority towards well/hq location
                     for (Direction dir : shuffledDirWell) {
                         closestSquare = targetWellLocation.add(dir);
                         closestSquareDir = rcLocation.directionTo(closestSquare);

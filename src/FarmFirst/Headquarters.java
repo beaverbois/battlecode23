@@ -4,12 +4,14 @@ import battlecode.common.*;
 
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
-import static Utilities.Util.*;
+import static Utilities.CarrierSync.*;
+import static Utilities.Util.locToInt;
 
 public class Headquarters {
     public static int hqIndex = 4;
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
+    public static ResourceType carrierAssignment = null;
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
             hqLocation = rc.getLocation();
@@ -17,6 +19,7 @@ public class Headquarters {
                 rc.writeSharedArray(hqIndex, locToInt(hqLocation));
             }
 
+            carrierAssignment = ResourceType.ADAMANTIUM;
             stateLock = true;
         }
         // If there are opponents within radius of headquarters, spawn launchers in direction of opponents
@@ -47,12 +50,17 @@ public class Headquarters {
                 }
             } else {
                 // Spawn carriers towards well
-                // TODO: alternating well types
                 Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
                 MapLocation newLoc = hqLocation.add(dir);
                 if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
                     rc.buildRobot(RobotType.CARRIER, newLoc);
                 }
+            }
+            // Alternate next carrier spawn between Ad and Mn target resources
+            if (carrierAssignment == ResourceType.ADAMANTIUM) {
+                assignCarrier(rc, ResourceType.MANA);
+            } else {
+                assignCarrier(rc, ResourceType.ADAMANTIUM);
             }
         }
     }
