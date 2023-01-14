@@ -13,12 +13,12 @@ public class Util {
 
     public static final int codingMultiplier = 100; // originally GameConstants.MAP_MAX_WIDTH
     public static MapLocation intToLoc(int raw) {
-        return new MapLocation(raw / codingMultiplier, raw % codingMultiplier);
+        return new MapLocation((raw - 1) / codingMultiplier, (raw - 1) % codingMultiplier);
     }
 
     // Maps (x,y) to "xy"
     public static int locToInt(MapLocation pos) {
-        return pos.x * codingMultiplier + pos.y;
+        return pos.x * codingMultiplier + pos.y + 1;
     }
 
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
@@ -131,7 +131,7 @@ public class Util {
 
     /**
      * Storage Layout
-     * Largest loc is 3,599
+     * Largest loc is 6061
      * Largest storage value is 2^16 = 65535
      *
      * 0 .. 3 | Resource Type | Well Location
