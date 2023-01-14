@@ -1,11 +1,28 @@
 package Utilities;
 
+import battlecode.common.Direction;
 import battlecode.common.MapLocation;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Public utility class
  */
 public class Util {
+
+    /** Array containing all the possible movement directions. */
+    static final Direction[] directions = {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.EAST,
+            Direction.SOUTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHWEST,
+            Direction.WEST,
+            Direction.NORTHWEST,
+    };
 
     public static final int LOC_MULTIPLIER = 100; // originally GameConstants.MAP_MAX_WIDTH
 
@@ -69,5 +86,16 @@ public class Util {
         if (ygap == 0) return xgap > 0 ? 2 : 6;
         if (xgap > 0) return ygap > 0 ? 1 : 3;
         return ygap > 0 ? 7 : 5;
+    }
+
+    // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
+    // TODO: Eventually stores path in maps
+    public static Direction[] closestDirections (MapLocation pos, MapLocation target) {
+        Map <Integer, Direction> map = new HashMap<>();
+        for (Direction direction : directions) {
+            map.put(distance((pos.add(direction)), target), direction);
+        }
+
+        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
     }
 }

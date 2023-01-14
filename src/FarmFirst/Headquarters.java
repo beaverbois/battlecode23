@@ -2,6 +2,11 @@ package FarmFirst;
 
 import battlecode.common.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
 import static Utilities.CarrierSync.*;
@@ -12,6 +17,9 @@ public class Headquarters {
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
     public static ResourceType carrierAssignment = null;
+    static List<Direction> shuffledDir = null;
+    static List<Direction> shuffledCardinalDir = null;
+
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
             hqLocation = rc.getLocation();
@@ -20,6 +28,12 @@ public class Headquarters {
             }
 
             carrierAssignment = ResourceType.ADAMANTIUM;
+
+            shuffledDir = new ArrayList<>(Arrays.asList(directions));
+            shuffledCardinalDir = new ArrayList<>(Arrays.asList(Direction.cardinalDirections()));
+            Collections.shuffle(shuffledDir);
+            Collections.shuffle(shuffledCardinalDir);
+
             stateLock = true;
         }
         // If there are opponents within radius of headquarters, spawn launchers in direction of opponents
@@ -30,8 +44,8 @@ public class Headquarters {
                 rc.buildRobot(RobotType.LAUNCHER, loc);
             } else {
                 // if direction towards opponent is blocked, pick another one
-                //TODO: Use randoms
-                for (Direction dir : directions) {
+                Collections.shuffle(shuffledDir);
+                for (Direction dir : shuffledDir) {
                     MapLocation randomLoc = rc.getLocation().add(dir);
                     if (rc.canBuildRobot(RobotType.LAUNCHER, randomLoc)) {
                         rc.buildRobot(RobotType.LAUNCHER, randomLoc);
@@ -43,13 +57,16 @@ public class Headquarters {
         else {
              // If not all wells have been found, spawn carrier in random direction
             if (getNumWellsFound(rc) < numWellsStored) {
-                Direction dir = directions[rng.nextInt(directions.length)];
-                MapLocation newLoc = rc.getLocation().add(dir);
-                if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
-                    rc.buildRobot(RobotType.CARRIER, newLoc);
+                Collections.shuffle(shuffledDir);
+                for (Direction dir : shuffledDir) {
+                    MapLocation randomLoc = rc.getLocation().add(dir);
+                    if (rc.canBuildRobot(RobotType.CARRIER, randomLoc)) {
+                        rc.buildRobot(RobotType.CARRIER, randomLoc);
+                    }
                 }
             } else {
-                // Spawn carriers towards well
+                // Spawn carriers towards random well
+                // TODO: In direction of closest well with carrierAssignment type
                 Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
                 MapLocation newLoc = hqLocation.add(dir);
                 if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
@@ -58,9 +75,11 @@ public class Headquarters {
             }
             // Alternate next carrier spawn between Ad and Mn target resources
             if (carrierAssignment == ResourceType.ADAMANTIUM) {
-                assignCarrier(rc, ResourceType.MANA);
+                setCarrierAssignment(rc, ResourceType.MANA);
+                carrierAssignment = ResourceType.MANA;
             } else {
-                assignCarrier(rc, ResourceType.ADAMANTIUM);
+                setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
+                carrierAssignment = ResourceType.ADAMANTIUM;
             }
         }
     }

@@ -11,9 +11,10 @@ import static Utilities.Util.locToInt;
 public class CarrierSync {
 
     public static int numWellsStored = 4;
-    public static int wellIndexMin = 0;
-    public static int wellIndexMax = 3;
-    public static int wellAssignmentIndex = 4;
+    public static int wellIndexMin = 56;
+    //TODO: This eventually needs to be (numHQ)*2 up to 63
+    public static int wellIndexMax = 59;
+    public static int carrierAssignmentIndex = 55;
 
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
         // if we are too far to write
@@ -65,11 +66,19 @@ public class CarrierSync {
         return total;
     }
 
-    public static ResourceType getCarrierAssignment(RobotController rc) {
-        return null;
+    public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
+        return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
     }
 
-    public static void assignCarrier(RobotController rc, ResourceType type) {
-
+    public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
+        if (rc.canWriteSharedArray(carrierAssignmentIndex, 1)) {
+            // copy into string and modify first index
+            if (rc.readSharedArray(carrierAssignmentIndex) == 0) {
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat("0000")));
+            } else {
+                String val = String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).substring(1);
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat(val)));
+            }
+        }
     }
 }
