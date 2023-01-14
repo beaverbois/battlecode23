@@ -8,6 +8,7 @@ import static FarmFirst.Headquarters.hqIndex;
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
 import static Utilities.CarrierSync.*;
+import static Utilities.Util.closestDirections;
 import static Utilities.Util.intToLoc;
 
 public class Carrier {
@@ -18,12 +19,13 @@ public class Carrier {
         RETURNING
     }
 
+    static boolean reportingWell = false;
+
     static Direction scoutDirection = null;
     static CarrierState state = null;
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
-    static ResourceType targetWellType = null;
     static final int maxCollectionCycles = 4; // Max is 6 for 1 move/turn after collecting
     static int numCycles = 0;
     static List<Direction> shuffledDir;
@@ -34,7 +36,6 @@ public class Carrier {
             // this will run when the bot is created
             state = CarrierState.SCOUTING;
             hqLocation = intToLoc(rc.readSharedArray(hqIndex));
-            //TODO: handle null case of getAssignment
             targetType = getCarrierAssignment(rc);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
@@ -48,51 +49,18 @@ public class Carrier {
                     if (getNumWellsFound(rc) < numWellsStored) {
                         scoutDirection = directions[rng.nextInt(directions.length)];
                         stateLock = true;
+                        scout(rc);
                     }
                     else {
                         // if we have discovered all wells, assemble a list of wells with our targetType and pick a random one
-//                        int index = wellIndexMin + rng.nextInt(numWellsStored);
-                        //TODO: this is bytecode heavy
-                        ArrayList<Integer> targetWellIndices = new ArrayList<>();
-                        for (int i = 0; i < numWellsStored; i++) {
-                            int n = wellIndexMin + i;
-                            if (getWellType(rc, n) == targetType) targetWellIndices.add(n);
-                        }
-                        rng.nextInt();
-
-//                        targetWellLocation = getWellLocation(rc, index);
-//                        targetWellType = getWellType(rc, index);
-                        state = CarrierState.MOVING;
+                        discoveredAllWells(rc);
                         break;
                     }
                 }
 
-                //TODO: Do not move towards borders
-
                 else {
-                    rc.setIndicatorString(state.toString());
-                    // once we have picked an initial direction, go in that direction till we can no longer
-                    if (rc.canMove(scoutDirection)) {
-                        rc.move(scoutDirection);
-                    } else {
-                        // if we can't go that way, randomly pick another direction until one is found
-                        for (Direction dir : shuffledDir) {
-                            if (rc.canMove(dir)) {
-                                scoutDirection = dir;
-                                rc.move(scoutDirection);
-                                break;
-                            }
-                        }
-                    }
+                    scout(rc);
                 }
-
-                WellInfo[] wells = rc.senseNearbyWells((targetType));
-                if (wells.length > 0) {
-                    targetWellLocation = rc.senseNearbyWells()[0].getMapLocation();
-                    targetWellType = rc.senseNearbyWells()[0].getResourceType();
-                    state = CarrierState.MOVING;
-                }
-
                 break;
 
             case MOVING:
@@ -119,8 +87,9 @@ public class Carrier {
                     }
 
                     // if we are still blocked, pick a random square around us
+//                    Collections.shuffle(shuffledDir);
                     if (rc.isMovementReady()) {
-                        for (Direction dir : shuffledDir) {
+                        for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -164,7 +133,7 @@ public class Carrier {
                         rc.move(hqDirection);
                     } else {
                         // if path towards hq is blocked, find another random direction
-                        for (Direction dir : shuffledDir) {
+                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -179,13 +148,33 @@ public class Carrier {
 
             case RETURNING:
 
+                if (reportingWell) {
+                    ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
+                    for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+                        if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
+                    }
+
+                    if (targetWellLocations.contains(targetWellLocation)) {
+                        reportingWell = false;
+                    } else if (rc.canWriteSharedArray(0, 1)) {
+                        writeWell(rc, targetType, targetWellLocation);
+
+                        System.out.println(targetType + " at " + targetWellLocation);
+                        System.out.println("Wells Discovered: " + getNumWellsFound(rc));
+                        reportingWell = false;
+                        state = CarrierState.MOVING;
+                        break;
+                    }
+                }
+
                 rcLocation = rc.getLocation();
                 Direction hqDirection = rcLocation.directionTo(hqLocation);
                 if (rc.canMove(hqDirection)) {
                     rc.move(hqDirection);
                 } else {
                     // if path is blocked, move to different square around hq
-                    for (Direction dir : shuffledDir) {
+//                    Collections.shuffle(shuffledDir);
+                    for (Direction dir : closestDirections(hqLocation, rcLocation)) {
                         closestSquare = hqLocation.add(dir);
                         closestSquareDir = rcLocation.directionTo(closestSquare);
                         if (rc.canMove(closestSquareDir)) {
@@ -196,7 +185,7 @@ public class Carrier {
 
                     // if we are still blocked, pick a random square around us to move to
                     if (rc.isMovementReady()) {
-                        for (Direction dir : shuffledDir) {
+                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -209,13 +198,83 @@ public class Carrier {
 
                 rcLocation = rc.getLocation();
                 if (rcLocation.isAdjacentTo(hqLocation)) {
-                    if (rc.canTransferResource(hqLocation, targetWellType, rc.getResourceAmount(targetWellType))) {
-                        rc.transferResource(hqLocation, targetWellType,rc.getResourceAmount(targetWellType));
+                    if (rc.canTransferResource(hqLocation, targetType, rc.getResourceAmount(targetType))) {
+                        rc.transferResource(hqLocation, targetType,rc.getResourceAmount(targetType));
                     }
 
-                    state = CarrierState.MOVING;
+                    if (!reportingWell) state = CarrierState.MOVING;
                 }
                 break;
         }
     }
+
+    private static void scout(RobotController rc) throws GameActionException {
+        rc.setIndicatorString(state.toString() + " " + targetType);
+        // once we have picked an initial direction, go in that direction till we can no longer
+        if (rc.canMove(scoutDirection)) {
+            rc.move(scoutDirection);
+        } else {
+            // if we can't go that way, randomly pick another direction until one is found
+            Collections.shuffle(shuffledDir) ;
+            for (Direction dir : shuffledDir) {
+                if (rc.canMove(dir)) {
+                    scoutDirection = dir;
+                    rc.move(scoutDirection);
+                    break;
+                }
+            }
+        }
+
+        // if all wells are discovered while scouting, move towards one
+        if (getNumWellsFound(rc) >= numWellsStored) {
+            discoveredAllWells(rc);
+            return;
+        }
+
+        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
+        WellInfo[] wells = rc.senseNearbyWells((targetType));
+        if (wells.length > 0) {
+            // make a location list of all stored wells of our type
+            ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
+            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+                if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
+            }
+
+            // we only want to store numWellsStored/2 wells per type, not elixir yet
+            if (targetWellLocations.size() >= numWellsStored / 2) {
+                return;
+            }
+
+            // check if any wells we found are new and not stored
+            for (WellInfo well : wells) {
+                MapLocation loc = well.getMapLocation();
+                if (!targetWellLocations.contains(loc)) {
+                    System.out.println("writing well");
+                    targetWellLocation = loc;
+                    // if we can write new well, do so
+                    if (rc.canWriteSharedArray(0, 1)) {
+                        writeWell(rc, targetType, loc);
+                    } else {
+                        // otherwise, return to hq to report
+                        reportingWell = true;
+                        state = CarrierState.RETURNING;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+        private static void discoveredAllWells(RobotController rc) throws GameActionException {
+            ArrayList<Integer> targetWellIndices = new ArrayList<>();
+            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+                if (getWellType(rc, i) == targetType) targetWellIndices.add(i);
+            }
+
+            int targetIndex = targetWellIndices.get(rng.nextInt(targetWellIndices.size()));
+
+            targetWellLocation = getWellLocation(rc, targetIndex);
+            targetType = getWellType(rc, targetIndex);
+            state = CarrierState.MOVING;
+        }
 }
