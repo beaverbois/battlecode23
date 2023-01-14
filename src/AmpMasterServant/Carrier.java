@@ -1,4 +1,4 @@
-package RushWithAnchors;
+package AmpMasterServant;
 
 import battlecode.common.*;
 

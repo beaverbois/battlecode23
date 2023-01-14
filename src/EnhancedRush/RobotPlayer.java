@@ -91,7 +91,6 @@ public strictfp class RobotPlayer {
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + allHQ.length + 1));
             }
             headquarters = closest(rc.getLocation(), allHQ);
-            System.out.println("HQ: " + headquarters);
             corner = headquarters;
         }
 

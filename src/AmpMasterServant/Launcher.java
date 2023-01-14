@@ -1,4 +1,4 @@
-package RushWithAnchors;
+package AmpMasterServant;
 
 import battlecode.common.*;
 
@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static RushWithAnchors.RobotPlayer.*;
-import static RushWithAnchors.RobotPlayer.directions;
-import static RushWithAnchors.RobotPlayer.rng;
 import static Utilities.Util.*;
 
 public class Launcher {

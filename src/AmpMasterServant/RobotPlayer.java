@@ -1,9 +1,7 @@
-package RushWithAnchors;
+package AmpMasterServant;
 
 import battlecode.common.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 import static Utilities.Util.*;

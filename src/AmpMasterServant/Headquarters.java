@@ -1,9 +1,8 @@
-package RushWithAnchors;
+package AmpMasterServant;
 
 import battlecode.common.*;
 
 import static RushWithAnchors.RobotPlayer.*;
-import static Utilities.Util.intToLoc;
 import static Utilities.Util.locToInt;
 
 public class Headquarters {
