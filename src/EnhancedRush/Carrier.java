@@ -131,7 +131,6 @@ public class Carrier {
 
         if (weight == 0) cstate = CarrierState.FARMING;
         else if(rc.isMovementReady()) {
-            System.out.println("Returning");
             moveTowards(rc, headquarters);
         }
     }

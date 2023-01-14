@@ -63,14 +63,23 @@ public class Carrier {
         if(rc.canWriteSharedArray(0, 0)) {
             if(enemyLoc != null) {
                 //For now trying "dumb" writing, where it will override.
-                rc.writeSharedArray(20, locToInt(enemyLoc));
+                for(int i = 33; i < 44; i += 2) {
+                    if (rc.readSharedArray(i) == 0) {
+                        writeToEmptyTarget(rc, locToInt(enemyLoc), false);
+                        break;
+                    }
+                }
                 enemyLoc = null;
             }
 
             //Update shared array with enemy HQ, currently may have problems with overwriting HQ.
-            for(int i = 0; i < allHQ.length; i++)
-                if(locToInt(allOpposingHQ[i]) != 0)
-                    rc.writeSharedArray(allHQ.length+i+1, locToInt(allOpposingHQ[i]));
+            for(int i = 0; i < allHQ.length; i++) {
+                int read = rc.readSharedArray(4 + i);
+                if (read == 0 && locToInt(allOpposingHQ[i]) != 0) {
+                    rc.writeSharedArray(4 + i, locToInt(allOpposingHQ[i]));
+                    writeToEmptyTarget(rc, locToInt(allOpposingHQ[i]), true);
+                }
+            }
             if(weight != 0) cstate = CarrierState.RETURNING;
             else cstate = CarrierState.FARMING;
         }
@@ -158,7 +167,6 @@ public class Carrier {
             } else {
                 while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
                 if(!islandLocs.iterator().hasNext()) moveAway(rc, corner);
-                System.out.println("Moving my anchor towards " + islandLocation);
                 moveTowards(rc, islandLocation);
                 if (rc.canPlaceAnchor()) {
                     rc.placeAnchor();
@@ -237,5 +245,23 @@ public class Carrier {
             dir = directions[randDir++ % directions.length];
         }
         if (rc.canMove(dir)) rc.move(dir);
+    }
+
+    private static void writeToEmptyTarget(RobotController rc, int write, boolean hq) throws GameActionException {
+        for(int i = 33; i < 44; i += 2)
+            if(rc.readSharedArray(i) == 0) {
+                rc.writeSharedArray(i, write);
+                return;
+            }
+
+        //We know there was no open slot to write in. If hq, should override slot with no alpha assigned.
+        if(hq) {
+            for (int i = 32; i < 43; i += 2) {
+                if (rc.readSharedArray(i) == 0) {
+                    rc.writeSharedArray(i + 1, write);
+                    return;
+                }
+            }
+        }
     }
 }

@@ -12,13 +12,17 @@ public class Launcher {
     static enum LauncherState {
         RUSHING,
         DEFENDING,
-        REPORTING
+        REPORTING,
+        ALPHA,
+        BETA
     }
     static LauncherState lstate = LauncherState.RUSHING;
 
     static RobotInfo[] enemies;
 
     static MapLocation pos;
+
+    static int lastAlphaDist = 100;
 
     static void run(RobotController rc) throws GameActionException {
         switch(lstate) {
@@ -30,7 +34,6 @@ public class Launcher {
 
     private static void turnStart(RobotController rc) throws GameActionException {
         pos = rc.getLocation();
-
 
         for (int i = 0; i < allHQ.length; i++) {
             int read = rc.readSharedArray(allHQ.length + i + 1);
@@ -89,6 +92,23 @@ public class Launcher {
         }
     }
 
+    private static void beta(RobotController rc, int alphaID) throws GameActionException {
+        turnStart(rc);
+
+        attack(rc);
+
+        RobotInfo alpha = rc.senseRobot(alphaID);
+        MapLocation alphaPos = alpha.getLocation();
+        int alphaDist = distance(pos, alphaPos);
+
+        if(alphaDist > 4 || (alphaDist > lastAlphaDist && alphaDist > 2)) moveTowards(rc, alphaPos);
+        else if(distance(pos, alphaPos) < 2 || (alphaDist < lastAlphaDist && alphaDist < 4)) moveAway(rc, alphaPos);
+    }
+
+    private static void alpha(RobotController rc) throws GameActionException {
+        turnStart(rc);
+    }
+
     private static void scout(RobotController rc) throws GameActionException {
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
@@ -122,7 +142,7 @@ public class Launcher {
             }
             if (rc.canAttack(target)) {
                 rc.attack(target);
-                if (rc.isMovementReady() && lstate != LauncherState.REPORTING) {
+                if (rc.isMovementReady() && lstate == LauncherState.RUSHING) {
                     if (rc.canMove(directions[towards(pos, target)])) {
                         rc.move(directions[towards(pos, target)]);
                     }
@@ -133,6 +153,23 @@ public class Launcher {
 
     private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
         int dirIn = towards(pos, target);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        Direction dir = directions[dirIn];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
+            rc.move(directions[(dirIn + 1) % directions.length]);
+        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
+            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
+        else {
+            moveRandom(rc);
+        }
+    }
+
+    private static void moveAway(RobotController rc, MapLocation target) throws GameActionException {
+        int dirIn = away(pos, target);
         if(dirIn == -1) {
             moveRandom(rc);
             return;
