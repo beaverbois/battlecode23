@@ -1,4 +1,4 @@
-package RushWithAnchors;
+package EfficientRush;
 
 import battlecode.common.*;
 
@@ -13,7 +13,7 @@ import static Utilities.Util.*;
  * The run() method inside this class is like your main function: this is what we'll call once your robot
  * is created!
  */
-public strictfp class OldRobotPlayer {
+public strictfp class RobotPlayer {
 
     /**
      * We will use this variable to count the number of turns this robot has been alive.
@@ -45,10 +45,10 @@ public strictfp class OldRobotPlayer {
     };
 
     static final ArrayList<RobotType> launcherPriority = new ArrayList<RobotType>(Arrays.asList(
+            RobotType.CARRIER,
             RobotType.DESTABILIZER,
             RobotType.LAUNCHER,
             RobotType.BOOSTER,
-            RobotType.CARRIER,
             RobotType.AMPLIFIER,
             RobotType.HEADQUARTERS
     ));
@@ -79,16 +79,16 @@ public strictfp class OldRobotPlayer {
         //Will need to fix this later
         if (rc.getType() == RobotType.HEADQUARTERS) {
             headquarters = rc.getLocation();
-            int numHQ = rc.readSharedArray(0);
-            rc.writeSharedArray(0, ++numHQ);
+            int numHQ = rc.readSharedArray(8);
+            rc.writeSharedArray(8, numHQ + 1);
             //Write position in #HQ index as x * 60 + y.
             rc.writeSharedArray(numHQ, locToInt(headquarters));
         } else {
-            allHQ = new MapLocation[rc.readSharedArray(0)];
+            allHQ = new MapLocation[rc.readSharedArray(8) % 10];
             allOpposingHQ = new MapLocation[allHQ.length];
             for (int i = 0; i < allHQ.length; i++) {
-                allHQ[i] = intToLoc(rc.readSharedArray(i + 1));
-                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + allHQ.length + 1));
+                allHQ[i] = intToLoc(rc.readSharedArray(i) % 10000);
+                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
             }
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;
@@ -100,7 +100,6 @@ public strictfp class OldRobotPlayer {
             if (rc.readSharedArray(31) == 1) Carrier.cstate = Carrier.CarrierState.SCOUTING;
             else if (rc.readSharedArray(31) == 2) {
                 Carrier.cstate = Carrier.CarrierState.ISLANDS;
-                System.out.println("Islands! " + Carrier.cstate);
             }
         }
 
@@ -125,7 +124,7 @@ public strictfp class OldRobotPlayer {
                         Carrier.run(rc);
                         break;
                     case LAUNCHER:
-                        DumbLauncher.run(rc);
+                        Launcher.run(rc);
                         break;
                     case BOOSTER:
                         Booster.run(rc);

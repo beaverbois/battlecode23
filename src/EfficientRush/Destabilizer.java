@@ -1,8 +1,9 @@
-package RushWithAnchors;
+
+package EfficientRush;
 
 import battlecode.common.RobotController;
 
-public class Amplifier {
+public class Destabilizer {
     public static void run(RobotController rc){
 
     }

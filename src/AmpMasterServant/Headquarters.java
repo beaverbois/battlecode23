@@ -2,7 +2,7 @@ package AmpMasterServant;
 
 import battlecode.common.*;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static AmpMasterServant.RobotPlayer.*;
 import static Utilities.Util.locToInt;
 
 public class Headquarters {

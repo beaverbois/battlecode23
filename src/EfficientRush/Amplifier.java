@@ -1,4 +1,4 @@
-package RushWithAnchors;
+package EfficientRush;
 
 import battlecode.common.RobotController;
 

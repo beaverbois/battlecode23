@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.HashMap;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static AmpMasterServant.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Amplifier {

@@ -5,7 +5,7 @@ import battlecode.common.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static AmpMasterServant.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Launcher {

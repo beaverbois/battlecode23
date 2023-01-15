@@ -2,7 +2,7 @@ package AmpMasterServant;
 
 import battlecode.common.*;
 
-import static RushWithAnchors.OldRobotPlayer.*;
+import static AmpMasterServant.OldRobotPlayer.*;
 import static Utilities.Util.*;
 
 public class DumbLauncher {

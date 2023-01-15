@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static AmpMasterServant.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Carrier {

@@ -1,14 +1,14 @@
-package RushWithAnchors;
+package EfficientRush;
 
 import battlecode.common.*;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static EfficientRush.RobotPlayer.*;
 
 public class Headquarters {
     static void run(RobotController rc) throws GameActionException {
         //Make scout carriers every 4 turns.
         if(turnCount > 1000) rc.writeSharedArray(31, 2);
-        else if(turnCount % 4 == 0) rc.writeSharedArray(31, 1);
+        else if(turnCount % 5 == 0) rc.writeSharedArray(31, 1);
         if(turnCount % 4 == 1) rc.writeSharedArray(31, 0);
         // Pick a direction to build in.
         int i = rng.nextInt(directions.length);

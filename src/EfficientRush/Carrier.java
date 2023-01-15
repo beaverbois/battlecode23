@@ -1,13 +1,12 @@
-package RushWithAnchors;
+package EfficientRush;
 
 import battlecode.common.*;
-import battlecode.world.Island;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static RushWithAnchors.RobotPlayer.*;
+import static EfficientRush.RobotPlayer.*;
 import static Utilities.Util.*;
 
 public class Carrier {
@@ -48,8 +47,8 @@ public class Carrier {
     }
 
     private static void reporting(RobotController rc) throws GameActionException {
-        for(int i = 0; i < allHQ.length; i++) {
-            int read = rc.readSharedArray(allHQ.length + i + 1);
+        for (int i = 0; i < allHQ.length; i++) {
+            int read = rc.readSharedArray(4 + i);
             if(read != 0 && read != locToInt(allOpposingHQ[i])) {
                 if(locToInt(allOpposingHQ[i]) == 0) allOpposingHQ[i] = intToLoc(read);
                     //Doesn't account for the case of 3+ HQ where the
@@ -62,16 +61,14 @@ public class Carrier {
         }
 
         if(rc.canWriteSharedArray(0, 0)) {
-            if(enemyLoc != null) {
-                //For now trying "dumb" writing, where it will override.
-                rc.writeSharedArray(20, locToInt(enemyLoc));
-                enemyLoc = null;
-            }
-
             //Update shared array with enemy HQ, currently may have problems with overwriting HQ.
-            for(int i = 0; i < allHQ.length; i++)
-                if(locToInt(allOpposingHQ[i]) != 0)
-                    rc.writeSharedArray(allHQ.length+i+1, locToInt(allOpposingHQ[i]));
+            for(int i = 0; i < allHQ.length; i++) {
+                int read = rc.readSharedArray(4+i);
+                int oppHQ = locToInt(allOpposingHQ[i]);
+                if (oppHQ != 0 && read == 0) {
+                    rc.writeSharedArray(4 + i, oppHQ);
+                }
+            }
             if(weight != 0) cstate = CarrierState.RETURNING;
             else cstate = CarrierState.FARMING;
         }

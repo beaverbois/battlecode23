@@ -44,10 +44,20 @@ public strictfp class RobotPlayer {
             Direction.NORTHWEST,
     };
 
+    static final ArrayList<RobotType> launcherPriority = new ArrayList<RobotType>(Arrays.asList(
+            RobotType.DESTABILIZER,
+            RobotType.LAUNCHER,
+            RobotType.BOOSTER,
+            RobotType.CARRIER,
+            RobotType.AMPLIFIER,
+            RobotType.HEADQUARTERS
+    ));
+
     static MapLocation headquarters = new MapLocation(0, 0);
     static MapLocation corner = new MapLocation(-1, -1);
     static MapLocation[] allHQ;
     static MapLocation[] allOpposingHQ;
+    static MapLocation enemyLoc;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -64,23 +74,21 @@ public strictfp class RobotPlayer {
         //System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
-
-        int read = rc.readSharedArray(8);
+        rc.setIndicatorString("Hello world!");
 
         //Will need to fix this later
         if (rc.getType() == RobotType.HEADQUARTERS) {
             headquarters = rc.getLocation();
-            rc.writeSharedArray(8, read + 1);
-            //Write position in #HQ index as x * 100 + y.
-            rc.writeSharedArray(read, locToInt(headquarters));
-            Headquarters.numHQ = read;
+            int numHQ = rc.readSharedArray(0);
+            rc.writeSharedArray(0, ++numHQ);
+            //Write position in #HQ index as x * 60 + y.
+            rc.writeSharedArray(numHQ, locToInt(headquarters));
         } else {
-            allHQ = new MapLocation[read % 10];
-            rc.setIndicatorString("AllHQ: " + allHQ.length);
+            allHQ = new MapLocation[rc.readSharedArray(0)];
             allOpposingHQ = new MapLocation[allHQ.length];
             for (int i = 0; i < allHQ.length; i++) {
-                allHQ[i] = intToLoc(rc.readSharedArray(i) % 10000);
-                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4));
+                allHQ[i] = intToLoc(rc.readSharedArray(i + 1));
+                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + allHQ.length + 1));
             }
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;
@@ -89,30 +97,10 @@ public strictfp class RobotPlayer {
         if (rc.getType() == RobotType.CARRIER) {
             //Using last index to convey role info to new bots, can do operations to
             //compress multiple robots into one slot.
-            if (rc.readSharedArray(10) == 1) Carrier.cstate = Carrier.CarrierState.SCOUTING;
-            else if (rc.readSharedArray(10) == 2) Carrier.cstate = Carrier.CarrierState.ISLANDS;
-        } else if(rc.getType() == RobotType.LAUNCHER) {
-            if (read / 10 % 10 == 1) {
-                Launcher.lstate = Launcher.LauncherState.BETA;
-                int minDist = 120;
-                int minLoc = -1;
-                for(int i = 25; i < 32; i += 2) {
-                    int loc = rc.readSharedArray(i);
-                    if(loc != 0 && loc / 10000 == 0 && distance(rc.getLocation(), intToLoc(loc % 10000)) < minDist) {
-                        minDist = loc;
-                        minLoc = i - 1;
-                    }
-                }
-                if(minLoc == -1) Launcher.lstate = Launcher.LauncherState.RUSHING;
-                else Launcher.alphaIndex = minLoc;
-            }
-            else if (read / 10 % 10 == 2) Launcher.lstate = Launcher.LauncherState.DEFENDING;
-        } else if(rc.getType() == RobotType.AMPLIFIER) {
-            if (read / 100 % 10 > 0 && read / 100 % 10 < 5) {
-                Amplifier.astate = Amplifier.AmpState.ALPHA;
-                Amplifier.alphaIndex = 2 * (read / 100 % 10 + 11);
-                rc.writeSharedArray(Amplifier.alphaIndex, rc.getID());
-                rc.writeSharedArray(8, read / 1000 * 1000 + read % 100);
+            if (rc.readSharedArray(31) == 1) Carrier.cstate = Carrier.CarrierState.SCOUTING;
+            else if (rc.readSharedArray(31) == 2) {
+                Carrier.cstate = Carrier.CarrierState.ISLANDS;
+                System.out.println("Islands! " + Carrier.cstate);
             }
         }
 
