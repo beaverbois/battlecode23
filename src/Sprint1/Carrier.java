@@ -305,6 +305,8 @@ public class Carrier {
 
     //Stuff added for integration purposes:
     private static void islands(RobotController rc) throws GameActionException {
+        rc.setIndicatorString("Islands");
+
         pos = rc.getLocation();
 
         //Camp on an island to destroy anchors or protect yours.
@@ -327,7 +329,6 @@ public class Carrier {
             int index = 0;
             MapLocation islandLocation = islandLocs.iterator().next();
             if(rc.getAnchor() == null) {
-                rc.setIndicatorString("Moving my anchor towards " + islandLocation);
                 moveTowards(rc, islandLocation);
             } else {
                 while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
