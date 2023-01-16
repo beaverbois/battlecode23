@@ -4,10 +4,10 @@ import battlecode.common.*;
 
 import java.util.*;
 
-import static FarmFirst.Headquarters.hqIndex;
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
 import static Utilities.CarrierSync.*;
+import static Utilities.HQSync.hqMinIndex;
 import static Utilities.Util.closestDirections;
 import static Utilities.Util.intToLoc;
 
@@ -34,8 +34,9 @@ public class Carrier {
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
             // this will run when the bot is created
+            //TODO: check if hq is upgradable, shared array must have what hqs have enough resources to be upgradable boolean
             state = CarrierState.SCOUTING;
-            hqLocation = intToLoc(rc.readSharedArray(hqIndex));
+            hqLocation = intToLoc(rc.readSharedArray(hqMinIndex));
             targetType = getCarrierAssignment(rc);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));

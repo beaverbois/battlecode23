@@ -1,5 +1,6 @@
 package FarmFirst;
 
+import Utilities.HQSync;
 import battlecode.common.*;
 
 import java.util.ArrayList;
@@ -10,10 +11,10 @@ import java.util.List;
 import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
 import static Utilities.CarrierSync.*;
+import static Utilities.HQSync.hqMinIndex;
 import static Utilities.Util.locToInt;
 
 public class Headquarters {
-    public static int hqIndex = 4;
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
     public static ResourceType carrierAssignment = null;
@@ -22,9 +23,10 @@ public class Headquarters {
 
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
+            // runs on hq creation
             hqLocation = rc.getLocation();
-            if (rc.canWriteSharedArray(hqIndex, locToInt(hqLocation))) {
-                rc.writeSharedArray(hqIndex, locToInt(hqLocation));
+            if (rc.canWriteSharedArray(hqMinIndex, locToInt(hqLocation))) {
+                rc.writeSharedArray(hqMinIndex, locToInt(hqLocation));
             }
 
             carrierAssignment = ResourceType.ADAMANTIUM;
@@ -37,6 +39,7 @@ public class Headquarters {
             stateLock = true;
         }
         // If there are opponents within radius of headquarters, spawn launchers in direction of opponents
+        //TODO : spawn/move away from borders on random spawn
         RobotInfo[] opponents = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (opponents.length > 0) {
             MapLocation loc = rc.getLocation().add(rc.getLocation().directionTo(opponents[0].location));
@@ -65,6 +68,11 @@ public class Headquarters {
                     }
                 }
             } else {
+                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) > GameConstants.UPGRADE_WELL_AMOUNT) {
+
+                } else if (rc.getResourceAmount(ResourceType.MANA) > GameConstants.UPGRADE_WELL_AMOUNT) {
+
+                }
                 // Spawn carriers towards random well
                 // TODO: In direction of closest well with carrierAssignment type
                 Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));

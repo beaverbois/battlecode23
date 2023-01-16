@@ -79,6 +79,8 @@ public class CarrierSync {
                 String val = String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).substring(1);
                 rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat(val)));
             }
+        } else {
+            System.out.println(rc.getID() + " Could not write to shared array!");
         }
     }
 }
