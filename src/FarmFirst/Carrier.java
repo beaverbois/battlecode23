@@ -8,7 +8,7 @@ import static FarmFirst.RobotPlayer.directions;
 import static FarmFirst.RobotPlayer.rng;
 import static Utilities.CarrierSync.*;
 import static Utilities.HQSync.hqMinIndex;
-import static Utilities.Util.closestDirections;
+import static Utilities.Util.closestDirectionsTo;
 import static Utilities.Util.intToLoc;
 
 public class Carrier {
@@ -90,7 +90,7 @@ public class Carrier {
                     // if we are still blocked, pick a random square around us
 //                    Collections.shuffle(shuffledDir);
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, targetWellLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -134,7 +134,7 @@ public class Carrier {
                         rc.move(hqDirection);
                     } else {
                         // if path towards hq is blocked, find another random direction
-                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -175,7 +175,7 @@ public class Carrier {
                 } else {
                     // if path is blocked, move to different square around hq
 //                    Collections.shuffle(shuffledDir);
-                    for (Direction dir : closestDirections(hqLocation, rcLocation)) {
+                    for (Direction dir : closestDirectionsTo(hqLocation, rcLocation)) {
                         closestSquare = hqLocation.add(dir);
                         closestSquareDir = rcLocation.directionTo(closestSquare);
                         if (rc.canMove(closestSquareDir)) {
@@ -186,7 +186,7 @@ public class Carrier {
 
                     // if we are still blocked, pick a random square around us to move to
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;

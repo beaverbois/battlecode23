@@ -1,11 +1,11 @@
 package Utilities;
 
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Public utility class
@@ -88,12 +88,39 @@ public class Util {
         return ygap > 0 ? 7 : 5;
     }
 
+    public static void moveTowards(RobotController rc, MapLocation to) throws GameActionException {
+        for (Direction dir : closestDirectionsTo(rc.getLocation(), to)) {
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                break;
+            }
+        }
+    }
+
+    public static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
+        for (Direction dir : farthestDirectionsFrom(rc.getLocation(), from)) {
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                break;
+            }
+        }
+    }
+
     // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
-    // TODO: Eventually stores path in maps
-    public static Direction[] closestDirections (MapLocation pos, MapLocation target) {
+    public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
         Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
             map.put(distance((pos.add(direction)), target), direction);
+        }
+
+        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
+    }
+
+    // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
+    public static Direction[] farthestDirectionsFrom (MapLocation pos, MapLocation target) {
+        Map <Integer, Direction> map = new HashMap<>();
+        for (Direction direction : directions) {
+            map.put(-1 * distance((pos.add(direction)), target), direction);
         }
 
         return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);

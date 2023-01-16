@@ -14,7 +14,6 @@ import static Sprint1.RobotPlayer.enemyLoc;
 import static Utilities.CarrierSync.*;
 import static Utilities.HQSync.hqMinIndex;
 import static Utilities.Util.*;
-import static Utilities.Util.towards;
 
 public class Carrier {
     enum CarrierState {
@@ -51,7 +50,7 @@ public class Carrier {
             targetType = getCarrierAssignment(rc);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
-            Collections.shuffle(shuffledDir) ;
+            Collections.shuffle(shuffledDir);
 
             //Do islands if instructed to.
             if(rc.readSharedArray(54) == 1) {
@@ -112,9 +111,8 @@ public class Carrier {
                     }
 
                     // if we are still blocked, pick a random square around us
-//                    Collections.shuffle(shuffledDir);
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, targetWellLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -158,7 +156,7 @@ public class Carrier {
                         rc.move(hqDirection);
                     } else {
                         // if path towards hq is blocked, find another random direction
-                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -200,8 +198,7 @@ public class Carrier {
                     rc.move(hqDirection);
                 } else {
                     // if path is blocked, move to different square around hq
-//                    Collections.shuffle(shuffledDir);
-                    for (Direction dir : closestDirections(hqLocation, rcLocation)) {
+                    for (Direction dir : closestDirectionsTo(hqLocation, rcLocation)) {
                         closestSquare = hqLocation.add(dir);
                         closestSquareDir = rcLocation.directionTo(closestSquare);
                         if (rc.canMove(closestSquareDir)) {
@@ -212,7 +209,7 @@ public class Carrier {
 
                     // if we are still blocked, pick a random square around us to move to
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -346,63 +343,18 @@ public class Carrier {
         }
     }
 
-    private static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
-        int dirIn = away(pos, from);
-        if(dirIn == -1) {
-            moveRandom(rc);
-            return;
-        }
-        int randInt = rng.nextInt(3);
-        Direction dir = directions[(dirIn + (randInt - 1) + directions.length) % directions.length];
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]))
-            rc.move(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]);
-        else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
-            rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
-        else {
-            corner = pos;
-            moveRandom(rc);
-        }
-    }
-
-    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        int dirIn = towards(pos, target);
-        if(dirIn == -1) {
-            moveRandom(rc);
-            return;
-        }
-        Direction dir = directions[dirIn];
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
-            rc.move(directions[(dirIn + 1) % directions.length]);
-        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
-            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
-        else {
-            moveRandom(rc);
-        }
-    }
-
-    private static void moveRandom(RobotController rc) throws GameActionException {
-        int randDir = rng.nextInt(directions.length);
-        Direction dir = directions[randDir++ % directions.length];
-        for (int i = 0; i < directions.length && !rc.canMove(dir); i++) {
-            dir = directions[randDir++ % directions.length];
-        }
-        if (rc.canMove(dir)) rc.move(dir);
-    }
-
     private static void senseEnemies(RobotController rc) throws GameActionException {
-        int radius = rc.getType().visionRadiusSquared;
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
+        // If a headquarters is detected, report it back to HQ
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
                 int pos = locToInt(enemy.getLocation());
                 int numHQ = allHQ.length;
                 for (int i = 0; i < numHQ; i++) {
                     int val = locToInt(allOpposingHQ[i]);
-                    if (val == pos) break;
-                    if (val == 0) {
+                    if (val == pos) {
+                        break;
+                    } else if (val == 0) {
                         allOpposingHQ[i] = intToLoc(pos);
                         state = CarrierState.RETURNING;
                         reportingEnemy = true;
@@ -410,7 +362,7 @@ public class Carrier {
                     }
                 }
             } else if(enemy.getType() == RobotType.LAUNCHER || enemy.getType() == RobotType.DESTABILIZER){
-                //If a fighting enemy, should report and attack it.
+                //If a fighting enemy is detected, report it back to HQ
                 enemyLoc = enemy.getLocation();
                 state = CarrierState.RETURNING;
                 reportingEnemy = true;

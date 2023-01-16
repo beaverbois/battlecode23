@@ -336,32 +336,12 @@ public class Launcher {
             }
             if (rc.canAttack(target)) {
                 rc.attack(target);
-            }
-            if (rc.isMovementReady() && lstate == LauncherState.RUSHING) {
+            }            if (rc.isMovementReady() && lstate == LauncherState.RUSHING) {
                 moveTowards(rc, target);
             }
         }
     }
 
-    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        int dirIn = towards(pos, target);
-        if(dirIn == -1) {
-            moveRandom(rc);
-            return;
-        }
-        Direction dir = directions[dirIn];
-        int rand = rng.nextInt(2) * 2 - 1;
-        int add = ((dirIn + rand) + directions.length - 1) % directions.length;
-        int sub = ((dirIn - rand) + directions.length - 1) % directions.length;
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[add]))
-            rc.move(directions[add]);
-        else if(rc.canMove(directions[sub]))
-            rc.move(directions[sub]);
-        else {
-            moveRandom(rc);
-        }
-    }
 
     private static void moveRandom(RobotController rc) throws GameActionException {
         int randDir = rng.nextInt(directions.length);
