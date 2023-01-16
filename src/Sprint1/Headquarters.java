@@ -11,7 +11,7 @@ import static Sprint1.RobotPlayer.*;
 import static Utilities.CarrierSync.*;
 import static Utilities.CarrierSync.setCarrierAssignment;
 import static Utilities.HQSync.hqMinIndex;
-import static Utilities.Util.locToInt;
+import static Utilities.Util.*;
 
 public class Headquarters {
 
@@ -71,6 +71,35 @@ public class Headquarters {
             rc.buildAnchor(Anchor.STANDARD);
         }
 
+        // Pick a direction to build in.
+        int i = rng.nextInt(directions.length);
+        //Direction dir = directions[i++];
+        MapLocation newLoc = rc.getLocation().add(directions[i++%directions.length]);
+        while(rc.canSenseRobotAtLocation(newLoc) && i < directions.length) {
+            newLoc = rc.getLocation().add(directions[i++%directions.length]);
+        }
+
+        //Spawn launchers if there are enemies in vision.
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
+        if(enemies.length > 0) {
+            if(rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) rc.buildRobot(RobotType.LAUNCHER, newLoc);
+            rc.setIndicatorString("Under Attack!");
+            for (int j = 32; j < 44; j++) {
+                int read = rc.readSharedArray(j);
+                int dist = distance(enemies[0].location, intToLoc(read));
+                if (dist < 3) {
+                    return;
+                }
+            }
+            for (int j = 32; j < 44; j++) {
+                if (rc.readSharedArray(j) == 0) {
+                    rc.writeSharedArray(j, locToInt(enemies[0].location));
+                    return;
+                }
+            }
+            return;
+        }
+
         //Stop making robots entirely once you cover an quarter of the map. Ideally don't get to bloated too early, since you need to build ISLANDS carriers.
         if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 4) {
             rc.setIndicatorString("Bloated");
@@ -94,11 +123,10 @@ public class Headquarters {
 //            }
             // Spawn carriers towards random well
             // TODO: In direction of closest well with carrierAssignment type
-            System.out.println(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
             Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
-            MapLocation newLoc = hqLocation.add(dir);
-            if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
-                rc.buildRobot(RobotType.CARRIER, newLoc);
+            MapLocation newLocat = hqLocation.add(dir);
+            if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLocat)) {
+                rc.buildRobot(RobotType.CARRIER, newLocat);
             }
         }
         // Alternate next carrier spawn between Ad and Mn target resources
@@ -113,14 +141,6 @@ public class Headquarters {
         //Don't need this because of CarrierSync
 //        else if(turnCount % 5 == 1) rc.writeSharedArray(31, 0);
 //        else if(turnCount % 5 == 0) rc.writeSharedArray(31, 1);
-
-        // Pick a direction to build in.
-        int i = rng.nextInt(directions.length);
-        //Direction dir = directions[i++];
-        MapLocation newLoc = rc.getLocation().add(directions[i++%directions.length]);
-        while(rc.canSenseRobotAtLocation(newLoc) && i < directions.length) {
-            newLoc = rc.getLocation().add(directions[i++%directions.length]);
-        }
 
         //Again, bloating numbers. This time, larger number = stop building earlier. Prolly wanna increase for launchers, and maybe for carriers.
         //Make sure that we build anchors FAR BEFORE we stop building carriers, as otherwise the anchors will be stranded.

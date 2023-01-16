@@ -59,6 +59,10 @@ public class Carrier {
             }
         }
 
+        senseEnemies(rc);
+
+        hqLocation = closest(rc.getLocation(), headquarters);
+
         switch (state) {
             case SCOUTING:
                 // if we have not discovered all wells, pick a random direction to go in and discover them
@@ -188,10 +192,7 @@ public class Carrier {
                     }
                 }
 
-                if(reportingEnemy) {
-                    report(rc);
-                    return;
-                }
+                if(reportingEnemy) report(rc);
 
                 rcLocation = rc.getLocation();
                 Direction hqDirection = rcLocation.directionTo(hqLocation);
