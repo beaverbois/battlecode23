@@ -21,6 +21,8 @@ public class Headquarters {
     static List<Direction> shuffledDir = null;
     static List<Direction> shuffledCardinalDir = null;
 
+    static final double  manaToAdamantiumRatio = 1.69;
+
     static void run(RobotController rc) throws GameActionException {
         //
         if (!stateLock) {
@@ -131,12 +133,13 @@ public class Headquarters {
             }
         }
         // Alternate next carrier spawn between Ad and Mn target resources
-        if (carrierAssignment == ResourceType.ADAMANTIUM) {
-            setCarrierAssignment(rc, ResourceType.MANA);
-            carrierAssignment = ResourceType.MANA;
-        } else {
+
+        if (rng.nextDouble() > 1/manaToAdamantiumRatio) {
             setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
             carrierAssignment = ResourceType.ADAMANTIUM;
+        } else {
+            setCarrierAssignment(rc, ResourceType.MANA);
+            carrierAssignment = ResourceType.MANA;
         }
 
         //Don't need this because of CarrierSync
