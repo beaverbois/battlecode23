@@ -1,6 +1,7 @@
 package BeaverBois_S1;
 
 import battlecode.common.*;
+import scala.collection.Map;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,11 +72,12 @@ public class Headquarters {
         }
 
         // Pick a direction to build in.
-        int i = rng.nextInt(directions.length);
+        int i = 0;
         //Direction dir = directions[i++];
-        MapLocation newLoc = rc.getLocation().add(directions[i++%directions.length]);
-        while(rc.canSenseRobotAtLocation(newLoc) && i < directions.length) {
-            newLoc = rc.getLocation().add(directions[i++%directions.length]);
+        Direction[] locs = closestDirectionsTo(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+        MapLocation newLoc = rc.getLocation().add(locs[i++]);
+        while(rc.canSenseRobotAtLocation(newLoc) && i < locs.length) {
+            newLoc = rc.getLocation().add(locs[i++]);
         }
 
         //Spawn launchers if there are enemies in vision.
