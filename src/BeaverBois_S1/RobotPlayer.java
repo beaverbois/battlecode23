@@ -1,11 +1,10 @@
-package Sprint1;
+package BeaverBois_S1;
 
 import battlecode.common.*;
 
 import java.util.Random;
 
-import static Sprint1.Headquarters.hqLocation;
-import static Utilities.Util.*;
+import static BeaverBois_S1.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

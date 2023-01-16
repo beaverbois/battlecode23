@@ -1,4 +1,4 @@
-package Sprint1;
+package BeaverBois_S1;
 
 import battlecode.common.*;
 
@@ -7,11 +7,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static Sprint1.RobotPlayer.*;
-import static Utilities.CarrierSync.*;
-import static Utilities.CarrierSync.setCarrierAssignment;
-import static Utilities.HQSync.hqMinIndex;
-import static Utilities.Util.*;
+import static BeaverBois_S1.RobotPlayer.*;
+import static BeaverBois_S1.CarrierSync.*;
+import static BeaverBois_S1.CarrierSync.setCarrierAssignment;
+import static BeaverBois_S1.Util.*;
 
 public class Headquarters {
 

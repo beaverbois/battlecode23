@@ -1,19 +1,19 @@
-package Sprint1;
+package BeaverBois_S1;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-import static Sprint1.RobotPlayer.allHQ;
-import static Sprint1.RobotPlayer.allOpposingHQ;
-import static Sprint1.RobotPlayer.corner;
-import static Sprint1.RobotPlayer.headquarters;
-import static Sprint1.RobotPlayer.directions;
-import static Sprint1.RobotPlayer.rng;
-import static Sprint1.RobotPlayer.enemyLoc;
-import static Utilities.CarrierSync.*;
-import static Utilities.HQSync.hqMinIndex;
-import static Utilities.Util.*;
+import static BeaverBois_S1.RobotPlayer.allHQ;
+import static BeaverBois_S1.RobotPlayer.allOpposingHQ;
+import static BeaverBois_S1.RobotPlayer.corner;
+import static BeaverBois_S1.RobotPlayer.headquarters;
+import static BeaverBois_S1.RobotPlayer.directions;
+import static BeaverBois_S1.RobotPlayer.rng;
+import static BeaverBois_S1.RobotPlayer.enemyLoc;
+import static BeaverBois_S1.CarrierSync.*;
+import static BeaverBois_S1.HQSync.hqMinIndex;
+import static BeaverBois_S1.Util.*;
 
 public class Carrier {
     enum CarrierState {
@@ -44,7 +44,7 @@ public class Carrier {
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
             // this will run when the bot is created
-            //TODO: check if hq is upgradable, shared array must have what hqs have enough resources to be upgradable boolean
+            //TODO: Upgrades
             state = CarrierState.SCOUTING;
             hqLocation = intToLoc(rc.readSharedArray(hqMinIndex));
             targetType = getCarrierAssignment(rc);
@@ -53,13 +53,12 @@ public class Carrier {
             Collections.shuffle(shuffledDir);
 
             //Do islands if instructed to.
-            if(rc.readSharedArray(54) == 1) {
+            if(rc.readSharedArray(islandIndex) == 1) {
                 state = CarrierState.ISLANDS;
             }
         }
 
         senseEnemies(rc);
-
         hqLocation = closest(rc.getLocation(), headquarters);
 
         switch (state) {
@@ -136,7 +135,6 @@ public class Carrier {
                 break;
 
             case FARMING:
-
                 // if we can collect resources, do so numCycles times
                 if (rc.canCollectResource(targetWellLocation, -1)) {
                     rc.collectResource(targetWellLocation, -1);
@@ -170,7 +168,6 @@ public class Carrier {
                 break;
 
             case RETURNING:
-
                 if (reportingWell) {
                     ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
                     for (int i = wellIndexMin; i <= wellIndexMax; i++) {
@@ -182,8 +179,7 @@ public class Carrier {
                     } else if (rc.canWriteSharedArray(0, 1)) {
                         writeWell(rc, targetType, targetWellLocation);
 
-                        //System.out.println(targetType + " at " + targetWellLocation);
-                        //System.out.println("Wells Discovered: " + getNumWellsFound(rc));
+                        System.out.println(targetType + " at " + targetWellLocation);
                         reportingWell = false;
                         state = CarrierState.MOVING;
                         break;
@@ -274,7 +270,6 @@ public class Carrier {
             for (WellInfo well : wells) {
                 MapLocation loc = well.getMapLocation();
                 if (!targetWellLocations.contains(loc)) {
-                    //System.out.println("writing well");
                     targetWellLocation = loc;
                     // if we can write new well, do so
                     if (rc.canWriteSharedArray(0, 1)) {
@@ -305,6 +300,7 @@ public class Carrier {
 
     //Stuff added for integration purposes:
     private static void islands(RobotController rc) throws GameActionException {
+        rc.setIndicatorString("ISLANDS");
         pos = rc.getLocation();
 
         //Camp on an island to destroy anchors or protect yours.
@@ -416,7 +412,53 @@ public class Carrier {
                 }
                 enemyLoc = null;
             }
+
             state = CarrierState.SCOUTING;
         }
+    }
+
+    private static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
+        int dirIn = away(pos, from);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        int randInt = rng.nextInt(3);
+        Direction dir = directions[(dirIn + (randInt - 1) + directions.length) % directions.length];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]);
+        else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
+        else {
+            corner = pos;
+            moveRandom(rc);
+        }
+    }
+
+    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+        int dirIn = towards(pos, target);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        Direction dir = directions[dirIn];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
+            rc.move(directions[(dirIn + 1) % directions.length]);
+        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
+            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
+        else {
+            moveRandom(rc);
+        }
+    }
+
+    private static void moveRandom(RobotController rc) throws GameActionException {
+        int randDir = rng.nextInt(directions.length);
+        Direction dir = directions[randDir++ % directions.length];
+        for (int i = 0; i < directions.length && !rc.canMove(dir); i++) {
+            dir = directions[randDir++ % directions.length];
+        }
+        if (rc.canMove(dir)) rc.move(dir);
     }
 }

@@ -1,4 +1,4 @@
-package Utilities;
+package BeaverBois_S1;
 
 import battlecode.common.*;
 

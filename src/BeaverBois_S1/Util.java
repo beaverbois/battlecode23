@@ -1,4 +1,4 @@
-package Utilities;
+package BeaverBois_S1;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
@@ -7,23 +7,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static BeaverBois_S1.RobotPlayer.directions;
+
 /**
  * Public utility class
  */
 public class Util {
 
     /** Array containing all the possible movement directions. */
-
-    static final Direction[] directions = {
-            Direction.NORTH,
-            Direction.NORTHEAST,
-            Direction.EAST,
-            Direction.SOUTHEAST,
-            Direction.SOUTH,
-            Direction.SOUTHWEST,
-            Direction.WEST,
-            Direction.NORTHWEST,
-    };
 
     public static final int LOC_MULTIPLIER = 100; // originally GameConstants.MAP_MAX_WIDTH
 

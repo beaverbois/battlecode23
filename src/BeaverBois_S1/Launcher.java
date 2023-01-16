@@ -1,15 +1,13 @@
-package Sprint1;
+package BeaverBois_S1;
 
 import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 
-import static Sprint1.RobotPlayer.*;
-import static Utilities.CarrierSync.*;
-import static Utilities.CarrierSync.writeWell;
-import static Utilities.Util.*;
+import static BeaverBois_S1.RobotPlayer.*;
+import static BeaverBois_S1.CarrierSync.*;
+import static BeaverBois_S1.Util.*;
 
 public class Launcher {
 
@@ -351,4 +349,42 @@ public class Launcher {
         }
         if (rc.canMove(dir)) rc.move(dir);
     }
+
+
+    private static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
+        int dirIn = away(pos, from);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        int randInt = rng.nextInt(3);
+        Direction dir = directions[(dirIn + (randInt - 1) + directions.length) % directions.length];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]);
+        else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
+        else {
+            corner = pos;
+            moveRandom(rc);
+        }
+    }
+
+    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+        int dirIn = towards(pos, target);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        Direction dir = directions[dirIn];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
+            rc.move(directions[(dirIn + 1) % directions.length]);
+        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
+            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
+        else {
+            moveRandom(rc);
+        }
+    }
+
 }
