@@ -59,7 +59,7 @@ public class Carrier {
         }
 
         senseEnemies(rc);
-        hqLocation = closest(rc.getLocation(), allHQ);
+        hqLocation = closest(rc.getLocation(), headquarters);
 
         switch (state) {
             case SCOUTING:
