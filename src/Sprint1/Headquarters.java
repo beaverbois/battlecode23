@@ -110,7 +110,6 @@ public class Headquarters {
             carrierAssignment = ResourceType.ADAMANTIUM;
         }
 
-
         //Don't need this because of CarrierSync
 //        else if(turnCount % 5 == 1) rc.writeSharedArray(31, 0);
 //        else if(turnCount % 5 == 0) rc.writeSharedArray(31, 1);

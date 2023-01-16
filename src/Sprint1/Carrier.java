@@ -56,7 +56,6 @@ public class Carrier {
             //Do islands if instructed to.
             if(rc.readSharedArray(54) == 1) {
                 state = CarrierState.ISLANDS;
-                System.out.println("Islands!");
             }
         }
 
@@ -89,7 +88,6 @@ public class Carrier {
 
                 // move towards square closest to target well
                 MapLocation rcLocation = rc.getLocation();
-                System.out.println(targetWellLocation);
                 MapLocation closestSquare = targetWellLocation.subtract(rcLocation.directionTo(targetWellLocation));
                 Direction closestSquareDir = rcLocation.directionTo(closestSquare);
                 if (rc.canMove(closestSquareDir)) {
@@ -182,8 +180,8 @@ public class Carrier {
                     } else if (rc.canWriteSharedArray(0, 1)) {
                         writeWell(rc, targetType, targetWellLocation);
 
-                        System.out.println(targetType + " at " + targetWellLocation);
-                        System.out.println("Wells Discovered: " + getNumWellsFound(rc));
+                        //System.out.println(targetType + " at " + targetWellLocation);
+                        //System.out.println("Wells Discovered: " + getNumWellsFound(rc));
                         reportingWell = false;
                         state = CarrierState.MOVING;
                         break;
@@ -278,7 +276,7 @@ public class Carrier {
             for (WellInfo well : wells) {
                 MapLocation loc = well.getMapLocation();
                 if (!targetWellLocations.contains(loc)) {
-                    System.out.println("writing well");
+                    //System.out.println("writing well");
                     targetWellLocation = loc;
                     // if we can write new well, do so
                     if (rc.canWriteSharedArray(0, 1)) {
@@ -313,7 +311,7 @@ public class Carrier {
 
         //Camp on an island to destroy anchors or protect yours.
         if(rc.getAnchor() == null && rc.senseIsland(pos) != -1) {
-            System.out.println("Camping");
+            //System.out.println("Camping");
             return;
         }
 
