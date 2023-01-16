@@ -42,8 +42,8 @@ public class Headquarters {
         }
 
         //Make island carriers late-game.
-        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12) rc.writeSharedArray(54, 2);
-        
+        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12) rc.writeSharedArray(54, 1);
+
         // If there are opponents within radius of headquarters, spawn launchers in direction of opponents
         //Sticking to spawning launchers when able, should make little difference.
         //TODO : spawn/move away from borders on random spawn
@@ -64,8 +64,15 @@ public class Headquarters {
 //                }
 //            }
 //        }
-        //Stop making robots entirely once you cover an eighth of the map. Ideally don't get to bloated too early, since you need to build ISLANDS carriers.
-        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 8) {
+
+        //Here, start building anchors once the robot count is high enough. Increase the number to start building anchors earlier, decrease for later.
+        if (rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12 && rc.canBuildAnchor(Anchor.STANDARD) && rc.getNumAnchors(Anchor.STANDARD) < 2) {
+            // If we can build an anchor do it!
+            rc.buildAnchor(Anchor.STANDARD);
+        }
+
+        //Stop making robots entirely once you cover an quarter of the map. Ideally don't get to bloated too early, since you need to build ISLANDS carriers.
+        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 4) {
             rc.setIndicatorString("Bloated");
             return;
         }
@@ -75,7 +82,7 @@ public class Headquarters {
             Collections.shuffle(shuffledDir);
             for (Direction dir : shuffledDir) {
                 MapLocation randomLoc = rc.getLocation().add(dir);
-                if (rc.canBuildRobot(RobotType.CARRIER, randomLoc)) {
+                if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, randomLoc)) {
                     rc.buildRobot(RobotType.CARRIER, randomLoc);
                 }
             }
@@ -90,7 +97,7 @@ public class Headquarters {
             System.out.println(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
             Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
             MapLocation newLoc = hqLocation.add(dir);
-            if (rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
+            if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLoc)) {
                 rc.buildRobot(RobotType.CARRIER, newLoc);
             }
         }
@@ -116,12 +123,6 @@ public class Headquarters {
             newLoc = rc.getLocation().add(directions[i++%directions.length]);
         }
 
-        //Here, start building anchors once the robot count is high enough. Increase the number to start building anchors earlier, decrease for later.
-        if (rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12 && rc.canBuildAnchor(Anchor.STANDARD) && rc.getNumAnchors(Anchor.STANDARD) < 2) {
-            // If we can build an anchor do it!
-            rc.buildAnchor(Anchor.STANDARD);
-        }
-
         //Again, bloating numbers. This time, larger number = stop building earlier. Prolly wanna increase for launchers, and maybe for carriers.
         //Make sure that we build anchors FAR BEFORE we stop building carriers, as otherwise the anchors will be stranded.
         //Alternatively, you can start turning farming carriers into ISLANDS carriers once rc.getRobotCount() is high enough.
@@ -129,7 +130,7 @@ public class Headquarters {
             // Let's try to build a carrier.
             rc.setIndicatorString("Building a launcher");
             rc.buildRobot(RobotType.LAUNCHER, newLoc);
-        } else if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 8 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLoc)){
+        } else if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLoc)){
             // Let's try to build a launcher.
             rc.setIndicatorString("Building a carrier");
             rc.buildRobot(RobotType.CARRIER, newLoc);

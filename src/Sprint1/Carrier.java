@@ -54,7 +54,10 @@ public class Carrier {
             Collections.shuffle(shuffledDir) ;
 
             //Do islands if instructed to.
-            if(rc.readSharedArray(54) == 1) state = CarrierState.ISLANDS;
+            if(rc.readSharedArray(54) == 1) {
+                state = CarrierState.ISLANDS;
+                System.out.println("Islands!");
+            }
         }
 
         switch (state) {
