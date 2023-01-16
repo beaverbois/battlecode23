@@ -44,20 +44,13 @@ public strictfp class RobotPlayer {
             Direction.NORTHWEST,
     };
 
-    static final ArrayList<RobotType> launcherPriority = new ArrayList<RobotType>(Arrays.asList(
-            RobotType.CARRIER,
-            RobotType.DESTABILIZER,
-            RobotType.LAUNCHER,
-            RobotType.BOOSTER,
-            RobotType.AMPLIFIER,
-            RobotType.HEADQUARTERS
-    ));
-
     static MapLocation headquarters = new MapLocation(0, 0);
     static MapLocation corner = new MapLocation(-1, -1);
     static MapLocation[] allHQ;
     static MapLocation[] allOpposingHQ;
     static MapLocation enemyLoc;
+
+    static int[] awayFromHQ;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -83,12 +76,16 @@ public strictfp class RobotPlayer {
             rc.writeSharedArray(8, numHQ + 1);
             //Write position in #HQ index as x * 60 + y.
             rc.writeSharedArray(numHQ, locToInt(headquarters));
+            awayFromHQ = new int[numHQ + 1];
+            awayFromHQ[numHQ] = towards(rc.getLocation(), new MapLocation(rc.getMapWidth() - rc.getLocation().x, rc.getMapHeight() - rc.getLocation().y));
         } else {
             allHQ = new MapLocation[rc.readSharedArray(8) % 10];
             allOpposingHQ = new MapLocation[allHQ.length];
+            awayFromHQ = new int[allHQ.length];
             for (int i = 0; i < allHQ.length; i++) {
                 allHQ[i] = intToLoc(rc.readSharedArray(i) % 10000);
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
+                awayFromHQ[i] = towards(allHQ[i], new MapLocation(rc.getMapWidth() - allHQ[i].x, rc.getMapHeight() - allHQ[i].y));
             }
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;

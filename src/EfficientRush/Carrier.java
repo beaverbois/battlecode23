@@ -69,7 +69,29 @@ public class Carrier {
                     rc.writeSharedArray(4 + i, oppHQ);
                 }
             }
-            if(weight != 0) cstate = CarrierState.RETURNING;
+
+            //If no slot is close to the reported enemy, update first free slot with enemy location.
+            if(enemyLoc != null) {
+                boolean exists = false;
+                for (int i = 32; i < 44; i++) {
+                    int read = rc.readSharedArray(i);
+                    int dist = distance(enemyLoc, intToLoc(read));
+                    if (dist < 3) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    for (int j = 32; j < 44; j++) {
+                        if (rc.readSharedArray(j) == 0) {
+                            rc.writeSharedArray(j, locToInt(enemyLoc));
+                            break;
+                        }
+                    }
+                }
+                enemyLoc = null;
+            }
+            if (weight != 0) cstate = CarrierState.RETURNING;
             else cstate = CarrierState.FARMING;
         }
 
@@ -168,7 +190,7 @@ public class Carrier {
     }
 
     private static void senseEnemies(RobotController rc) throws GameActionException {
-        int radius = rc.getType().actionRadiusSquared;
+        int radius = rc.getType().visionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
         for (RobotInfo enemy : enemies) {
@@ -184,9 +206,11 @@ public class Carrier {
                         return;
                     }
                 }
-            } else {
+            } else if(enemy.getType() == RobotType.LAUNCHER || enemy.getType() == RobotType.DESTABILIZER){
+                //If a fighting enemy, should report and attack it.
                 enemyLoc = enemy.getLocation();
                 cstate = CarrierState.REPORTING;
+                return;
             }
         }
     }
