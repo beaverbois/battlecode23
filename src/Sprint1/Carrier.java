@@ -308,8 +308,13 @@ public class Carrier {
     private static void islands(RobotController rc) throws GameActionException {
         pos = rc.getLocation();
 
-        if(rc.getAnchor() == null && rc.senseIsland(pos) != -1) return;
+        //Camp on an island to destroy anchors or protect yours.
+        if(rc.getAnchor() == null && rc.senseIsland(pos) != -1) {
+            System.out.println("Camping");
+            return;
+        }
 
+        //Default code provided, just picks up anchors moves towards islands we know about.
         int[] islands = rc.senseNearbyIslands();
         Set<MapLocation> islandLocs = new HashSet<>();
         for (int id : islands) {
