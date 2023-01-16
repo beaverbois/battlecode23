@@ -26,7 +26,8 @@ public class CarrierSync {
         int index;
         for (index = wellIndexMin; index <= wellIndexMax; index++) {
             if (rc.readSharedArray(index) == 0) {
-                rc.writeSharedArray(index, type.resourceID * 10000 + locToInt(loc));
+                String val = "" + type.resourceID + locToInt(loc);
+                rc.writeSharedArray(index, Integer.parseInt(val));
                 return;
             }
         }
@@ -39,7 +40,8 @@ public class CarrierSync {
             return null;
         }
 
-        return intToLoc(rc.readSharedArray(index % 10000));
+        String val = String.valueOf(rc.readSharedArray(index));
+        return intToLoc(Integer.parseInt(val.substring(1)));
     }
 
     public static ResourceType getWellType(RobotController rc, int index) throws GameActionException {
@@ -49,7 +51,8 @@ public class CarrierSync {
             return null;
         }
 
-        return ResourceType.values()[rc.readSharedArray(index) / 10000];
+        String val = String.valueOf(rc.readSharedArray(index));
+        return ResourceType.values()[Integer.parseInt(String.valueOf(val.charAt(0)))];
     }
 
     public static int getNumWellsFound(RobotController rc) throws GameActionException {
@@ -64,17 +67,17 @@ public class CarrierSync {
     }
 
     public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
-        return ResourceType.values()[rc.readSharedArray(carrierAssignmentIndex) / 10000];
+        return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
     }
 
     public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
         if (rc.canWriteSharedArray(carrierAssignmentIndex, 1)) {
             // copy into string and modify first index
-            int val = rc.readSharedArray(carrierAssignmentIndex);
-            if (val == 0) {
-                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000);
+            if (rc.readSharedArray(carrierAssignmentIndex) == 0) {
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat("0000")));
             } else {
-                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + val % 10000);
+                String val = String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).substring(1);
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat(val)));
             }
         } else {
             System.out.println(rc.getID() + " Could not write to shared array!");
