@@ -1,8 +1,9 @@
-package BeaverBois_S1;
+
+package Sprint1;
 
 import battlecode.common.RobotController;
 
-public class Amplifier {
+public class Destabilizer {
     public static void run(RobotController rc){
 
     }

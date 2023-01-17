@@ -1,17 +1,16 @@
-package BeaverBois_S1;
+package Sprint1;
 
 import battlecode.common.*;
-import scala.collection.Map;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static BeaverBois_S1.RobotPlayer.*;
-import static BeaverBois_S1.CarrierSync.*;
-import static BeaverBois_S1.CarrierSync.setCarrierAssignment;
-import static BeaverBois_S1.Util.*;
+import static Sprint1.RobotPlayer.*;
+import static Sprint1.CarrierSync.*;
+import static Sprint1.CarrierSync.setCarrierAssignment;
+import static Sprint1.Util.*;
 
 public class Headquarters {
 
@@ -88,7 +87,7 @@ public class Headquarters {
         // Pick a direction to build in.
         int i = 0;
         //Direction dir = directions[i++];
-        Direction[] locs = closestDirectionsTo(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+        Direction[] locs = closestDirections(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
         MapLocation newLoc = rc.getLocation().add(locs[i++]);
         while(rc.canSenseRobotAtLocation(newLoc) && i < locs.length) {
             newLoc = rc.getLocation().add(locs[i++]);

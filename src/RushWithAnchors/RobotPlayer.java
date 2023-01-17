@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import static BeaverBois_S1.Util.*;
+import static Sprint1.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

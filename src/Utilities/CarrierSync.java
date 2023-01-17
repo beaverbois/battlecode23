@@ -5,8 +5,8 @@ import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 
-import static BeaverBois_S1.Util.intToLoc;
-import static BeaverBois_S1.Util.locToInt;
+import static Sprint1.Util.intToLoc;
+import static Sprint1.Util.locToInt;
 
 public class CarrierSync {
 

@@ -1,11 +1,11 @@
-package PostS1;
+package Sprint2;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-import static PostS1.RobotPlayer.allOpposingHQ;
-import static PostS1.Util.*;
+import static Sprint2.RobotPlayer.allOpposingHQ;
+import static Sprint2.Util.*;
 
 public class LauncherSync {
 

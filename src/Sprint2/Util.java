@@ -1,17 +1,16 @@
-package PostS1;
+package Sprint2;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import battlecode.world.RobotControllerImpl;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static PostS1.RobotPlayer.rng;
-import static PostS1.RobotPlayer.directions;
+import static Sprint2.RobotPlayer.rng;
+import static Sprint2.RobotPlayer.directions;
 
 /**
  * Public utility class
@@ -60,22 +59,24 @@ public class Util {
     }
 
     // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
-    public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
+    public static Direction[] closestDirections(MapLocation from, MapLocation to) {
         Map <Double, Direction> map = new HashMap<>();
+
+        // rng prevents map conflicts with same distances
         for (Direction direction : directions) {
-            //RNG ensures there are unique keys
-            map.put(dist((pos.add(direction)), target) + rng.nextDouble() / 100.0, direction);
+            map.put(dist((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
         }
 
-        //It just works I guess
         return new TreeMap<>(map).values().toArray(new Direction[0]);
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
-    public static Direction[] farthestDirectionsFrom (MapLocation pos, MapLocation target) {
+    public static Direction[] farthestDirections(MapLocation from, MapLocation to) {
         Map <Double, Direction> map = new HashMap<>();
+
+        // rng prevents map conflicts with same distances
         for (Direction direction : directions) {
-            map.put(-1 * distance((pos.add(direction)), target) + rng.nextDouble(), direction);
+            map.put(-1 * distance((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);
@@ -84,7 +85,7 @@ public class Util {
     public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
         MapLocation pos = rc.getLocation();
 
-        Direction[] closest = closestDirectionsTo(pos, target);
+        Direction[] closest = closestDirections(pos, target);
         if(rc.isMovementReady()) {
             for(int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
@@ -92,7 +93,7 @@ public class Util {
                     rc.move(dir);
                     //Accounts multiple movements
                     if(!rc.isMovementReady()) break;
-                    closest = closestDirectionsTo(rc.getLocation(), target);
+                    closest = closestDirections(rc.getLocation(), target);
                     i = 0;
                 }
             }
@@ -103,7 +104,7 @@ public class Util {
         //May want to switch this to randomize between the three "away" directions.
         MapLocation pos = rc.getLocation();
 
-        Direction[] closest = farthestDirectionsFrom(pos, target);
+        Direction[] closest = farthestDirections(pos, target);
         if(rc.isMovementReady()) {
             for(int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
@@ -111,7 +112,7 @@ public class Util {
                     rc.move(dir);
                     //Accounts for multiple movements
                     if(!rc.isMovementReady()) break;
-                    closest = closestDirectionsTo(rc.getLocation(), target);
+                    closest = closestDirections(rc.getLocation(), target);
                     i = 0;
                 }
             }

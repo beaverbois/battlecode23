@@ -1,16 +1,13 @@
-package PostS1;
+package Sprint1;
 
 import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import static PostS1.CarrierSync.*;
-import static PostS1.LauncherSync.closestTargetHQ;
-import static PostS1.LauncherSync.readOppHeadquarters;
-import static PostS1.RobotPlayer.*;
-import static PostS1.Util.*;
+import static Sprint1.RobotPlayer.*;
+import static Sprint1.CarrierSync.*;
+import static Sprint1.Util.*;
 
 public class Launcher {
 
@@ -31,7 +28,7 @@ public class Launcher {
             RobotType.HEADQUARTERS
     ));
 
-    static RobotInfo[] nearbyRobots, enemies, allies;
+    static RobotInfo[] enemies;
 
     static MapLocation pos;
 
@@ -59,22 +56,22 @@ public class Launcher {
     private static void turnStart(RobotController rc) throws GameActionException {
         pos = rc.getLocation();
 
-        readOppHeadquarters(rc, allOpposingHQ);
-
-        nearbyRobots = rc.senseNearbyRobots();
-        List<RobotInfo> alliesL = new ArrayList<RobotInfo>();
-        List<RobotInfo> enemiesL = new ArrayList<RobotInfo>();
-
-        for(RobotInfo bot : nearbyRobots) {
-            if(bot.team == rc.getTeam()) alliesL.add(bot);
-            else enemiesL.add(bot);
+        for (int i = 0; i < allHQ.length; i++) {
+            int read = rc.readSharedArray(i + 4) % 10000;
+            if (read != 0 && read != locToInt(allOpposingHQ[i])) {
+                if (locToInt(allOpposingHQ[i]) == 0) {
+                    allOpposingHQ[i] = intToLoc(read);
+                }
+                else if (i < allHQ.length - 1) {
+                    allOpposingHQ[i + 1] = allOpposingHQ[i];
+                    allOpposingHQ[i] = intToLoc(read);
+                }
+            }
         }
 
-        allies = new RobotInfo[alliesL.size()];
-        enemies = new RobotInfo[enemiesL.size()];
-
-        allies = alliesL.toArray(allies);
-        enemies = enemiesL.toArray(enemies);
+        int radius = rc.getType().visionRadiusSquared;
+        Team opponent = rc.getTeam().opponent();
+        enemies = rc.senseNearbyRobots(radius, opponent);
     }
 
     private static void rushing(RobotController rc) throws GameActionException {
@@ -85,19 +82,30 @@ public class Launcher {
         scout(rc);
         if(lstate == LauncherState.REPORTING) return;
 
-        MapLocation t = closestTargetHQ(rc, allOpposingHQ);
-        if(t != null) {
-            lstate = LauncherState.SWARMING;
-            targetOppHQ = t;
-            moveTowards(rc, targetOppHQ);
-            return;
+        int count = 0;
+        int maxDist = 10; //Max distance to swarm towards.
+        int tooClose = 4; //Min distance before a target is considered new.
+        MapLocation[] untakenHQ = new MapLocation[4];
+        for (int i = 0; i < allOpposingHQ.length; i++) {
+            if (locToInt(allOpposingHQ[i]) == 0) break;
+            if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ[count++] = allOpposingHQ[i];
+        }
+        if(count != 0) {
+            MapLocation[] knownOppHQ = new MapLocation[count];
+            System.arraycopy(untakenHQ, 0, knownOppHQ, 0, count);
+            MapLocation close = closest(pos, knownOppHQ);
+            if(distance(pos, close) < maxDist) {
+                targetOppHQ = close;
+                lstate = LauncherState.SWARMING;
+                Direction to = directions[towards(pos, targetOppHQ)];
+                if(rc.isMovementReady() && rc.canMove(to)) rc.move(to);
+            }
         }
 
         if (rc.isMovementReady()) {
             //If an enemy launcher is seen, move some units towards it.
             MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
             MapLocation target = new MapLocation(120, 120);
-            int tooClose = 4;
             int minDist = distance(pos, target);
             for(int i = 32; i < 44; i++) {
                 int read = rc.readSharedArray(i);
@@ -308,12 +316,13 @@ public class Launcher {
     private static void attack(RobotController rc) throws GameActionException {
         int targetPrio;
         if (rc.isActionReady() && enemies.length > 0) {
+            // MapLocation toAttack = enemies[0].location;
             targetPrio = launcherPriority.indexOf(enemies[0].getType());
             int targetHealth = enemies[0].getHealth();
             MapLocation target = enemies[0].location;
             for (RobotInfo enemy : enemies) {
                 MapLocation loc = enemy.location;
-                if(enemy.getType() != RobotType.HEADQUARTERS && rc.canActLocation(loc)) {
+                if(rc.canActLocation(loc)) {
                     RobotType etype = enemy.getType();
                     int eprio = launcherPriority.indexOf(etype);
                     if (eprio < targetPrio || (eprio <= targetPrio && enemy.getHealth() < targetHealth)) {
@@ -325,7 +334,57 @@ public class Launcher {
             }
             if (rc.canAttack(target)) {
                 rc.attack(target);
+            }            if (rc.isMovementReady() && lstate == LauncherState.RUSHING) {
+                moveTowards(rc, target);
             }
         }
     }
+
+
+    private static void moveRandom(RobotController rc) throws GameActionException {
+        int randDir = rng.nextInt(directions.length);
+        Direction dir = directions[randDir++ % directions.length];
+        for (int i = 0; i < directions.length && !rc.canMove(dir); i++) {
+            dir = directions[randDir++ % directions.length];
+        }
+        if (rc.canMove(dir)) rc.move(dir);
+    }
+
+
+    private static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
+        int dirIn = away(pos, from);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        int randInt = rng.nextInt(3);
+        Direction dir = directions[(dirIn + (randInt - 1) + directions.length) % directions.length];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]);
+        else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
+            rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
+        else {
+            corner = pos;
+            moveRandom(rc);
+        }
+    }
+
+    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+        int dirIn = towards(pos, target);
+        if(dirIn == -1) {
+            moveRandom(rc);
+            return;
+        }
+        Direction dir = directions[dirIn];
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
+            rc.move(directions[(dirIn + 1) % directions.length]);
+        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
+            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
+        else {
+            moveRandom(rc);
+        }
+    }
+
 }

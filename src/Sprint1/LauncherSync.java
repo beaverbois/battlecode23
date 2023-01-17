@@ -1,4 +1,4 @@
-package BeaverBois_S1;
+package Sprint1;
 
 public class LauncherSync {
 }

@@ -1,12 +1,12 @@
-package PostS1;
+package Sprint1;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 
-import static PostS1.Util.intToLoc;
-import static PostS1.Util.locToInt;
+import static Sprint1.Util.intToLoc;
+import static Sprint1.Util.locToInt;
 
 public class CarrierSync {
 
@@ -20,14 +20,15 @@ public class CarrierSync {
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
         // if we are too far to write
         if (!rc.canWriteSharedArray(wellIndexMin, 1)) {
-            System.out.println(rc.getID() + " Could not write to shared array!");
+            System.out.println("Could not write to shared array!");
             return;
         }
         // search until we find an available index to write
         int index;
         for (index = wellIndexMin; index <= wellIndexMax; index++) {
             if (rc.readSharedArray(index) == 0) {
-                rc.writeSharedArray(index, type.resourceID * 10000 + locToInt(loc));
+                String val = "" + type.resourceID + locToInt(loc);
+                rc.writeSharedArray(index, Integer.parseInt(val));
                 return;
             }
         }
@@ -37,17 +38,18 @@ public class CarrierSync {
         if (index < wellIndexMin || index > wellIndexMax)
             throw new IndexOutOfBoundsException("Well index out of bounds");
         else if (rc.readSharedArray(index) == 0) {
-            return null;
+            System.out.println("Shared array is empty at index " + index);
         }
 
-        return intToLoc(rc.readSharedArray(index) % 10000);
+        String val = String.valueOf(rc.readSharedArray(index));
+        return intToLoc(Integer.parseInt(val.substring(1)));
     }
 
     public static ResourceType getWellType(RobotController rc, int index) throws GameActionException {
         if (index < wellIndexMin || index > wellIndexMax)
             throw new IndexOutOfBoundsException("Well index out of bounds");
         else if (rc.readSharedArray(index) == 0) {
-            return null;
+            System.out.println("Shared array is empty at index " + index);
         }
 
         String val = String.valueOf(rc.readSharedArray(index));
@@ -66,18 +68,18 @@ public class CarrierSync {
     }
 
     public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
-        return ResourceType.values()[rc.readSharedArray(carrierAssignmentIndex) / 10000];
+        System.out.println("Got carrier assignment: " + ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))].toString());
+        return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
     }
 
     public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
         if (rc.canWriteSharedArray(carrierAssignmentIndex, 1)) {
             // copy into string and modify first index
-            //rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + rc.readSharedArray(carrierAssignmentIndex) % 10000);
-            int read = rc.readSharedArray(carrierAssignmentIndex);
-            if (read == 0) {
-                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000);
+            if (rc.readSharedArray(carrierAssignmentIndex) == 0) {
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat("0000")));
             } else {
-                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + read % 10000);
+                String val = String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).substring(1);
+                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat(val)));
             }
         } else {
             System.out.println(rc.getID() + " Could not write to shared array!");

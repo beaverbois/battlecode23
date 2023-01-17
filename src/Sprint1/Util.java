@@ -1,4 +1,4 @@
-package BeaverBois_S1;
+package Sprint1;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static BeaverBois_S1.RobotPlayer.directions;
+import static Sprint1.RobotPlayer.directions;
 
 /**
  * Public utility class
@@ -100,21 +100,36 @@ public class Util {
 //        }
 //    }
 
-    // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
-    public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
+    // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
+    public static Direction[] closestDirections(MapLocation from, MapLocation to) {
         Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(distance((pos.add(direction)), target), direction);
+            map.put(distance((from.add(direction)), to), direction);
+        }
+
+        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
+    }
+
+    // returns list of directions sorted by distance from a MapLocation to another for optimized path finding, optionally including center
+    public static Direction[] closestDirections(MapLocation from, MapLocation to, boolean includeCenter) {
+        Direction[] directionList = directions;
+        if (includeCenter) {
+            directionList = Direction.allDirections();
+        }
+
+        Map <Integer, Direction> map = new HashMap<>();
+        for (Direction direction : directionList) {
+            map.put(distance((from.add(direction)), to), direction);
         }
 
         return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
-    public static Direction[] farthestDirectionsFrom (MapLocation pos, MapLocation target) {
+    public static Direction[] farthestDirections(MapLocation to, MapLocation from) {
         Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(-1 * distance((pos.add(direction)), target), direction);
+            map.put(-1 * distance((to.add(direction)), from), direction);
         }
 
         return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);

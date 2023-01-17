@@ -1,13 +1,13 @@
-package PostS1;
+package Sprint2;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-import static PostS1.CarrierSync.*;
-import static PostS1.HQSync.hqMinIndex;
-import static PostS1.RobotPlayer.*;
-import static PostS1.Util.*;
+import static Sprint2.CarrierSync.*;
+import static Sprint2.HQSync.hqMinIndex;
+import static Sprint2.RobotPlayer.*;
+import static Sprint2.Util.*;
 
 public class Carrier {
     enum CarrierState {
@@ -107,7 +107,7 @@ public class Carrier {
 
                     // if we are still blocked, pick a random square around us
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirectionsTo(rcLocation, targetWellLocation)) {
+                        for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -149,7 +149,7 @@ public class Carrier {
                         rc.move(hqDirection);
                     } else {
                         // if path towards hq is blocked, find another random direction
-                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
+                        for (Direction dir : closestDirections(rcLocation, hqLocation)) {
                             if (rc.canMove(dir)) {
                                 rc.move(dir);
                                 break;
@@ -188,7 +188,7 @@ public class Carrier {
                     rc.move(hqDirection);
                 } else {
                     // if path is blocked, move to different square around hq
-                    for (Direction dir : closestDirectionsTo(hqLocation, rcLocation)) {
+                    for (Direction dir : closestDirections(hqLocation, rcLocation)) {
                         closestSquare = hqLocation.add(dir);
                         closestSquareDir = rcLocation.directionTo(closestSquare);
                         if (rc.canMove(closestSquareDir)) {

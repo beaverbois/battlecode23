@@ -1,12 +1,12 @@
-package BeaverBois_S1;
+package Sprint2;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 
-import static BeaverBois_S1.Util.intToLoc;
-import static BeaverBois_S1.Util.locToInt;
+import static Sprint2.Util.intToLoc;
+import static Sprint2.Util.locToInt;
 
 public class CarrierSync {
 
@@ -27,8 +27,7 @@ public class CarrierSync {
         int index;
         for (index = wellIndexMin; index <= wellIndexMax; index++) {
             if (rc.readSharedArray(index) == 0) {
-                String val = "" + type.resourceID + locToInt(loc);
-                rc.writeSharedArray(index, Integer.parseInt(val));
+                rc.writeSharedArray(index, type.resourceID * 10000 + locToInt(loc));
                 return;
             }
         }
@@ -41,8 +40,7 @@ public class CarrierSync {
             return null;
         }
 
-        String val = String.valueOf(rc.readSharedArray(index));
-        return intToLoc(Integer.parseInt(val.substring(1)));
+        return intToLoc(rc.readSharedArray(index) % 10000);
     }
 
     public static ResourceType getWellType(RobotController rc, int index) throws GameActionException {
@@ -68,18 +66,18 @@ public class CarrierSync {
     }
 
     public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
-        System.out.println("Got carrier assignment: " + ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))].toString());
-        return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
+        return ResourceType.values()[rc.readSharedArray(carrierAssignmentIndex) / 10000];
     }
 
     public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
         if (rc.canWriteSharedArray(carrierAssignmentIndex, 1)) {
             // copy into string and modify first index
-            if (rc.readSharedArray(carrierAssignmentIndex) == 0) {
-                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat("0000")));
+            //rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + rc.readSharedArray(carrierAssignmentIndex) % 10000);
+            int read = rc.readSharedArray(carrierAssignmentIndex);
+            if (read == 0) {
+                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000);
             } else {
-                String val = String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).substring(1);
-                rc.writeSharedArray(carrierAssignmentIndex, Integer.parseInt(String.valueOf(type.resourceID).concat(val)));
+                rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + read % 10000);
             }
         } else {
             System.out.println(rc.getID() + " Could not write to shared array!");

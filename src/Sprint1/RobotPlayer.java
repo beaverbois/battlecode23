@@ -1,10 +1,10 @@
-package BeaverBois_S1;
+package Sprint1;
 
 import battlecode.common.*;
 
 import java.util.Random;
 
-import static BeaverBois_S1.Util.*;
+import static Sprint1.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.
@@ -131,6 +131,11 @@ public strictfp class RobotPlayer {
                     case AMPLIFIER:
                         Amplifier.run(rc);
                         break;
+
+                }
+
+                if (Clock.getBytecodesLeft() <= 0) {
+                    System.out.println("[WARN] Bytecode Limit Exceeded!!");
                 }
 
             } catch (GameActionException e) {

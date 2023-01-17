@@ -1,4 +1,4 @@
-package PostS1;
+package Sprint2;
 
 import battlecode.common.*;
 
@@ -7,10 +7,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static PostS1.CarrierSync.*;
-import static PostS1.RobotPlayer.directions;
-import static PostS1.RobotPlayer.rng;
-import static PostS1.Util.*;
+import static Sprint2.CarrierSync.*;
+import static Sprint2.RobotPlayer.directions;
+import static Sprint2.RobotPlayer.rng;
+import static Sprint2.Util.*;
 
 public class Headquarters {
 
@@ -75,7 +75,7 @@ public class Headquarters {
         // Pick a direction to build in.
         int i = 0;
         //Direction dir = directions[i++];
-        Direction[] locs = closestDirectionsTo(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+        Direction[] locs = closestDirections(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
         MapLocation newLoc = rc.getLocation().add(locs[i++]);
         while(rc.canSenseRobotAtLocation(newLoc) && i < locs.length) {
             newLoc = rc.getLocation().add(locs[i++]);

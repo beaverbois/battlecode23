@@ -1,4 +1,4 @@
-package BeaverBois_S1;
+package Sprint2;
 
 public class RobotSync {
 }

@@ -1,5 +1,5 @@
 
-package PostS1;
+package Sprint2;
 
 import battlecode.common.RobotController;
 

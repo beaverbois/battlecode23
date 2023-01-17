@@ -1,10 +1,10 @@
-package PostS1;
+package Sprint2;
 
 import battlecode.common.*;
 
 import java.util.Random;
 
-import static PostS1.Util.*;
+import static Sprint2.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

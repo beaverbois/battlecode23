@@ -1,19 +1,19 @@
-package BeaverBois_S1;
+package Sprint1;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-import static BeaverBois_S1.RobotPlayer.allHQ;
-import static BeaverBois_S1.RobotPlayer.allOpposingHQ;
-import static BeaverBois_S1.RobotPlayer.corner;
-import static BeaverBois_S1.RobotPlayer.headquarters;
-import static BeaverBois_S1.RobotPlayer.directions;
-import static BeaverBois_S1.RobotPlayer.rng;
-import static BeaverBois_S1.RobotPlayer.enemyLoc;
-import static BeaverBois_S1.CarrierSync.*;
-import static BeaverBois_S1.HQSync.hqMinIndex;
-import static BeaverBois_S1.Util.*;
+import static Sprint1.RobotPlayer.allHQ;
+import static Sprint1.RobotPlayer.allOpposingHQ;
+import static Sprint1.RobotPlayer.corner;
+import static Sprint1.RobotPlayer.headquarters;
+import static Sprint1.RobotPlayer.directions;
+import static Sprint1.RobotPlayer.rng;
+import static Sprint1.RobotPlayer.enemyLoc;
+import static Sprint1.CarrierSync.*;
+import static Sprint1.HQSync.hqMinIndex;
+import static Sprint1.Util.*;
 
 public class Carrier {
     enum CarrierState {
@@ -156,58 +156,53 @@ public class Carrier {
     }
 
     private static void move(RobotController rc) throws GameActionException {
+        // check if we are already adjacent to a well
+        checkWellAdjacency(rc);
 
-        // move towards square closest to target well
+        // move towards square around target well closest to us
         rcLocation = rc.getLocation();
-        MapLocation closestSquare = targetWellLocation.subtract(rcLocation.directionTo(targetWellLocation));
-        Direction closestSquareDir = rcLocation.directionTo(closestSquare);
-        if (rc.canMove(closestSquareDir)) {
-            rc.move(closestSquareDir);
-        } else {
-            // if path is blocked, move to different square around well closest to us
+        int numAttempts = 0;
+        for (Direction dir : closestDirections(targetWellLocation, rcLocation, true)) {
+            MapLocation closestSquare = targetWellLocation.add(dir);
+            Direction closestSquareDir = rcLocation.directionTo(closestSquare);
 
-            for (Direction dir : closestDirectionsTo(rcLocation, targetWellLocation)) {
-                closestSquare = targetWellLocation.add(dir);
-                closestSquareDir = rcLocation.directionTo(closestSquare);
-                if (rc.canMove(closestSquareDir)) {
-                    rc.move(closestSquareDir);
+            // ensure we do not move towards a wall/impassible square
+            if (closestSquare.isWithinDistanceSquared(rcLocation, rc.getType().visionRadiusSquared) && !rc.sensePassability(closestSquare)) {
+                continue;
+            }
+
+            if (rc.canMove(closestSquareDir)) {
+                rc.move(closestSquareDir);
+                rc.setIndicatorString(state.toString() + " TO " + closestSquare + " FOR " + targetType.toString() + " AT " + targetWellLocation);
+                numAttempts++;
+                break;
+            }
+        }
+
+        // robot has not moved, so move to a random square around us closest to well
+        if (numAttempts == 0) {
+            rcLocation = rc.getLocation();
+            for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
+                if (rc.canMove(dir)) {
+                    rc.move(dir);
+                    rc.setIndicatorString(state.toString() + " TO " + rcLocation.add(dir) + " FOR " + targetType.toString() + " AT " + targetWellLocation);
                     break;
                 }
             }
-
-            // if we are still blocked, pick a random square around us
-            if (rc.isMovementReady()) {
-                for (Direction dir : closestDirectionsTo(rcLocation, targetWellLocation)) {
-                    if (rc.canMove(dir)) {
-                        rc.move(dir);
-                        break;
-                    }
-                }
-            }
         }
 
-        rc.setIndicatorString(state.toString() + " " + closestSquareDir + " TO " + closestSquare);
+        // check if we are adjacent to a well
+        checkWellAdjacency(rc);
 
-        rcLocation = rc.getLocation();
-        if (rcLocation.isAdjacentTo(targetWellLocation)) {
-            state = CarrierState.FARMING;
-            if (rc.canCollectResource(targetWellLocation, -1)) {
-                rc.collectResource(targetWellLocation, -1);
-                numCycles++;
-            }
-            rc.setIndicatorString(state.toString() + " CYCLE " + numCycles);
+        // move a second time if we can
+        if (rc.isMovementReady()) {
+            move(rc);
         }
-
     }
 
     private static void farm(RobotController rc) throws GameActionException {
-        // if we can collect resources, do so numCycles times
-        if (rc.canCollectResource(targetWellLocation, -1)) {
-            rc.collectResource(targetWellLocation, -1);
-            numCycles++;
-        }
-
-        rc.setIndicatorString(state.toString() + " CYCLE " + numCycles);
+        // if we can collect resources, do so
+        checkAndCollectResources(rc);
 
         // once we reach maxCollectionCycles, return and move towards hq
         if (numCycles == maxCollectionCycles) {
@@ -220,7 +215,7 @@ public class Carrier {
                 rc.move(hqDirection);
             } else {
                 // if path towards hq is blocked, find another random direction
-                for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
+                for (Direction dir : closestDirections(rcLocation, hqLocation)) {
                     if (rc.canMove(dir)) {
                         rc.move(dir);
                         break;
@@ -259,7 +254,7 @@ public class Carrier {
             rc.move(hqDirection);
         } else {
             // if path is blocked, move to different square around hq
-            for (Direction dir : closestDirectionsTo(hqLocation, rcLocation)) {
+            for (Direction dir : closestDirections(hqLocation, rcLocation)) {
                 MapLocation closestSquare = hqLocation.add(dir);
                 Direction closestSquareDir = rcLocation.directionTo(closestSquare);
                 if (rc.canMove(closestSquareDir)) {
@@ -270,7 +265,7 @@ public class Carrier {
 
             // if we are still blocked, pick a random square around us to move to
             if (rc.isMovementReady()) {
-                for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
+                for (Direction dir : closestDirections(rcLocation, hqLocation)) {
                     if (rc.canMove(dir)) {
                         rc.move(dir);
                         break;
@@ -291,11 +286,14 @@ public class Carrier {
         }
     }
     private static void discoveredAllWells(RobotController rc) throws GameActionException {
+        // assemble a list of the indices of wells of our type
         ArrayList<Integer> targetWellIndices = new ArrayList<>();
         for (int i = wellIndexMin; i <= wellIndexMax; i++) {
             if (getWellType(rc, i) == targetType) targetWellIndices.add(i);
         }
 
+        // select a target that is closest to us
+        // TODO: consider not using random wells after scouting and far from selected one
         int targetIndex = targetWellIndices.get(rng.nextInt(targetWellIndices.size()));
 
         targetWellLocation = getWellLocation(rc, targetIndex);
@@ -467,5 +465,23 @@ public class Carrier {
             dir = directions[randDir++ % directions.length];
         }
         if (rc.canMove(dir)) rc.move(dir);
+    }
+
+    private static void checkWellAdjacency(RobotController rc) throws GameActionException {
+        rcLocation = rc.getLocation();
+        if (rcLocation.isAdjacentTo(targetWellLocation)) {
+            state = CarrierState.FARMING;
+
+            // if we can collect resources, do so
+            checkAndCollectResources(rc);
+        }
+    }
+
+    private static void checkAndCollectResources(RobotController rc) throws GameActionException {
+        if (rc.canCollectResource(targetWellLocation, -1)) {
+            rc.collectResource(targetWellLocation, -1);
+            numCycles++;
+            rc.setIndicatorString(state.toString() + " CYCLE " + numCycles + "/" + maxCollectionCycles);
+        }
     }
 }
