@@ -124,6 +124,10 @@ public strictfp class RobotPlayer {
                         break;
                 }
 
+                if (Clock.getBytecodesLeft() <= 0) {
+                    System.out.println("[WARN] Bytecode Limit Exceeded!!");
+                }
+
             } catch (GameActionException e) {
                 // Oh no! It looks like we did something illegal in the Battlecode world. You should
                 // handle GameActionExceptions judiciously, in case unexpected events occur in the game
