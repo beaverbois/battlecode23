@@ -64,7 +64,7 @@ public class Util {
         Map <Double, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
             //RNG ensures there are unique keys
-            map.put(distance((pos.add(direction)), target) + rng.nextDouble(), direction);
+            map.put(dist((pos.add(direction)), target) + rng.nextDouble() / 100.0, direction);
         }
 
         //It just works I guess
