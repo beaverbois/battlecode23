@@ -1,12 +1,15 @@
 package PostS1;
 
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static PostS1.RobotPlayer.rng;
 import static PostS1.RobotPlayer.directions;
 
 /**
@@ -30,6 +33,11 @@ public class Util {
     //Movement methods
     public static int distance(MapLocation pos, MapLocation target) {
         return Math.max(Math.abs(target.x - pos.x), Math.abs(target.y - pos.y));
+    }
+
+    //Causes some sketchy errors with rc.canMove() not stopping the robot from moving to an occupied space...
+    public static double dist(MapLocation pos, MapLocation target) {
+        return Math.sqrt(Math.pow(target.x - pos.x, 2) + Math.pow(target.y - pos.y, 2));
     }
 
     // TODO: hashmap
@@ -102,21 +110,49 @@ public class Util {
 
     // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
     public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
-        Map <Integer, Direction> map = new HashMap<>();
+        Map <Double, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(distance((pos.add(direction)), target), direction);
+            //RNG ensures there are unique keys
+            map.put(distance((pos.add(direction)), target) + rng.nextDouble() / 100, direction);
         }
 
-        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
+        //It just works I guess
+        return new TreeMap<>(map).values().toArray(new Direction[0]);
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
     public static Direction[] farthestDirectionsFrom (MapLocation pos, MapLocation target) {
-        Map <Integer, Direction> map = new HashMap<>();
+        Map <Double, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(-1 * distance((pos.add(direction)), target), direction);
+            map.put(-1 * distance((pos.add(direction)), target) + rng.nextDouble(), direction);
         }
 
-        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
+        TreeMap tree = new TreeMap<>(map);
+
+        System.out.println("Pos: " + pos + ", " + target + ", " + tree.values());
+
+        return new TreeMap<>(map).values().toArray(new Direction[0]);
+    }
+
+    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+        MapLocation pos = rc.getLocation();
+
+        int dirIn = towards(pos, target);
+        if(dirIn == -1) {
+            //Already at location, no need to move.
+            return;
+        }
+        Direction dir = directions[dirIn];
+        int rand = rng.nextInt(2) * 2 - 1;
+        int add = ((dirIn + rand) + directions.length - 1) % directions.length;
+        int sub = ((dirIn - rand) + directions.length - 1) % directions.length;
+        if (rc.canMove(dir)) rc.move(dir);
+        else if (rc.canMove(directions[add]))
+            rc.move(directions[add]);
+        else if(rc.canMove(directions[sub]))
+            rc.move(directions[sub]);
+//        else {
+//            moveRandom(rc);
+//        }
     }
 }

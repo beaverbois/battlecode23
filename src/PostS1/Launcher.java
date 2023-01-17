@@ -316,13 +316,12 @@ public class Launcher {
     private static void attack(RobotController rc) throws GameActionException {
         int targetPrio;
         if (rc.isActionReady() && enemies.length > 0) {
-            // MapLocation toAttack = enemies[0].location;
             targetPrio = launcherPriority.indexOf(enemies[0].getType());
             int targetHealth = enemies[0].getHealth();
             MapLocation target = enemies[0].location;
             for (RobotInfo enemy : enemies) {
                 MapLocation loc = enemy.location;
-                if(rc.canActLocation(loc)) {
+                if(enemy.getType() != RobotType.HEADQUARTERS && rc.canActLocation(loc)) {
                     RobotType etype = enemy.getType();
                     int eprio = launcherPriority.indexOf(etype);
                     if (eprio < targetPrio || (eprio <= targetPrio && enemy.getHealth() < targetHealth)) {
@@ -334,8 +333,6 @@ public class Launcher {
             }
             if (rc.canAttack(target)) {
                 rc.attack(target);
-            }            if (rc.isMovementReady() && lstate == LauncherState.RUSHING) {
-                moveTowards(rc, target);
             }
         }
     }

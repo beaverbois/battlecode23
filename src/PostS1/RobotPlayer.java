@@ -90,15 +90,6 @@ public strictfp class RobotPlayer {
             corner = headquarters;
         }
 
-        if (rc.getType() == RobotType.CARRIER) {
-            //Using last index to convey role info to new bots, can do operations to
-            //compress multiple robots into one slot.
-            if (rc.readSharedArray(31) == 1) Carrier.state = Carrier.CarrierState.SCOUTING;
-            else if (rc.readSharedArray(31) == 2) {
-                Carrier.state = Carrier.CarrierState.ISLANDS;
-            }
-        }
-
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
             // loop. If we ever leave this loop and return from run(), the robot dies! At the end of the
