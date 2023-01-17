@@ -4,6 +4,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.world.RobotControllerImpl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -58,62 +59,12 @@ public class Util {
         return close;
     }
 
-    // TODO: remove
-    public static int away(MapLocation pos, MapLocation target) {
-        //Returns the INDEX in directions of the direction away from target.
-        if (pos == target) return -1;
-
-        int xgap, ygap;
-
-        xgap = target.x - pos.x;
-        ygap = target.y - pos.y;
-
-        if (xgap == 0) return ygap > 0 ? 4 : 0;
-        if (ygap == 0) return xgap > 0 ? 6 : 2;
-        if (xgap > 0) return ygap > 0 ? 5 : 7;
-        return ygap > 0 ? 1 : 3;
-    }
-
-    // TODO: remove
-    public static int towards(MapLocation pos, MapLocation target) {
-        //Returns the INDEX in directions of the direction away from target.
-        if (pos == target) return -1;
-
-        int xgap, ygap;
-
-        xgap = target.x - pos.x;
-        ygap = target.y - pos.y;
-
-        if (xgap == 0) return ygap > 0 ? 0 : 4;
-        if (ygap == 0) return xgap > 0 ? 2 : 6;
-        if (xgap > 0) return ygap > 0 ? 1 : 3;
-        return ygap > 0 ? 7 : 5;
-    }
-
-//    public static void moveTowards(RobotController rc, MapLocation to) throws GameActionException {
-//        for (Direction dir : closestDirectionsTo(rc.getLocation(), to)) {
-//            if (rc.canMove(dir)) {
-//                rc.move(dir);
-//                break;
-//            }
-//        }
-//    }
-//
-//    public static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
-//        for (Direction dir : farthestDirectionsFrom(rc.getLocation(), from)) {
-//            if (rc.canMove(dir)) {
-//                rc.move(dir);
-//                break;
-//            }
-//        }
-//    }
-
     // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
     public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
         Map <Double, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
             //RNG ensures there are unique keys
-            map.put(distance((pos.add(direction)), target) + rng.nextDouble() / 100, direction);
+            map.put(distance((pos.add(direction)), target) + rng.nextDouble(), direction);
         }
 
         //It just works I guess
@@ -127,32 +78,43 @@ public class Util {
             map.put(-1 * distance((pos.add(direction)), target) + rng.nextDouble(), direction);
         }
 
-        TreeMap tree = new TreeMap<>(map);
-
-        System.out.println("Pos: " + pos + ", " + target + ", " + tree.values());
-
         return new TreeMap<>(map).values().toArray(new Direction[0]);
     }
 
-    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+    public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
         MapLocation pos = rc.getLocation();
 
-        int dirIn = towards(pos, target);
-        if(dirIn == -1) {
-            //Already at location, no need to move.
-            return;
+        Direction[] closest = closestDirectionsTo(pos, target);
+        if(rc.isMovementReady()) {
+            for(int i = 0; i < closest.length; i++) {
+                Direction dir = closest[i];
+                if(rc.canMove(dir)) {
+                    rc.move(dir);
+                    //Accounts multiple movements
+                    if(!rc.isMovementReady()) break;
+                    closest = closestDirectionsTo(rc.getLocation(), target);
+                    i = 0;
+                }
+            }
         }
-        Direction dir = directions[dirIn];
-        int rand = rng.nextInt(2) * 2 - 1;
-        int add = ((dirIn + rand) + directions.length - 1) % directions.length;
-        int sub = ((dirIn - rand) + directions.length - 1) % directions.length;
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[add]))
-            rc.move(directions[add]);
-        else if(rc.canMove(directions[sub]))
-            rc.move(directions[sub]);
-//        else {
-//            moveRandom(rc);
-//        }
+    }
+
+    public static void moveAway(RobotController rc, MapLocation target) throws GameActionException {
+        //May want to switch this to randomize between the three "away" directions.
+        MapLocation pos = rc.getLocation();
+
+        Direction[] closest = farthestDirectionsFrom(pos, target);
+        if(rc.isMovementReady()) {
+            for(int i = 0; i < closest.length; i++) {
+                Direction dir = closest[i];
+                if(rc.canMove(dir)) {
+                    rc.move(dir);
+                    //Accounts for multiple movements
+                    if(!rc.isMovementReady()) break;
+                    closest = closestDirectionsTo(rc.getLocation(), target);
+                    i = 0;
+                }
+            }
+        }
     }
 }

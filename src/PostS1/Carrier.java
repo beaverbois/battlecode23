@@ -31,7 +31,7 @@ public class Carrier {
     public static ResourceType targetType = null;
 
     //Robot's current position
-    static MapLocation pos;
+    static MapLocation rcLocation;
 
     static boolean reportingEnemy = false;
 
@@ -53,7 +53,9 @@ public class Carrier {
         }
 
         senseEnemies(rc);
-        hqLocation = closest(rc.getLocation(), headquarters);
+        //Using the closest HQ is less efficient atm.
+        //hqLocation = closest(rc.getLocation(), allHQ);
+        rcLocation = rc.getLocation();
 
         switch (state) {
             case SCOUTING:
@@ -83,7 +85,7 @@ public class Carrier {
             case MOVING:
 
                 // move towards square closest to target well
-                MapLocation rcLocation = rc.getLocation();
+                //Changing rcLocation to a global variable set at the start of every turn.
                 MapLocation closestSquare = targetWellLocation.subtract(rcLocation.directionTo(targetWellLocation));
                 Direction closestSquareDir = rcLocation.directionTo(closestSquare);
                 if (rc.canMove(closestSquareDir)) {
@@ -142,7 +144,6 @@ public class Carrier {
                     state = CarrierState.RETURNING;
                     numCycles = 0;
 
-                    rcLocation = rc.getLocation();
                     Direction hqDirection = rcLocation.directionTo(hqLocation);
                     if (rc.canMove(hqDirection)) {
                         rc.move(hqDirection);
@@ -182,7 +183,6 @@ public class Carrier {
 
                 if(reportingEnemy) report(rc);
 
-                rcLocation = rc.getLocation();
                 Direction hqDirection = rcLocation.directionTo(hqLocation);
                 if (rc.canMove(hqDirection)) {
                     rc.move(hqDirection);
@@ -199,12 +199,17 @@ public class Carrier {
 
                     // if we are still blocked, pick a random square around us to move to
                     if (rc.isMovementReady()) {
-                        for (Direction dir : closestDirectionsTo(rcLocation, hqLocation)) {
-                            if (rc.canMove(dir)) {
-                                rc.move(dir);
-                                break;
-                            }
-                        }
+//                        Direction[] dir = closestDirectionsTo(rcLocation, hqLocation);
+//                        for (Direction d : dir) {
+//                            if (rc.canMove(d)) {
+//                                rc.move(d);
+//                                break;
+//                            }
+//                        }
+                        //Switched to moveTowards, I think this is what we should use. No more exceptions, and it
+                        //accounts for multiple moves. Your call, but I think we should switch every carrier movement
+                        //to moveTowards instead of iterating over closestDirections.
+                        moveTowards(rc, hqLocation);
                     }
                 }
 
@@ -295,10 +300,10 @@ public class Carrier {
     //Stuff added for integration purposes:
     private static void islands(RobotController rc) throws GameActionException {
         rc.setIndicatorString("ISLANDS");
-        pos = rc.getLocation();
+        rcLocation = rc.getLocation();
 
         //Camp on an island to destroy anchors or protect yours.
-        if(rc.getAnchor() == null && rc.senseIsland(pos) != -1) {
+        if(rc.getAnchor() == null && rc.senseIsland(rcLocation) != -1) {
             //System.out.println("Camping");
             return;
         }
@@ -310,7 +315,7 @@ public class Carrier {
             MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
             islandLocs.addAll(Arrays.asList(thisIslandLocs));
         }
-        if(pos.isAdjacentTo(headquarters) && rc.getAnchor() == null) {
+        if(rcLocation.isAdjacentTo(headquarters) && rc.getAnchor() == null) {
             if(rc.canTakeAnchor(headquarters, Anchor.STANDARD)) rc.takeAnchor(headquarters, Anchor.STANDARD);
         }
         if (islandLocs.size() > 0) {
@@ -410,50 +415,5 @@ public class Carrier {
             state = CarrierState.SCOUTING;
             stateLock = false;
         }
-    }
-
-    private static void moveAway(RobotController rc, MapLocation from) throws GameActionException {
-        int dirIn = away(pos, from);
-        if(dirIn == -1) {
-            moveRandom(rc);
-            return;
-        }
-        int randInt = rng.nextInt(3);
-        Direction dir = directions[(dirIn + (randInt - 1) + directions.length) % directions.length];
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]))
-            rc.move(directions[(dirIn + (randInt % 2) + directions.length - 1) % directions.length]);
-        else if(rc.canMove(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]))
-            rc.move(directions[(dirIn + (randInt + 1 % 2) + directions.length - 1) % directions.length]);
-        else {
-            corner = pos;
-            moveRandom(rc);
-        }
-    }
-
-    private static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        int dirIn = towards(pos, target);
-        if(dirIn == -1) {
-            moveRandom(rc);
-            return;
-        }
-        Direction dir = directions[dirIn];
-        if (rc.canMove(dir)) rc.move(dir);
-        else if (rc.canMove(directions[(dirIn + 1) % directions.length]))
-            rc.move(directions[(dirIn + 1) % directions.length]);
-        else if(rc.canMove(directions[((dirIn - 1) + directions.length - 1) % directions.length]))
-            rc.move(directions[((dirIn - 1) + directions.length - 1) % directions.length]);
-        else {
-            moveRandom(rc);
-        }
-    }
-
-    private static void moveRandom(RobotController rc) throws GameActionException {
-        int randDir = rng.nextInt(directions.length);
-        Direction dir = directions[randDir++ % directions.length];
-        for (int i = 0; i < directions.length && !rc.canMove(dir); i++) {
-            dir = directions[randDir++ % directions.length];
-        }
-        if (rc.canMove(dir)) rc.move(dir);
     }
 }
