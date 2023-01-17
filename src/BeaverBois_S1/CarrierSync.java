@@ -68,6 +68,7 @@ public class CarrierSync {
     }
 
     public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
+        System.out.println("Got carrier assignment: " + ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))].toString());
         return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
     }
 
