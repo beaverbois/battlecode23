@@ -60,11 +60,9 @@ public class Util {
 
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
     public static Direction[] closestDirections(MapLocation from, MapLocation to) {
-        Map <Double, Direction> map = new HashMap<>();
-
-        // rng prevents map conflicts with same distances
+        Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(dist((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
+            map.put(distance((from.add(direction)), to), direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);
@@ -77,10 +75,9 @@ public class Util {
             directionList = Direction.allDirections();
         }
 
-        Map <Double, Direction> map = new HashMap<>();
-        // rng prevents map conflicts with same distances
+        Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directionList) {
-            map.put(dist((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
+            map.put(distance((from.add(direction)), to), direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);

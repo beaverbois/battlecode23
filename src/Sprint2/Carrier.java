@@ -153,7 +153,9 @@ public class Carrier {
 
     private static void move(RobotController rc) throws GameActionException {
         // check if we are already adjacent to a well
-        checkWellAdjacency(rc);
+        if (checkWellAdjacency(rc)) {
+            return;
+        };
 
         // move towards square around target well closest to us
         rcLocation = rc.getLocation();
@@ -187,8 +189,10 @@ public class Carrier {
             }
         }
 
-        // check if we are adjacent to a well
-        checkWellAdjacency(rc);
+        // check if we are adjacent to a well and change state accordingly
+        if (checkWellAdjacency(rc)) {
+            return;
+        };
 
         // move a second time if we can
         if (rc.isMovementReady()) {
@@ -463,14 +467,16 @@ public class Carrier {
         if (rc.canMove(dir)) rc.move(dir);
     }
 
-    private static void checkWellAdjacency(RobotController rc) throws GameActionException {
+    private static boolean checkWellAdjacency(RobotController rc) throws GameActionException {
         rcLocation = rc.getLocation();
         if (rcLocation.isAdjacentTo(targetWellLocation)) {
             state = CarrierState.FARMING;
 
             // if we can collect resources, do so
             checkAndCollectResources(rc);
+            return true;
         }
+        return false;
     }
 
     private static void checkAndCollectResources(RobotController rc) throws GameActionException {
