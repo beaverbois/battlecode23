@@ -16,12 +16,9 @@ public class Headquarters {
 
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
+    public static ResourceType carrierAssignment = null;
     static List<Direction> shuffledDir = null;
     static List<Direction> shuffledCardinalDir = null;
-
-    static final double  manaToAdamantiumRatio = 1.69; // nice
-    static int numAD = 0;
-    static int numMN = 0;
 
     static void run(RobotController rc) throws GameActionException {
         //
@@ -33,7 +30,7 @@ public class Headquarters {
 //                rc.writeSharedArray(hqMinIndex, locToInt(hqLocation));
 //            }
 
-            setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
+            carrierAssignment = ResourceType.ADAMANTIUM;
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
             shuffledCardinalDir = new ArrayList<>(Arrays.asList(Direction.cardinalDirections()));
@@ -41,17 +38,6 @@ public class Headquarters {
             Collections.shuffle(shuffledCardinalDir);
 
             stateLock = true;
-        }
-
-        // set frequency of mana/adamantium focused carriers
-        if (rng.nextDouble() > 1.0 / 4.0) {
-            setCarrierAssignment(rc, ResourceType.MANA);
-            numMN++;
-            System.out.println("Number Mana: " + numMN);
-        } else {
-            setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
-            numAD++;
-            System.out.println("Number Adamantium: " + numAD);
         }
 
         //Make island carriers late-game.
@@ -87,7 +73,7 @@ public class Headquarters {
         // Pick a direction to build in.
         int i = 0;
         //Direction dir = directions[i++];
-        Direction[] locs = closestDirections(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+        Direction[] locs = closestDirectionsTo(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
         MapLocation newLoc = rc.getLocation().add(locs[i++]);
         while(rc.canSenseRobotAtLocation(newLoc) && i < locs.length) {
             newLoc = rc.getLocation().add(locs[i++]);
@@ -142,6 +128,14 @@ public class Headquarters {
             if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLocat)) {
                 rc.buildRobot(RobotType.CARRIER, newLocat);
             }
+        }
+        // Alternate next carrier spawn between Ad and Mn target resources
+        if (carrierAssignment == ResourceType.ADAMANTIUM) {
+            setCarrierAssignment(rc, ResourceType.MANA);
+            carrierAssignment = ResourceType.MANA;
+        } else {
+            setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
+            carrierAssignment = ResourceType.ADAMANTIUM;
         }
 
         //Don't need this because of CarrierSync

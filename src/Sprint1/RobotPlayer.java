@@ -131,11 +131,6 @@ public strictfp class RobotPlayer {
                     case AMPLIFIER:
                         Amplifier.run(rc);
                         break;
-
-                }
-
-                if (Clock.getBytecodesLeft() <= 0) {
-                    System.out.println("[WARN] Bytecode Limit Exceeded!!");
                 }
 
             } catch (GameActionException e) {

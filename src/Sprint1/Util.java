@@ -100,36 +100,21 @@ public class Util {
 //        }
 //    }
 
-    // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
-    public static Direction[] closestDirections(MapLocation from, MapLocation to) {
+    // returns list of nearby directions sorted by distance to a MapLocation for optimized path finding
+    public static Direction[] closestDirectionsTo (MapLocation pos, MapLocation target) {
         Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(distance((from.add(direction)), to), direction);
-        }
-
-        return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
-    }
-
-    // returns list of directions sorted by distance from a MapLocation to another for optimized path finding, optionally including center
-    public static Direction[] closestDirections(MapLocation from, MapLocation to, boolean includeCenter) {
-        Direction[] directionList = directions;
-        if (includeCenter) {
-            directionList = Direction.allDirections();
-        }
-
-        Map <Integer, Direction> map = new HashMap<>();
-        for (Direction direction : directionList) {
-            map.put(distance((from.add(direction)), to), direction);
+            map.put(distance((pos.add(direction)), target), direction);
         }
 
         return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
-    public static Direction[] farthestDirections(MapLocation to, MapLocation from) {
+    public static Direction[] farthestDirectionsFrom (MapLocation pos, MapLocation target) {
         Map <Integer, Direction> map = new HashMap<>();
         for (Direction direction : directions) {
-            map.put(-1 * distance((to.add(direction)), from), direction);
+            map.put(-1 * distance((pos.add(direction)), target), direction);
         }
 
         return new TreeMap<Integer, Direction>(map).values().toArray(new Direction[0]);

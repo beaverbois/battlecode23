@@ -20,7 +20,7 @@ public class CarrierSync {
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
         // if we are too far to write
         if (!rc.canWriteSharedArray(wellIndexMin, 1)) {
-            System.out.println("Could not write to shared array!");
+            System.out.println(rc.getID() + " Could not write to shared array!");
             return;
         }
         // search until we find an available index to write
@@ -38,7 +38,7 @@ public class CarrierSync {
         if (index < wellIndexMin || index > wellIndexMax)
             throw new IndexOutOfBoundsException("Well index out of bounds");
         else if (rc.readSharedArray(index) == 0) {
-            System.out.println("Shared array is empty at index " + index);
+            return null;
         }
 
         String val = String.valueOf(rc.readSharedArray(index));
@@ -49,7 +49,7 @@ public class CarrierSync {
         if (index < wellIndexMin || index > wellIndexMax)
             throw new IndexOutOfBoundsException("Well index out of bounds");
         else if (rc.readSharedArray(index) == 0) {
-            System.out.println("Shared array is empty at index " + index);
+            return null;
         }
 
         String val = String.valueOf(rc.readSharedArray(index));
@@ -68,7 +68,6 @@ public class CarrierSync {
     }
 
     public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
-        System.out.println("Got carrier assignment: " + ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))].toString());
         return ResourceType.values()[Integer.parseInt(String.valueOf(String.valueOf(rc.readSharedArray(carrierAssignmentIndex)).charAt(0)))];
     }
 
