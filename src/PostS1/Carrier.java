@@ -4,10 +4,10 @@ import battlecode.common.*;
 
 import java.util.*;
 
-import static BeaverBois_S1.CarrierSync.*;
-import static BeaverBois_S1.HQSync.hqMinIndex;
-import static BeaverBois_S1.RobotPlayer.*;
-import static BeaverBois_S1.Util.*;
+import static PostS1.CarrierSync.*;
+import static PostS1.HQSync.hqMinIndex;
+import static PostS1.RobotPlayer.*;
+import static PostS1.Util.*;
 
 public class Carrier {
     enum CarrierState {

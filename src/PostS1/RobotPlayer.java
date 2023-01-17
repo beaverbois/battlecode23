@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 import java.util.Random;
 
-import static BeaverBois_S1.Util.*;
+import static PostS1.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

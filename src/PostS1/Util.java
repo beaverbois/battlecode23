@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static BeaverBois_S1.RobotPlayer.directions;
+import static PostS1.RobotPlayer.directions;
 
 /**
  * Public utility class

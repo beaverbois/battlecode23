@@ -5,9 +5,9 @@ import battlecode.common.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static BeaverBois_S1.CarrierSync.*;
-import static BeaverBois_S1.RobotPlayer.*;
-import static BeaverBois_S1.Util.*;
+import static PostS1.CarrierSync.*;
+import static PostS1.RobotPlayer.*;
+import static PostS1.Util.*;
 
 public class Launcher {
 

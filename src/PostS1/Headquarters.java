@@ -7,10 +7,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static BeaverBois_S1.CarrierSync.*;
-import static BeaverBois_S1.RobotPlayer.directions;
-import static BeaverBois_S1.RobotPlayer.rng;
-import static BeaverBois_S1.Util.*;
+import static PostS1.CarrierSync.*;
+import static PostS1.RobotPlayer.directions;
+import static PostS1.RobotPlayer.rng;
+import static PostS1.Util.*;
 
 public class Headquarters {
 
