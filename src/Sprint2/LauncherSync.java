@@ -79,7 +79,7 @@ public class LauncherSync {
         //ONLY CALL IF CAN WRITE
         ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
 
-        for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
             if (getWellType(rc, i) == targetWellType) targetWellLocations.add(getWellLocation(rc, i));
         }
 

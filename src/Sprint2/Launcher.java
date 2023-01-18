@@ -61,8 +61,6 @@ public class Launcher {
     private static void turnStart(RobotController rc) throws GameActionException {
         pos = rc.getLocation();
 
-        //Rushers are suppressing our HQ
-        rc.setIndicatorString("HQ: " + allOpposingHQ[0]);
         readOppHeadquarters(rc, allOpposingHQ);
 
         nearbyRobots = rc.senseNearbyRobots();
@@ -71,7 +69,7 @@ public class Launcher {
 
         for(RobotInfo bot : nearbyRobots) {
             if(bot.team == rc.getTeam() && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
-            else enemiesL.add(bot);
+            else if(bot.team == rc.getTeam().opponent()) enemiesL.add(bot);
         }
 
         allies = new RobotInfo[alliesL.size()];
@@ -107,7 +105,7 @@ public class Launcher {
                 centerY += allHQ[i].y;
             }
             MapLocation hqCenter = new MapLocation(centerX / allHQ.length, centerY / allHQ.length);
-            if(allies.length < numInPack && distance(pos, hqCenter) > 2) moveTowards(rc, hqCenter);
+            if(allies.length < numInPack && distance(pos, hqCenter) > 1) moveTowards(rc, hqCenter);
             //If you have enough in the pack, have everyone move towards the other side.
             else if(allies.length >= numInPack) {
                 MapLocation target = new MapLocation(rc.getMapWidth() - hqCenter.x, rc.getMapHeight() - hqCenter.y);
@@ -168,6 +166,8 @@ public class Launcher {
 //            if(distance(pos, center) < 3 && allies.length > 3) moveTowards(rc, new MapLocation(rc.getMapWidth() - headquarters.x, rc.getMapHeight() - headquarters.y));
 //            else moveTowards(rc, center);
         }
+
+        attack(rc);
     }
 
     private static void reporting(RobotController rc) throws GameActionException {
@@ -197,6 +197,8 @@ public class Launcher {
             headquarters = closest(pos, allHQ);
             moveTowards(rc, headquarters);
         }
+
+        attack(rc);
     }
 
     private static void swarming(RobotController rc) throws GameActionException {
@@ -226,6 +228,8 @@ public class Launcher {
             oppHQStatus = 1;
             lstate = LauncherState.REPORTING;
         }
+
+        attack(rc);
     }
 
     private static void suppressing(RobotController rc) throws GameActionException {
@@ -244,6 +248,8 @@ public class Launcher {
         for(RobotInfo bot : allies) if(bot.getType() != RobotType.LAUNCHER) numAttackers--;
 
         if(distance(pos, targetOppHQ) > 1 && numAttackers > 3) lstate = LauncherState.RUSHING;
+
+        attack(rc);
     }
 
     private static void scout(RobotController rc) throws GameActionException {
@@ -278,7 +284,7 @@ public class Launcher {
         boolean foundAll = true;
 
         //Make sure we haven't found every well yet.
-        for(int i = wellIndexMin; i < wellIndexMax; i++) {
+        for(int i = WELL_INDEX_MIN; i < WELL_INDEX_MAX; i++) {
             if(rc.readSharedArray(i) == 0) {
                 foundAll = false;
                 break;
@@ -293,7 +299,7 @@ public class Launcher {
             // make a location list of all stored wells of each type
             ArrayList<MapLocation> adWellLocations = new ArrayList<>();
             ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
-            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
                 int read = rc.readSharedArray(i);
                 if (ResourceType.values()[read / 10000] == ResourceType.ADAMANTIUM) adWellLocations.add(intToLoc(read % 10000));
                 else if (ResourceType.values()[read / 10000] == ResourceType.MANA) mnWellLocations.add(intToLoc(read % 10000));
@@ -305,8 +311,8 @@ public class Launcher {
                 for (WellInfo well : wells) {
                     MapLocation loc = well.getMapLocation();
                     ResourceType type = well.getResourceType();
-                    if ((type == ResourceType.MANA && mnWellLocations.size() < numWellsStored / 2 && !mnWellLocations.contains(loc))
-                            || (type == ResourceType.ADAMANTIUM && adWellLocations.size() < numWellsStored / 2 && !adWellLocations.contains(loc))) {
+                    if ((type == ResourceType.MANA && mnWellLocations.size() < NUM_WELLS_STORED / 2 && !mnWellLocations.contains(loc))
+                            || (type == ResourceType.ADAMANTIUM && adWellLocations.size() < NUM_WELLS_STORED / 2 && !adWellLocations.contains(loc))) {
                         targetWellLocation = loc;
                         targetWellType = type;
                         // otherwise, return to hq to report

@@ -51,8 +51,7 @@ public class CarrierSync {
             System.out.println("Shared array is empty at index " + index);
         }
 
-        String val = String.valueOf(rc.readSharedArray(index));
-        return ResourceType.values()[Integer.parseInt(String.valueOf(val.charAt(0)))];
+        return ResourceType.values()[rc.readSharedArray(index) / 10000];
     }
 
     public static int getNumWellsFound(RobotController rc) throws GameActionException {
@@ -72,14 +71,8 @@ public class CarrierSync {
 
     public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
         if (rc.canWriteSharedArray(CARRIER_ASSIGNMENT_INDEX, 1)) {
-            // copy into string and modify first index
-            //rc.writeSharedArray(carrierAssignmentIndex, type.resourceID * 10000 + rc.readSharedArray(carrierAssignmentIndex) % 10000);
-            int read = rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX);
-            if (read == 0) {
-                rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, type.resourceID * 10000);
-            } else {
-                rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, type.resourceID * 10000 + read % 10000);
-            }
+            //Accounts for both cases, as if readSharedArray returns 0 then modding by 10000 is still 0.
+            rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, type.resourceID * 10000 + rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX) % 10000);
         } else {
             System.out.println(rc.getID() + " Could not write to shared array!");
         }
