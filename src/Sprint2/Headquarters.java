@@ -44,7 +44,9 @@ public class Headquarters {
 
         // TODO: Merge to CarrierSync
         //Make island carriers late-game.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 12) rc.writeSharedArray(ISLAND_INDEX, 1);
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) rc.writeSharedArray(ISLAND_INDEX, 1);
+        //In case we start losing, swap back.
+        else if(rc.readSharedArray(ISLAND_INDEX) == 1) rc.writeSharedArray(ISLAND_INDEX, 0);
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
@@ -87,6 +89,14 @@ public class Headquarters {
             }
         }
 
+        //If we need to build anchors and don't have the resources, only build with excess.
+        if(rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8 && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
+            //Make sure we build anchors
+            rc.setIndicatorString("Saving up for an anchor");
+            return;
+        }
+
+        //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
@@ -97,9 +107,9 @@ public class Headquarters {
                 }
             } else {
                 if (rc.getResourceAmount(ResourceType.MANA) > 60) {
-                    robotBuildType = RobotType.CARRIER;
-                } else {
                     robotBuildType = RobotType.LAUNCHER;
+                } else {
+                    robotBuildType = RobotType.CARRIER;
                 }
             }
         } else {
@@ -113,6 +123,9 @@ public class Headquarters {
 
             case LAUNCHER:
                 buildLauncher(rc);
+                break;
+
+            case HEADQUARTERS:
                 break;
         }
     }
