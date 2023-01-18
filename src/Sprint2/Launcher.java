@@ -2,6 +2,7 @@ package Sprint2;
 
 import battlecode.common.*;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +19,8 @@ public class Launcher {
         RUSHING,
         REPORTING,
         SWARMING,
-        SUPPRESSING
+        SUPPRESSING,
+        PACK
     }
     static LauncherState lstate = LauncherState.RUSHING;
 
@@ -33,19 +35,26 @@ public class Launcher {
 
     static RobotInfo[] nearbyRobots, enemies, allies;
 
+    static RobotInfo[] packStatus;
+
     static MapLocation pos;
 
-    static MapLocation targetOppHQ;
+    static MapLocation target;
     static int oppHQStatus = 0;
 
     static int targetEnemy = 0;
 
-    static int numInPack = 8;
+    static final int MIN_PACK_SIZE = 6, RETREAT = 3;
 
     //Wells
     static boolean reportingWell = false, reportingEnemy = false, reportingHQ = false;
     static MapLocation targetWellLocation = null;
     static ResourceType targetWellType = null;
+
+    static final int TOWARDS_CENTER_MOD = 2;
+
+    static MapLocation[] suspectedOppHQ;
+    static int suspectCount = 0;
 
     static void run(RobotController rc) throws GameActionException {
         rc.setIndicatorString(lstate.toString());
@@ -55,6 +64,7 @@ public class Launcher {
             case REPORTING: reporting(rc); break;
             case SWARMING: swarming(rc); break;
             case SUPPRESSING: suppressing(rc); break;
+            case PACK: pack(rc); break;
         }
     }
 
@@ -62,6 +72,8 @@ public class Launcher {
         pos = rc.getLocation();
 
         readOppHeadquarters(rc, allOpposingHQ);
+
+        updateSuspected(rc);
 
         nearbyRobots = rc.senseNearbyRobots();
         List<RobotInfo> alliesL = new ArrayList<>();
@@ -77,6 +89,8 @@ public class Launcher {
 
         allies = alliesL.toArray(allies);
         enemies = enemiesL.toArray(enemies);
+
+        if(packStatus == null) packStatus = allies;
     }
 
     private static void rushing(RobotController rc) throws GameActionException {
@@ -91,8 +105,8 @@ public class Launcher {
 
         if(t != null) {
             lstate = LauncherState.SWARMING;
-            targetOppHQ = t;
-            moveTowards(rc, targetOppHQ);
+            target = t;
+            moveTowards(rc, target);
             return;
         }
 
@@ -100,74 +114,36 @@ public class Launcher {
             //If an enemy launcher is seen, move some units towards it.
             //Trying moving towards the center of all HQ, then moving out as a pack.
             int centerX = 0, centerY = 0;
-            for(int i = 0; i < allHQ.length; i++) {
-                centerX += allHQ[i].x;
-                centerY += allHQ[i].y;
+            for (MapLocation mapLocation : allHQ) {
+                centerX += mapLocation.x;
+                centerY += mapLocation.y;
             }
             MapLocation hqCenter = new MapLocation(centerX / allHQ.length, centerY / allHQ.length);
-            if(allies.length < numInPack && distance(pos, hqCenter) > 1) moveTowards(rc, hqCenter);
-            //If you have enough in the pack, have everyone move towards the other side.
-            else if(allies.length >= numInPack) {
-                MapLocation target = new MapLocation(rc.getMapWidth() - hqCenter.x, rc.getMapHeight() - hqCenter.y);
-                moveTowards(rc, target);
+
+            int towardsCenterX, towardsCenterY;
+
+            MapLocation gatherPoint;
+
+            //Gather
+
+            towardsCenterX = (rc.getMapWidth() / 2 - hqCenter.x) / TOWARDS_CENTER_MOD;
+            towardsCenterY = (rc.getMapHeight() / 2 - hqCenter.y) / TOWARDS_CENTER_MOD;
+
+            gatherPoint = new MapLocation(hqCenter.x + towardsCenterX, hqCenter.y + towardsCenterY);
+
+            rc.setIndicatorString("Rushing, " + gatherPoint);
+
+            if(distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+
+            if(packStatus.length > MIN_PACK_SIZE) {
+                lstate = LauncherState.PACK;
+                target = new MapLocation(rc.getMapWidth() - hqCenter.x, rc.getMapWidth() - hqCenter.y);
             }
 
+            attack(rc);
 
-//            MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
-//            MapLocation target = new MapLocation(120, 120);
-//            int tooClose = 4;
-//            int minDist = distance(pos, target);
-//            for(int i = 32; i < 44; i++) {
-//                int read = rc.readSharedArray(i);
-//                MapLocation loc = intToLoc(read);
-//                int dist = distance(pos, loc);
-//                if(read != 0 && dist < tooClose && enemies.length < 2) {
-//                    lstate = LauncherState.REPORTING;
-//                    targetEnemy = read;
-//                    reportingEnemy = true;
-//                    moveTowards(rc, headquarters);
-//                    return;
-//                }
-//                else if(read != 0 && dist < minDist) {
-//                    //If it's by an oppHQ, don't bother.
-//                    boolean close = false;
-//                    for(int j = 0; j < allHQ.length; j++) {
-//                        if(distance(loc, allOpposingHQ[j]) < tooClose) {
-//                            close = true;
-//                            break;
-//                        }
-//                    }
-//
-//                    if(!close) {
-//                        //Close-ish to the target, go for it.
-//                        target = loc;
-//                        minDist = dist;
-//                    }
-//                }
-//            }
-//
-//            //Go towards target
-//            if(distance(pos, target) < 40) {
-//                rc.setIndicatorString("Rushing " + target);
-//                moveTowards(rc, target);
-//                return;
-//            }
-//
-//            if(reportingWell && enemies.length == 0) {
-//                lstate = LauncherState.REPORTING;
-//                return;
-//            }
-//
-//            int radius = rc.getType().visionRadiusSquared;
-//            Team ally = rc.getTeam();
-//            RobotInfo[] allies = rc.senseNearbyRobots(radius, ally);
-//
-//            //Trying running to the center
-//            if(distance(pos, center) < 3 && allies.length > 3) moveTowards(rc, new MapLocation(rc.getMapWidth() - headquarters.x, rc.getMapHeight() - headquarters.y));
-//            else moveTowards(rc, center);
+            packStatus = allies;
         }
-
-        attack(rc);
     }
 
     private static void reporting(RobotController rc) throws GameActionException {
@@ -206,9 +182,6 @@ public class Launcher {
 
         attack(rc);
 
-        Team ally = rc.getTeam();
-        RobotInfo[] allies = rc.senseNearbyRobots(targetOppHQ, 4, ally);
-
         int numAttackers = allies.length;
         int numDefenders = enemies.length;
 
@@ -216,40 +189,74 @@ public class Launcher {
 
         for(RobotInfo bot : enemies) if(bot.getType() != RobotType.LAUNCHER && bot.getType() != RobotType.DESTABILIZER) numDefenders--;
 
-        int suppressiveForce = 2;
+        int suppressiveForce = 4;
 
         int difference = numAttackers - numDefenders;
 
         if (rc.isMovementReady()) {
-            moveTowards(rc, targetOppHQ);
+            moveTowards(rc, target);
         }
-        if(distance(pos, targetOppHQ) < 2) lstate = LauncherState.SUPPRESSING;
-        if(distance(pos, targetOppHQ) < 4 && difference > suppressiveForce) {
+        if(distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
+        if(distance(pos, target) < 3 && difference > suppressiveForce) {
             oppHQStatus = 1;
             lstate = LauncherState.REPORTING;
         }
-
         attack(rc);
     }
 
     private static void suppressing(RobotController rc) throws GameActionException {
-        //Tentatively intentionally allowing HQ to spawn bots to waste resources.
         turnStart(rc);
 
         attack(rc);
 
-        if(rc.isMovementReady() && distance(pos, targetOppHQ) > 1) moveTowards(rc, targetOppHQ);
-
-        Team ally = rc.getTeam();
-        RobotInfo[] allies = rc.senseNearbyRobots(targetOppHQ, 4, ally);
-
-        int numAttackers = allies.length;
-
-        for(RobotInfo bot : allies) if(bot.getType() != RobotType.LAUNCHER) numAttackers--;
-
-        if(distance(pos, targetOppHQ) > 1 && numAttackers > 3) lstate = LauncherState.RUSHING;
+        if(rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
+        else if(rc.isMovementReady() && distance(pos, target) > 4) moveTowards(rc, target);
+//
+//
+//        Team ally = rc.getTeam();
+//        RobotInfo[] allies = rc.senseNearbyRobots(target, 4, ally);
+//
+//        int numAttackers = allies.length;
+//
+//        for(RobotInfo bot : allies) if(bot.getType() != RobotType.LAUNCHER) numAttackers--;
+//
+//        if(distance(pos, target) > 1 && numAttackers > 3) lstate = LauncherState.RUSHING;
 
         attack(rc);
+    }
+
+    private static void pack(RobotController rc) throws GameActionException {
+        turnStart(rc);
+
+        attack(rc);
+
+        scout(rc);
+
+        if(allies.length < RETREAT) {
+            lstate = LauncherState.RUSHING;
+            return;
+        }
+
+        int avrX = pos.x, avrY = pos.y;
+
+        //TODO: Implement moving towards injured allies (aka health decreased since last turn).
+        for(RobotInfo ally : allies) {
+            avrX += ally.getLocation().x;
+            avrY += ally.getLocation().y;
+        }
+
+
+
+        MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
+
+        //If too far ahead, don't move.
+        if(distance(pos, target) > distance(avrPos, target) + 2);
+        //If far from pack, move towards them.
+        else if(distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
+        else moveTowards(rc, target);
+
+        //If within vision distance of target and there are no enemies, swap target.
+        packStatus = allies;
     }
 
     private static void scout(RobotController rc) throws GameActionException {
@@ -330,23 +337,23 @@ public class Launcher {
         if (rc.isActionReady() && enemies.length > 0) {
             targetPrio = launcherPriority.indexOf(enemies[0].getType());
             int targetHealth = enemies[0].getHealth();
-            MapLocation target = enemies[0].location;
+            MapLocation targetLoc = enemies[0].location;
             for (RobotInfo enemy : enemies) {
                 MapLocation loc = enemy.location;
-                if(enemy.getType() != RobotType.HEADQUARTERS && rc.canActLocation(loc)) {
+                if(!enemy.getType().equals(RobotType.HEADQUARTERS) && rc.canActLocation(loc)) {
                     RobotType etype = enemy.getType();
                     int eprio = launcherPriority.indexOf(etype);
                     if (eprio < targetPrio || (eprio <= targetPrio && enemy.getHealth() < targetHealth)) {
                         targetHealth = enemy.getHealth();
                         targetPrio = launcherPriority.indexOf(etype);
-                        target = loc;
+                        targetLoc = loc;
                     }
                 }
             }
-            if (rc.canAttack(target)) {
-                rc.attack(target);
-                if(rc.isMovementReady() && lstate == LauncherState.RUSHING) {
-                    moveAway(rc, target);
+            if (rc.canSenseRobotAtLocation(targetLoc) && !rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.HEADQUARTERS) && rc.canAttack(targetLoc)) {
+                rc.attack(targetLoc);
+                if(rc.isMovementReady()) {
+                    moveAway(rc, targetLoc);
                 }
             }
         }

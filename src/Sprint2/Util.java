@@ -28,6 +28,11 @@ public class Util {
         return pos.x * LOC_MULTIPLIER + pos.y + 1;
     }
 
+    public static boolean withinSquaredRadius(MapLocation pos, MapLocation other, int radius) {
+        double xDist = other.x - pos.x, yDist = other.y - pos.y;
+        return xDist * xDist + yDist * yDist <= radius;
+    }
+
     //Movement methods
     public static int distance(MapLocation pos, MapLocation target) {
         return Math.max(Math.abs(target.x - pos.x), Math.abs(target.y - pos.y));

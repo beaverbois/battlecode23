@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 import java.util.Random;
 
+import static Sprint2.LauncherSync.setSuspected;
 import static Sprint2.Util.*;
 
 /**
@@ -89,6 +90,8 @@ public strictfp class RobotPlayer {
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;
         }
+
+        if(rc.getType() == RobotType.LAUNCHER) setSuspected(rc);
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
