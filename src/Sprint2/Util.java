@@ -1,9 +1,7 @@
 package Sprint2;
 
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
+import battlecode.common.*;
+import javafx.util.Pair;
 
 import java.util.*;
 
@@ -37,6 +35,7 @@ public class Util {
 
     //Causes some sketchy errors with rc.canMove() not stopping the robot from moving to an occupied space...
     public static double dist(MapLocation pos, MapLocation target) {
+        System.out.println("Bytecode Before: " + Clock.getBytecodeNum());
         int xDist = Math.abs(target.x - pos.x), yDist = Math.abs(target.y - pos.y);
         //Weighing the smaller distance much less.
         return Math.max(xDist, yDist) + Math.min(xDist, yDist) / MIN_MULTIPLIER;
@@ -62,64 +61,50 @@ public class Util {
 
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
     public static Direction[] closestDirections(MapLocation from, MapLocation to) {
-        // Use a treemap with directions mapped to distances
-        Map <Double, ArrayList<Direction>> map = new TreeMap<>();
-        for (Direction direction : directions) {
-            double dist = dist(from.add(direction), to);
-            if (!map.containsKey(dist)) {
-                ArrayList<Direction> dirs = new ArrayList<>();
-                dirs.add(direction);
-                map.put(dist, dirs);
-            } else {
-                ArrayList<Direction> dirs = map.get(dist);
-                dirs.add(direction);
-                map.replace(dist, dirs);
-            }
+        double[] map = new double[directions.length];
+        for (int i = 0; i < directions.length; i++) {
+            double rand = rng.nextDouble() / 100.0;
+            double distance = dist((from.add(directions[i])), to) + rand;
+            map[i] = distance + i * 100;
         }
 
-        // Assemble list of directions, randomizing the order of directions with the same distance
-        ArrayList<Direction> output = new ArrayList<>();
-        for (Map.Entry<Double, ArrayList<Direction>> entry : map.entrySet()) {
-            ArrayList<Direction> dirs = entry.getValue();
-            Collections.shuffle(dirs);
-            output.addAll(dirs);
+        Arrays.sort(map);
+
+        Direction[] dir = new Direction[directions.length];
+
+        for(int i = 0; i < directions.length; i++) {
+            dir[i] = directions[(int) map[i] / 100];
         }
 
-        return output.toArray(new Direction[0]);
+        return dir;
     }
 
     // TODO: Fix collisions in TreeMap, find shortest map implementation
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding, optionally including center
     public static Direction[] closestDirections(MapLocation from, MapLocation to, boolean includeCenter) {
+
+
         Direction[] directionList = directions;
         if (includeCenter) {
             directionList = Direction.allDirections();
         }
 
-        // Use a treemap with directions mapped to distances
-        Map <Double, ArrayList<Direction>> map = new TreeMap<>();
-        for (Direction direction : directionList) {
-            double dist = dist(from.add(direction), to);
-            if (!map.containsKey(dist)) {
-                ArrayList<Direction> dirs = new ArrayList<>();
-                dirs.add(direction);
-                map.put(dist, dirs);
-            } else {
-                ArrayList<Direction> dirs = map.get(dist);
-                dirs.add(direction);
-                map.replace(dist, dirs);
-            }
+        double[] map = new double[directionList.length];
+        for (int i = 0; i < directionList.length; i++) {
+            double rand = rng.nextDouble() / 100.0;
+            double distance = dist((from.add(directionList[i])), to) + rand;
+            map[i] = distance + i * 100;
         }
 
-        // Assemble list of directions, randomizing the order of directions with the same distance
-        ArrayList<Direction> output = new ArrayList<>();
-        for (Map.Entry<Double, ArrayList<Direction>> entry : map.entrySet()) {
-            ArrayList<Direction> dirs = entry.getValue();
-            Collections.shuffle(dirs);
-            output.addAll(dirs);
+        Arrays.sort(map);
+
+        Direction[] dir = new Direction[directionList.length];
+
+        for(int i = 0; i < directionList.length; i++) {
+            dir[i] = directionList[(int) map[i] / 100];
         }
 
-        return output.toArray(new Direction[0]);
+        return dir;
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
