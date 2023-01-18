@@ -35,7 +35,6 @@ public class Util {
 
     //Causes some sketchy errors with rc.canMove() not stopping the robot from moving to an occupied space...
     public static double dist(MapLocation pos, MapLocation target) {
-        System.out.println("Bytecode Before: " + Clock.getBytecodeNum());
         int xDist = Math.abs(target.x - pos.x), yDist = Math.abs(target.y - pos.y);
         //Weighing the smaller distance much less.
         return Math.max(xDist, yDist) + Math.min(xDist, yDist) / MIN_MULTIPLIER;
@@ -61,47 +60,64 @@ public class Util {
 
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
     public static Direction[] closestDirections(MapLocation from, MapLocation to) {
-        double[] map = new double[directions.length];
+        double[] close = new double[directions.length];
         for (int i = 0; i < directions.length; i++) {
-            double rand = rng.nextDouble() / 100.0;
+            double rand = rng.nextDouble();
             double distance = dist((from.add(directions[i])), to) + rand;
-            map[i] = distance + i * 100;
+            close[i] = distance + i * 100;
         }
 
-        Arrays.sort(map);
+        //Sort the array
+        for(int i = 1; i < directions.length; i++) {
+            for(int j = i; j > 0; j--) {
+                if(close[j] % 100 < close[j-1] % 100) {
+                    double temp = close[j-1];
+                    close[j-1] = close[j];
+                    close[j] = temp;
+                } else break;
+            }
+        }
 
+        //Add to directions array
         Direction[] dir = new Direction[directions.length];
 
         for(int i = 0; i < directions.length; i++) {
-            dir[i] = directions[(int) map[i] / 100];
+            dir[i] = directions[(int) close[i] / 100];
         }
 
         return dir;
     }
 
-    // TODO: Fix collisions in TreeMap, find shortest map implementation
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding, optionally including center
     public static Direction[] closestDirections(MapLocation from, MapLocation to, boolean includeCenter) {
-
-
         Direction[] directionList = directions;
         if (includeCenter) {
             directionList = Direction.allDirections();
         }
 
-        double[] map = new double[directionList.length];
+        double[] close = new double[directionList.length];
         for (int i = 0; i < directionList.length; i++) {
-            double rand = rng.nextDouble() / 100.0;
+            double rand = rng.nextDouble();
             double distance = dist((from.add(directionList[i])), to) + rand;
-            map[i] = distance + i * 100;
+            close[i] = distance + i * 100;
         }
 
-        Arrays.sort(map);
+        //Sort the array
+        for(int i = 1; i < directionList.length; i++) {
+            for(int j = i; j > 0; j--) {
+                if(close[j] % 100 < close[j-1] % 100) {
+                    double temp = close[j-1];
+                    close[j-1] = close[j];
+                    close[j] = temp;
+                } else break;
+            }
+        }
 
+        //Add to directions array
         Direction[] dir = new Direction[directionList.length];
 
         for(int i = 0; i < directionList.length; i++) {
-            dir[i] = directionList[(int) map[i] / 100];
+            dir[i] = directionList[(int) close[i] / 100];
         }
 
         return dir;
@@ -109,14 +125,32 @@ public class Util {
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
     public static Direction[] farthestDirections(MapLocation from, MapLocation to) {
-        Map <Double, Direction> map = new TreeMap<>();
-
-        // rng prevents map conflicts with same distances
-        for (Direction direction : directions) {
-            map.put(-1 * dist((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
+        double[] close = new double[directions.length];
+        for (int i = 0; i < directions.length; i++) {
+            double rand = rng.nextDouble();
+            double distance = dist((from.add(directions[i])), to) + rand;
+            close[i] = distance + i * 100;
         }
 
-        return map.values().toArray(new Direction[0]);
+        //Sort the array
+        for(int i = 1; i < directions.length; i++) {
+            for(int j = i; j > 0; j--) {
+                if(close[j] % 100 > close[j-1] % 100) {
+                    double temp = close[j-1];
+                    close[j-1] = close[j];
+                    close[j] = temp;
+                } else break;
+            }
+        }
+
+        //Add to directions array
+        Direction[] dir = new Direction[directions.length];
+
+        for(int i = 0; i < directions.length; i++) {
+            dir[i] = directions[(int) close[i] / 100];
+        }
+
+        return dir;
     }
 
     // TODO: Fix collisions in TreeMap
@@ -146,6 +180,7 @@ public class Util {
             Direction[] closest = closestDirections(pos, target);
 
             for(int i = 0; i < closest.length; i++) {
+                rc.setIndicatorString("Closest: " + closest[0]);
                 Direction dir = closest[i];
                 if(rc.canMove(dir)) {
                     rc.move(dir);
@@ -170,7 +205,7 @@ public class Util {
                     rc.move(dir);
                     //Accounts for multiple movements
                     if(!rc.isMovementReady()) break;
-                    closest = closestDirections(rc.getLocation(), target);
+                    closest = farthestDirections(rc.getLocation(), target);
                     i = 0;
                 }
             }
