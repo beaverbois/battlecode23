@@ -21,6 +21,8 @@ public class Util {
 
     public static final int LOC_MULTIPLIER = 100; // originally GameConstants.MAP_MAX_WIDTH
 
+    private static final double MIN_MULTIPLIER = 4.0;
+
     public static MapLocation intToLoc(int raw) {
         return new MapLocation((raw - 1) / LOC_MULTIPLIER, (raw - 1) % LOC_MULTIPLIER);
     }
@@ -37,7 +39,9 @@ public class Util {
 
     //Causes some sketchy errors with rc.canMove() not stopping the robot from moving to an occupied space...
     public static double dist(MapLocation pos, MapLocation target) {
-        return Math.sqrt(Math.pow(target.x - pos.x, 2) + Math.pow(target.y - pos.y, 2));
+        int xDist = Math.abs(target.x - pos.x), yDist = Math.abs(target.y - pos.y);
+        //Weighing the smaller distance much less.
+        return Math.max(xDist, yDist) + Math.min(xDist, yDist) / MIN_MULTIPLIER;
     }
 
     // TODO: hashmap
