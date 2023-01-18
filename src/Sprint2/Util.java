@@ -60,14 +60,15 @@ public class Util {
 
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding
     public static Direction[] closestDirections(MapLocation from, MapLocation to) {
-        Map <Integer, Direction> map = new HashMap<>();
+        Map <Double, Direction> map = new TreeMap<>();
         for (Direction direction : directions) {
-            map.put(distance((from.add(direction)), to), direction);
+            map.put(dist((from.add(direction)), to), direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);
     }
 
+    // TODO: Fix collisions in TreeMap, find shortest map implementation
     // returns list of directions sorted by distance from a MapLocation to another for optimized path finding, optionally including center
     public static Direction[] closestDirections(MapLocation from, MapLocation to, boolean includeCenter) {
         Direction[] directionList = directions;
@@ -75,9 +76,9 @@ public class Util {
             directionList = Direction.allDirections();
         }
 
-        Map <Integer, Direction> map = new HashMap<>();
+        Map <Double, Direction> map = new HashMap<>();
         for (Direction direction : directionList) {
-            map.put(distance((from.add(direction)), to), direction);
+            map.put(dist((from.add(direction)), to), direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);
@@ -89,11 +90,32 @@ public class Util {
 
         // rng prevents map conflicts with same distances
         for (Direction direction : directions) {
-            map.put(-1 * distance((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
+            map.put(-1 * dist((from.add(direction)), to) + rng.nextDouble() / 100.0, direction);
         }
 
         return new TreeMap<>(map).values().toArray(new Direction[0]);
     }
+
+    // TODO: Fix collisions in TreeMap
+    // returns a list of sorted MapLocations distances to a fixed MapLocation within an action radius of a robot
+    public static MapLocation[] closestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
+        Map<Double, MapLocation> map = new HashMap<>();
+        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
+            map.put(dist(loc, to), loc);
+        }
+
+        return new TreeMap<>(map).values().toArray(new MapLocation[0]);
+    }
+
+    public static MapLocation[] farthestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
+        Map<Integer, MapLocation> map = new HashMap<>();
+        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
+            map.put(-1 * distance(loc, to), loc);
+        }
+
+        return new TreeMap<>(map).values().toArray(new MapLocation[0]);
+    }
+
 
     public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
         MapLocation pos = rc.getLocation();

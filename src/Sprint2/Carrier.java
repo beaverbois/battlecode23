@@ -28,7 +28,7 @@ public class Carrier {
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
     static MapLocation rcLocation = null;
-    static final int maxCollectionCycles = 4; // Max is 6 for 1 move/turn after collecting
+    static final int maxCollectionCycles = 15; // Max is 6 for 1 move/turn after collecting
     static int numCycles = 0;
     static List<Direction> shuffledDir;
     public static ResourceType targetType = null;
@@ -40,14 +40,14 @@ public class Carrier {
             // this will run when the bot is created
             //TODO: Upgrades
             state = CarrierState.SCOUTING;
-            hqLocation = intToLoc(rc.readSharedArray(hqMinIndex));
+            rcLocation = rc.getLocation();
             targetType = getCarrierAssignment(rc);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
             Collections.shuffle(shuffledDir);
 
             //Do islands if instructed to.
-            if (rc.readSharedArray(islandIndex) == 1) {
+            if (rc.readSharedArray(ISLAND_INDEX) == 1) {
                 state = CarrierState.ISLANDS;
             }
         }
@@ -59,8 +59,9 @@ public class Carrier {
             case SCOUTING:
                 // if we have not discovered all wells, pick a random direction to go in and discover them
                 if (!stateLock) {
-                    if (getNumWellsFound(rc) < numWellsStored) {
-                        scoutDirection = directions[rng.nextInt(directions.length)];
+                    if (getNumWellsFound(rc) < NUM_WELLS_STORED) {
+                        rcLocation = rc.getLocation();
+                        scoutDirection = hqLocation.directionTo(rcLocation);
                         stateLock = true;
                         scout(rc);
                     } else {
@@ -74,7 +75,6 @@ public class Carrier {
 
                 //Check for enemies and enemy HQ
                 senseEnemies(rc);
-
                 break;
 
             case MOVING:
@@ -86,6 +86,7 @@ public class Carrier {
                 break;
 
             case RETURNING:
+                //TODO: double moves on return
                 returning(rc);
                 break;
             case ISLANDS: {
@@ -113,22 +114,24 @@ public class Carrier {
         }
 
         // if all wells are discovered while scouting, move towards one
-        if (getNumWellsFound(rc) >= numWellsStored) {
+        if (getNumWellsFound(rc) >= NUM_WELLS_STORED) {
             discoveredAllWells(rc);
             return;
         }
 
         // when we discover a nearby well, make sure it is the right type and not already stored before we write it
-        WellInfo[] wells = rc.senseNearbyWells((targetType));
+        WellInfo[] wells = rc.senseNearbyWells(targetType);
         if (wells.length > 0) {
+            //TODO: Temp fix
+            targetWellLocation = wells[0].getMapLocation();
             // make a location list of all stored wells of our type
             ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
                 if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
             }
 
             // we only want to store numWellsStored/2 wells per type, not elixir yet
-            if (targetWellLocations.size() >= numWellsStored / 2) {
+            if (targetWellLocations.size() >= NUM_WELLS_STORED / 2) {
                 return;
             }
 
@@ -136,7 +139,6 @@ public class Carrier {
             for (WellInfo well : wells) {
                 MapLocation loc = well.getMapLocation();
                 if (!targetWellLocations.contains(loc)) {
-                    targetWellLocation = loc;
                     // if we can write new well, do so
                     if (rc.canWriteSharedArray(0, 1)) {
                         writeWell(rc, targetType, loc);
@@ -165,7 +167,7 @@ public class Carrier {
             Direction closestSquareDir = rcLocation.directionTo(closestSquare);
 
             // ensure we do not move towards a wall/impassible square
-            if (closestSquare.isWithinDistanceSquared(rcLocation, rc.getType().visionRadiusSquared) && !rc.sensePassability(closestSquare)) {
+            if (rc.canSenseLocation(closestSquare) && !rc.sensePassability(closestSquare)) {
                 continue;
             }
 
@@ -230,7 +232,7 @@ public class Carrier {
     private static void returning(RobotController rc) throws GameActionException {
         if (reportingWell) {
             ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
                 if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
             }
 
@@ -246,7 +248,8 @@ public class Carrier {
             }
         }
 
-        if (reportingEnemy) report(rc);
+        // TODO: fix null crashes here
+//        if (reportingEnemy) report(rc);
 
         rcLocation = rc.getLocation();
         Direction hqDirection = rcLocation.directionTo(hqLocation);
@@ -282,19 +285,23 @@ public class Carrier {
                 rc.transferResource(hqLocation, targetType, rc.getResourceAmount(targetType));
             }
 
-            if (!reportingWell) state = CarrierState.MOVING;
+            if (!reportingWell) {
+                state = CarrierState.MOVING;
+                move(rc);
+            }
         }
     }
     private static void discoveredAllWells(RobotController rc) throws GameActionException {
         // assemble a list of the indices of wells of our type
+        // TODO: do not use random wells after scouting, use closest instead
         ArrayList<Integer> targetWellIndices = new ArrayList<>();
-        for (int i = wellIndexMin; i <= wellIndexMax; i++) {
-            if (getWellType(rc, i) == targetType) targetWellIndices.add(i);
+        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
+            if (getWellType(rc, i).equals(targetType)) targetWellIndices.add(i);
         }
 
-        // select a target that is closest to us
-        // TODO: consider not using random wells after scouting and far from selected one
-        int targetIndex = targetWellIndices.get(rng.nextInt(targetWellIndices.size()));
+        // Pick a random well from our list of wells with the correct type
+        Collections.shuffle(targetWellIndices);
+        int targetIndex = targetWellIndices.get(0);
 
         targetWellLocation = getWellLocation(rc, targetIndex);
         targetType = getWellType(rc, targetIndex);
@@ -416,7 +423,11 @@ public class Carrier {
                 enemyLoc = null;
             }
 
-            state = CarrierState.SCOUTING;
+            if (targetWellLocation == null) {
+                state = CarrierState.SCOUTING;
+            } else {
+                state = CarrierState.MOVING;
+            }
         }
     }
 

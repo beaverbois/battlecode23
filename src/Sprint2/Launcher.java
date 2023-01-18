@@ -178,7 +178,7 @@ public class Launcher {
             //Wells
             if(reportingWell) {
                 ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-                for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+                for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
                     if (getWellType(rc, i) == targetWellType) targetWellLocations.add(getWellLocation(rc, i));
                 }
 
@@ -255,18 +255,18 @@ public class Launcher {
             // make a location list of all stored wells of each type
             ArrayList<MapLocation> adWellLocations = new ArrayList<>();
             ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
-            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
                 if (getWellType(rc, i) == ResourceType.ADAMANTIUM) adWellLocations.add(getWellLocation(rc, i));
                 else if (getWellType(rc, i) == ResourceType.MANA) mnWellLocations.add(getWellLocation(rc, i));
             }
 
             // we only want to store numWellsStored/2 wells per type, not elixir yet
-            if (adWellLocations.size() < numWellsStored / 2 || mnWellLocations.size() < numWellsStored / 2) {
+            if (adWellLocations.size() < NUM_WELLS_STORED / 2 || mnWellLocations.size() < NUM_WELLS_STORED / 2) {
                 // check if any wells we found are new and not stored
                 for (WellInfo well : wells) {
                     MapLocation loc = well.getMapLocation();
                     ResourceType type = well.getResourceType();
-                    if ((mnWellLocations.size() < numWellsStored / 2 && mnWellLocations.contains(loc)) || (adWellLocations.size() < numWellsStored / 2 && adWellLocations.contains(loc))) {
+                    if ((mnWellLocations.size() < NUM_WELLS_STORED / 2 && mnWellLocations.contains(loc)) || (adWellLocations.size() < NUM_WELLS_STORED / 2 && adWellLocations.contains(loc))) {
                         System.out.println("writing well");
                         targetWellLocation = loc;
                         targetWellType = type;

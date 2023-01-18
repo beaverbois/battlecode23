@@ -7,8 +7,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static Sprint1.RobotPlayer.directions;
 import static Sprint2.CarrierSync.*;
-import static Sprint2.RobotPlayer.directions;
 import static Sprint2.RobotPlayer.rng;
 import static Sprint2.Util.*;
 
@@ -17,145 +17,167 @@ public class Headquarters {
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
     public static ResourceType carrierAssignment = null;
-    static List<Direction> shuffledDir = null;
-    static List<Direction> shuffledCardinalDir = null;
-
-    static final double  manaToAdamantiumRatio = 1.69;
+    static final double MANA_TARGET_RATE = 0.69; // between 0 - 1
+    static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
+    static final double MAX_ROBOTS = 0.38; // ratio of map size
+    static final double MIN_ROBOTS_FOR_ANCHOR = 40; // min robots to build anchor
+    static final double MAX_ANCHORS = 8; // min robots to build anchor
+    static int MAP_WIDTH;
+    static int MAP_HEIGHT;
+    static int numAnchors = 0;
+    static RobotType robotBuildType = null;
 
     static void run(RobotController rc) throws GameActionException {
-        //
+        // runs on hq creation
         if (!stateLock) {
-            // runs on hq creation
-            //This is accounted for in RobotPlayer for me.
-//            hqLocation = rc.getLocation();
-//            if (rc.canWriteSharedArray(hqMinIndex, locToInt(hqLocation))) {
-//                rc.writeSharedArray(hqMinIndex, locToInt(hqLocation));
-//            }
+            MAP_WIDTH = rc.getMapWidth();
+            MAP_HEIGHT = rc.getMapHeight();
 
-            carrierAssignment = ResourceType.ADAMANTIUM;
-
-            shuffledDir = new ArrayList<>(Arrays.asList(directions));
-            shuffledCardinalDir = new ArrayList<>(Arrays.asList(Direction.cardinalDirections()));
-            Collections.shuffle(shuffledDir);
-            Collections.shuffle(shuffledCardinalDir);
+            // sense any nearby wells and write them
+            WellInfo[] wells = rc.senseNearbyWells();
+            for (WellInfo well : wells) {
+                writeWell(rc, well.getResourceType(), well.getMapLocation());
+            }
 
             stateLock = true;
         }
 
+        // TODO: Merge to CarrierSync
         //Make island carriers late-game.
-        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12) rc.writeSharedArray(54, 1);
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 12) rc.writeSharedArray(ISLAND_INDEX, 1);
 
-        // If there are opponents within radius of headquarters, spawn launchers in direction of opponents
-        //Sticking to spawning launchers when able, should make little difference.
-        //TODO : spawn/move away from borders on random spawn
-//        RobotInfo[] opponents = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-//        if (opponents.length > 0) {
-//            MapLocation loc = rc.getLocation().add(rc.getLocation().directionTo(opponents[0].location));
-//            if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
-//                rc.buildRobot(RobotType.LAUNCHER, loc);
-//            } else {
-//                // if direction towards opponent is blocked, pick another one
-//                Collections.shuffle(shuffledDir);
-//                for (Direction dir : shuffledDir) {
-//                    MapLocation randomLoc = rc.getLocation().add(dir);
-//                    if (rc.canBuildRobot(RobotType.LAUNCHER, randomLoc)) {
-//                        rc.buildRobot(RobotType.LAUNCHER, randomLoc);
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-
-        //Here, start building anchors once the robot count is high enough. Increase the number to start building anchors earlier, decrease for later.
-        if (rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 12 && rc.canBuildAnchor(Anchor.STANDARD) && rc.getNumAnchors(Anchor.STANDARD) < 2) {
-            // If we can build an anchor do it!
+        // TODO: Need more robust island/anchor tracking
+        // Build anchors once we have enough robots
+        if (rc.canBuildAnchor(Anchor.STANDARD) && rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && numAnchors < MAX_ANCHORS) {
             rc.buildAnchor(Anchor.STANDARD);
+            numAnchors++;
         }
 
-        // Pick a direction to build in.
-        int i = 0;
-        //Direction dir = directions[i++];
-        Direction[] locs = closestDirections(rc.getLocation(), new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
-        MapLocation newLoc = rc.getLocation().add(locs[i++]);
-        while(rc.canSenseRobotAtLocation(newLoc) && i < locs.length) {
-            newLoc = rc.getLocation().add(locs[i++]);
-        }
-
-        //Spawn launchers if there are enemies in vision.
+        // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
-        if(enemies.length > 0) {
-            if(rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) rc.buildRobot(RobotType.LAUNCHER, newLoc);
-            rc.setIndicatorString("Under Attack!");
+        if (enemies.length > 0) {
+            rc.setIndicatorString("Enemies Detected");
+            RobotInfo enemy = enemies[0];
+
+            // Spawn a robot in the closest spot to the enemy
+            if (rc.isActionReady()) {
+                MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, enemy.location);
+
+                for (MapLocation loc : spawnLocations) {
+                    if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
+                        rc.buildRobot(RobotType.LAUNCHER, loc);
+                        break;
+                    }
+                }
+            }
+
+            //TODO: Move to LauncherSync
             for (int j = 32; j < 44; j++) {
                 int read = rc.readSharedArray(j);
-                int dist = distance(enemies[0].location, intToLoc(read));
+                int dist = distance(enemy.location, intToLoc(read));
                 if (dist < 3) {
                     return;
                 }
             }
             for (int j = 32; j < 44; j++) {
                 if (rc.readSharedArray(j) == 0) {
-                    rc.writeSharedArray(j, locToInt(enemies[0].location));
+                    rc.writeSharedArray(j, locToInt(enemy.location));
                     return;
                 }
             }
-            return;
         }
 
-        //Stop making robots entirely once you cover an quarter of the map. Ideally don't get to bloated too early, since you need to build ISLANDS carriers.
-        if(rc.getRobotCount() > rc.getMapHeight() * rc.getMapWidth() / 4) {
-            rc.setIndicatorString("Bloated");
-            return;
-        }
-
-        // If not all wells have been found, spawn carrier in random direction
-        if (getNumWellsFound(rc) < numWellsStored) {
-            Collections.shuffle(shuffledDir);
-            for (Direction dir : shuffledDir) {
-                MapLocation randomLoc = rc.getLocation().add(dir);
-                if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, randomLoc)) {
-                    rc.buildRobot(RobotType.CARRIER, randomLoc);
+        // Main robot building if other conditions aren't satisfied
+        if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
+            if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
+                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) > 50) {
+                    robotBuildType = RobotType.CARRIER;
+                } else {
+                    robotBuildType = RobotType.LAUNCHER;
+                }
+            } else {
+                if (rc.getResourceAmount(ResourceType.MANA) > 60) {
+                    robotBuildType = RobotType.CARRIER;
+                } else {
+                    robotBuildType = RobotType.LAUNCHER;
                 }
             }
         } else {
-//            if (rc.getResourceAmount(ResourceType.ADAMANTIUM) > GameConstants.UPGRADE_WELL_AMOUNT) {
-//
-//            } else if (rc.getResourceAmount(ResourceType.MANA) > GameConstants.UPGRADE_WELL_AMOUNT) {
-//
-//            }
-            // Spawn carriers towards random well
-            // TODO: In direction of closest well with carrierAssignment type
-            Direction dir = hqLocation.directionTo(getWellLocation(rc, wellIndexMin + rng.nextInt(numWellsStored)));
-            MapLocation newLocat = hqLocation.add(dir);
-            if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLocat)) {
-                rc.buildRobot(RobotType.CARRIER, newLocat);
+            rc.setIndicatorString("Max robots reached");
+        }
+
+        switch (robotBuildType) {
+            case CARRIER:
+                buildCarrier(rc);
+                break;
+
+            case LAUNCHER:
+                buildLauncher(rc);
+                break;
+        }
+    }
+
+    static void buildCarrier(RobotController rc) throws GameActionException {
+        if (rc.isActionReady()) {
+            // Set the resource target of carrier spawns
+            if (rng.nextDouble() > MANA_TARGET_RATE) {
+                setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
+                carrierAssignment = ResourceType.ADAMANTIUM;
+            } else {
+                setCarrierAssignment(rc, ResourceType.MANA);
+                carrierAssignment = ResourceType.MANA;
+            }
+
+            // If not all wells have been found, spawn scout carrier in random location
+            if (getNumWellsFound(rc) < NUM_WELLS_STORED) {
+                // Create a list of random spawn locations sorted farthest from hq
+                MapLocation[] spawnLocations = farthestLocationsInActionRadius(rc, hqLocation, hqLocation);
+                List<MapLocation> randomSpawnLocations = Arrays.asList(spawnLocations);
+
+                Collections.shuffle(randomSpawnLocations);
+                for (MapLocation loc : randomSpawnLocations) {
+                    if (rc.canBuildRobot(RobotType.CARRIER, loc)) {
+                        rc.buildRobot(RobotType.CARRIER, loc);
+                    }
+                }
+
+            } else {
+                // Spawn carriers in direction of closest random well of selected type
+                ArrayList<Integer> targetWellIndices = new ArrayList<>();
+                for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
+                    if (getWellType(rc, i).equals(carrierAssignment)) targetWellIndices.add(i);
+                }
+
+                // Pick a random well from our list of wells with the correct type
+                Collections.shuffle(targetWellIndices);
+                int wellIndex = targetWellIndices.get(0);
+
+                // Spawn as close to the well as possible
+                MapLocation wellLocation = getWellLocation(rc, wellIndex);
+                MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, wellLocation);
+
+                for (MapLocation loc : spawnLocations) {
+                    if (rc.canBuildRobot(RobotType.CARRIER, loc)) {
+                        rc.buildRobot(RobotType.CARRIER, loc);
+                        break;
+                    }
+                }
             }
         }
-        // Alternate next carrier spawn between Ad and Mn target resources
+    }
 
-        if (rng.nextDouble() > 1/manaToAdamantiumRatio) {
-            setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
-            carrierAssignment = ResourceType.ADAMANTIUM;
-        } else {
-            setCarrierAssignment(rc, ResourceType.MANA);
-            carrierAssignment = ResourceType.MANA;
-        }
+    // Build launchers closest to middle of the map
+    static void buildLauncher(RobotController rc) throws GameActionException {
+        if (rc.isActionReady()) {
+            MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
+            MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 
-        //Don't need this because of CarrierSync
-//        else if(turnCount % 5 == 1) rc.writeSharedArray(31, 0);
-//        else if(turnCount % 5 == 0) rc.writeSharedArray(31, 1);
-
-        //Again, bloating numbers. This time, larger number = stop building earlier. Prolly wanna increase for launchers, and maybe for carriers.
-        //Make sure that we build anchors FAR BEFORE we stop building carriers, as otherwise the anchors will be stranded.
-        //Alternatively, you can start turning farming carriers into ISLANDS carriers once rc.getRobotCount() is high enough.
-        if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getResourceAmount(ResourceType.MANA) > 200) && rc.canBuildRobot(RobotType.LAUNCHER, newLoc)) {
-            // Let's try to build a carrier.
-            rc.setIndicatorString("Building a launcher");
-            rc.buildRobot(RobotType.LAUNCHER, newLoc);
-        } else if ((rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 12 || rc.getNumAnchors(Anchor.STANDARD) > 0) && rc.canBuildRobot(RobotType.CARRIER, newLoc)){
-            // Let's try to build a launcher.
-            rc.setIndicatorString("Building a carrier");
-            rc.buildRobot(RobotType.CARRIER, newLoc);
+            for (MapLocation loc : spawnLocations) {
+                if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
+                    rc.buildRobot(RobotType.LAUNCHER, loc);
+                    break;
+                }
+            }
         }
     }
 }

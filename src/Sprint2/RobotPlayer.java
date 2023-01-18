@@ -65,9 +65,9 @@ public strictfp class RobotPlayer {
         //System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
-        rc.setIndicatorString("Hello world!");
+        rc.setIndicatorString("Spawned");
 
-        //Will need to fix this later
+        //TODO: Refactor into headquarters and HQSync
         if (rc.getType() == RobotType.HEADQUARTERS) {
             headquarters = rc.getLocation();
             int numHQ = rc.readSharedArray(8);
@@ -124,7 +124,7 @@ public strictfp class RobotPlayer {
                         break;
                 }
 
-                if (Clock.getBytecodesLeft() <= 0) {
+                if (Clock.getBytecodeNum() >= rc.getType().bytecodeLimit * 0.98) {
                     System.out.println("[WARN] Bytecode Limit Exceeded!!");
                 }
 
@@ -148,7 +148,6 @@ public strictfp class RobotPlayer {
             }
             // End of loop: go back to the top. Clock.yield() has ended, so it's time for another turn!
         }
-
         // Your code should never reach here (unless it's intentional)! Self-destruction imminent...
     }
 }
