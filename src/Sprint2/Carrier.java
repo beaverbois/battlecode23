@@ -154,8 +154,8 @@ public class Carrier {
     }
 
     private static void move(RobotController rc) throws GameActionException {
-        // check if we are already adjacent to a well
-        if (checkWellAdjacency(rc)) {
+        // check if we are already adjacent to a well or can't move
+        if (!rc.isMovementReady() || checkWellAdjacency(rc)) {
             return;
         };
 
