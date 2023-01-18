@@ -5,10 +5,10 @@ import battlecode.common.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static Sprint2.CarrierSync.*;
-import static Sprint2.LauncherSync.closestTargetHQ;
-import static Sprint2.LauncherSync.readOppHeadquarters;
+import static Sprint2.LauncherSync.*;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
 
@@ -40,8 +40,10 @@ public class Launcher {
 
     static int targetEnemy = 0;
 
+    static int numInPack = 8;
+
     //Wells
-    static boolean reportingWell = false;
+    static boolean reportingWell = false, reportingEnemy = false, reportingHQ = false;
     static MapLocation targetWellLocation = null;
     static ResourceType targetWellType = null;
 
@@ -59,14 +61,16 @@ public class Launcher {
     private static void turnStart(RobotController rc) throws GameActionException {
         pos = rc.getLocation();
 
+        //Rushers are suppressing our HQ
+        rc.setIndicatorString("HQ: " + allOpposingHQ[0]);
         readOppHeadquarters(rc, allOpposingHQ);
 
         nearbyRobots = rc.senseNearbyRobots();
-        List<RobotInfo> alliesL = new ArrayList<RobotInfo>();
-        List<RobotInfo> enemiesL = new ArrayList<RobotInfo>();
+        List<RobotInfo> alliesL = new ArrayList<>();
+        List<RobotInfo> enemiesL = new ArrayList<>();
 
         for(RobotInfo bot : nearbyRobots) {
-            if(bot.team == rc.getTeam()) alliesL.add(bot);
+            if(bot.team == rc.getTeam() && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
             else enemiesL.add(bot);
         }
 
@@ -86,6 +90,7 @@ public class Launcher {
         if(lstate == LauncherState.REPORTING) return;
 
         MapLocation t = closestTargetHQ(rc, allOpposingHQ);
+
         if(t != null) {
             lstate = LauncherState.SWARMING;
             targetOppHQ = t;
@@ -95,57 +100,73 @@ public class Launcher {
 
         if (rc.isMovementReady()) {
             //If an enemy launcher is seen, move some units towards it.
-            MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
-            MapLocation target = new MapLocation(120, 120);
-            int tooClose = 4;
-            int minDist = distance(pos, target);
-            for(int i = 32; i < 44; i++) {
-                int read = rc.readSharedArray(i);
-                MapLocation loc = intToLoc(read);
-                int dist = distance(pos, loc);
-                if(read != 0 && dist < tooClose && enemies.length < 2) {
-                    lstate = LauncherState.REPORTING;
-                    targetEnemy = read;
-                    moveTowards(rc, headquarters);
-                    return;
-                }
-                else if(read != 0 && dist < minDist) {
-                    //If it's by an oppHQ, don't bother.
-                    boolean close = false;
-                    for(int j = 0; j < allHQ.length; j++) {
-                        if(distance(loc, allOpposingHQ[j]) < tooClose) {
-                            close = true;
-                            break;
-                        }
-                    }
-
-                    if(!close) {
-                        //Close-ish to the target, go for it.
-                        target = loc;
-                        minDist = dist;
-                    }
-                }
+            //Trying moving towards the center of all HQ, then moving out as a pack.
+            int centerX = 0, centerY = 0;
+            for(int i = 0; i < allHQ.length; i++) {
+                centerX += allHQ[i].x;
+                centerY += allHQ[i].y;
             }
-
-            //Go towards target
-            if(distance(pos, target) < 40) {
-                rc.setIndicatorString("Rushing " + target);
+            MapLocation hqCenter = new MapLocation(centerX / allHQ.length, centerY / allHQ.length);
+            if(allies.length < numInPack && distance(pos, hqCenter) > 2) moveTowards(rc, hqCenter);
+            //If you have enough in the pack, have everyone move towards the other side.
+            else if(allies.length >= numInPack) {
+                MapLocation target = new MapLocation(rc.getMapWidth() - hqCenter.x, rc.getMapHeight() - hqCenter.y);
                 moveTowards(rc, target);
-                return;
             }
 
-            if(reportingWell && enemies.length == 0) {
-                lstate = LauncherState.REPORTING;
-                return;
-            }
 
-            int radius = rc.getType().visionRadiusSquared;
-            Team ally = rc.getTeam();
-            RobotInfo[] allies = rc.senseNearbyRobots(radius, ally);
-
-            //Trying running to the center
-            if(distance(pos, center) < 3 && allies.length > 3) moveTowards(rc, new MapLocation(rc.getMapWidth() - headquarters.x, rc.getMapHeight() - headquarters.y));
-            else moveTowards(rc, center);
+//            MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+//            MapLocation target = new MapLocation(120, 120);
+//            int tooClose = 4;
+//            int minDist = distance(pos, target);
+//            for(int i = 32; i < 44; i++) {
+//                int read = rc.readSharedArray(i);
+//                MapLocation loc = intToLoc(read);
+//                int dist = distance(pos, loc);
+//                if(read != 0 && dist < tooClose && enemies.length < 2) {
+//                    lstate = LauncherState.REPORTING;
+//                    targetEnemy = read;
+//                    reportingEnemy = true;
+//                    moveTowards(rc, headquarters);
+//                    return;
+//                }
+//                else if(read != 0 && dist < minDist) {
+//                    //If it's by an oppHQ, don't bother.
+//                    boolean close = false;
+//                    for(int j = 0; j < allHQ.length; j++) {
+//                        if(distance(loc, allOpposingHQ[j]) < tooClose) {
+//                            close = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    if(!close) {
+//                        //Close-ish to the target, go for it.
+//                        target = loc;
+//                        minDist = dist;
+//                    }
+//                }
+//            }
+//
+//            //Go towards target
+//            if(distance(pos, target) < 40) {
+//                rc.setIndicatorString("Rushing " + target);
+//                moveTowards(rc, target);
+//                return;
+//            }
+//
+//            if(reportingWell && enemies.length == 0) {
+//                lstate = LauncherState.REPORTING;
+//                return;
+//            }
+//
+//            int radius = rc.getType().visionRadiusSquared;
+//            Team ally = rc.getTeam();
+//            RobotInfo[] allies = rc.senseNearbyRobots(radius, ally);
+//
+//            //Trying running to the center
+//            if(distance(pos, center) < 3 && allies.length > 3) moveTowards(rc, new MapLocation(rc.getMapWidth() - headquarters.x, rc.getMapHeight() - headquarters.y));
+//            else moveTowards(rc, center);
         }
     }
 
@@ -155,43 +176,21 @@ public class Launcher {
         attack(rc);
 
         if (rc.canWriteSharedArray(0, 0)) {
-            //Update shared array with enemy HQ and status updates on suppressed HQ.
-            for(int i = 0; i < allHQ.length; i++) {
-                int read = rc.readSharedArray(4+i);
-                int oppHQ = locToInt(allOpposingHQ[i]);
-                if (oppHQ != 0 && (read == 0 || (targetOppHQ != null && targetOppHQ.equals(allOpposingHQ[i])))) {
-                    if(targetOppHQ != null && targetOppHQ.equals(allOpposingHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + oppHQ);
-                    else rc.writeSharedArray(4 + i, oppHQ);
-                }
-            }
-            if(targetEnemy != 0) {
-                for (int i = 32; i < 44; i++) {
-                    int read = rc.readSharedArray(i);
-                    int dist = distance(intToLoc(targetEnemy), intToLoc(read));
-                    if (dist < 3) {
-                        rc.writeSharedArray(i, 0);
-                    }
-                }
-                targetEnemy = 0;
+            if(reportingHQ) {
+                reportHQ(rc, allOpposingHQ);
+                reportingHQ = false;
             }
 
-            //Wells
+            if(reportingEnemy) {
+                reportEnemy(rc, intToLoc(targetEnemy));
+                reportingEnemy = false;
+            }
+
             if(reportingWell) {
-                ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-                for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                    if (getWellType(rc, i) == targetWellType) targetWellLocations.add(getWellLocation(rc, i));
-                }
-
-                if (targetWellLocations.contains(targetWellLocation)) {
-                    reportingWell = false;
-                } else if (rc.canWriteSharedArray(0, 1)) {
-                    writeWell(rc, targetWellType, targetWellLocation);
-
-                    System.out.println(targetWellType + " at " + targetWellLocation);
-                    System.out.println("Wells Discovered: " + getNumWellsFound(rc));
-                    reportingWell = false;
-                }
+                reportWell(rc, targetWellLocation, targetWellType);
+                reportingWell = false;
             }
+
             lstate = LauncherState.RUSHING;
         } else if (rc.isMovementReady()) {
             //Move towards closest headquarters.
@@ -248,41 +247,7 @@ public class Launcher {
     }
 
     private static void scout(RobotController rc) throws GameActionException {
-        //Well scouting
-        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
-        WellInfo[] wells = rc.senseNearbyWells();
-        if (wells.length > 0) {
-            // make a location list of all stored wells of each type
-            ArrayList<MapLocation> adWellLocations = new ArrayList<>();
-            ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
-            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                if (getWellType(rc, i) == ResourceType.ADAMANTIUM) adWellLocations.add(getWellLocation(rc, i));
-                else if (getWellType(rc, i) == ResourceType.MANA) mnWellLocations.add(getWellLocation(rc, i));
-            }
-
-            // we only want to store numWellsStored/2 wells per type, not elixir yet
-            if (adWellLocations.size() < NUM_WELLS_STORED / 2 || mnWellLocations.size() < NUM_WELLS_STORED / 2) {
-                // check if any wells we found are new and not stored
-                for (WellInfo well : wells) {
-                    MapLocation loc = well.getMapLocation();
-                    ResourceType type = well.getResourceType();
-                    if ((mnWellLocations.size() < NUM_WELLS_STORED / 2 && mnWellLocations.contains(loc)) || (adWellLocations.size() < NUM_WELLS_STORED / 2 && adWellLocations.contains(loc))) {
-                        System.out.println("writing well");
-                        targetWellLocation = loc;
-                        targetWellType = type;
-                        // if we can write new well, do so
-                        if (rc.canWriteSharedArray(0, 1)) {
-                            writeWell(rc, type, loc);
-                        } else {
-                            // otherwise, return to hq to report
-                            reportingWell = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-        }
+        lookForWells(rc);
 
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
@@ -296,11 +261,60 @@ public class Launcher {
                     if (val == 0) {
                         allOpposingHQ[i] = enemy.getLocation();
                         lstate = LauncherState.REPORTING;
+                        reportingHQ = true;
                         System.out.println("Spotted HQ " + enemy.getLocation());
                         break;
                     }
                 }
                 return;
+            }
+        }
+    }
+
+    private static void lookForWells(RobotController rc) throws GameActionException {
+        //Well scouting
+        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
+
+        boolean foundAll = true;
+
+        //Make sure we haven't found every well yet.
+        for(int i = wellIndexMin; i < wellIndexMax; i++) {
+            if(rc.readSharedArray(i) == 0) {
+                foundAll = false;
+                break;
+            }
+        }
+
+        if(foundAll) return;
+
+        WellInfo[] wells = rc.senseNearbyWells();
+
+        if (wells.length > 0) {
+            // make a location list of all stored wells of each type
+            ArrayList<MapLocation> adWellLocations = new ArrayList<>();
+            ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
+            for (int i = wellIndexMin; i <= wellIndexMax; i++) {
+                int read = rc.readSharedArray(i);
+                if (ResourceType.values()[read / 10000] == ResourceType.ADAMANTIUM) adWellLocations.add(intToLoc(read % 10000));
+                else if (ResourceType.values()[read / 10000] == ResourceType.MANA) mnWellLocations.add(intToLoc(read % 10000));
+            }
+
+            // we only want to store numWellsStored/2 wells per type, not elixir yet
+            if (adWellLocations.size() < NUM_WELLS_STORED / 2 || mnWellLocations.size() < NUM_WELLS_STORED / 2) {
+                // check if any wells we found are new and not stored
+                for (WellInfo well : wells) {
+                    MapLocation loc = well.getMapLocation();
+                    ResourceType type = well.getResourceType();
+                    if ((type == ResourceType.MANA && mnWellLocations.size() < numWellsStored / 2 && !mnWellLocations.contains(loc))
+                            || (type == ResourceType.ADAMANTIUM && adWellLocations.size() < numWellsStored / 2 && !adWellLocations.contains(loc))) {
+                        targetWellLocation = loc;
+                        targetWellType = type;
+                        // otherwise, return to hq to report
+                        reportingWell = true;
+                        lstate = LauncherState.REPORTING;
+                        return;
+                    }
+                }
             }
         }
     }
@@ -325,6 +339,9 @@ public class Launcher {
             }
             if (rc.canAttack(target)) {
                 rc.attack(target);
+                if(rc.isMovementReady() && lstate == LauncherState.RUSHING) {
+                    moveAway(rc, target);
+                }
             }
         }
     }

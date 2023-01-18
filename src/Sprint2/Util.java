@@ -118,10 +118,10 @@ public class Util {
 
 
     public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        MapLocation pos = rc.getLocation();
-
-        Direction[] closest = closestDirections(pos, target);
         if(rc.isMovementReady()) {
+            MapLocation pos = rc.getLocation();
+            Direction[] closest = closestDirections(pos, target);
+
             for(int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
                 if(rc.canMove(dir)) {

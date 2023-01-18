@@ -291,7 +291,7 @@ public class Carrier {
             }
         }
     }
-    private static void discoveredAllWells(RobotController rc) throws GameActionException {
+    public static void discoveredAllWells(RobotController rc) throws GameActionException {
         // assemble a list of the indices of wells of our type
         // TODO: do not use random wells after scouting, use closest instead
         ArrayList<Integer> targetWellIndices = new ArrayList<>();
