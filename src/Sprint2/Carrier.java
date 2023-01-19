@@ -5,6 +5,7 @@ import battlecode.common.*;
 import java.util.*;
 
 import static Sprint2.CarrierSync.*;
+import static Sprint2.HQSync.readHQLocation;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
 
@@ -21,6 +22,7 @@ public class Carrier {
     private static Direction scoutDirection = null;
     static CarrierState state = null;
     static boolean stateLock = false;
+    static int hqNum = 0;
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
     static MapLocation rcLocation = null;
@@ -36,7 +38,10 @@ public class Carrier {
             // this will run when the bot is created
             state = CarrierState.SCOUTING;
             rcLocation = rc.getLocation();
-            targetType = getCarrierAssignment(rc);
+            hqNum = getHQNum(rc);
+            System.out.println("MY NUMBER IS " + hqNum);
+            hqLocation = readHQLocation(rc, hqNum);
+            targetType = readCarrierAssignment(rc, hqNum);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
             Collections.shuffle(shuffledDir);
@@ -48,20 +53,21 @@ public class Carrier {
         }
 
 //        senseEnemies(rc);
-        hqLocation = closest(rc.getLocation(), headquarters);
 
         switch (state) {
             case SCOUTING:
                 // if we have not discovered all wells, pick a random direction to go in and discover them
                 if (!stateLock) {
-                    if (getNumWellsFound(rc) < NUM_WELLS_STORED) {
+                    if (readNumWellsFound(rc, hqNum) < 2) {
                         rcLocation = rc.getLocation();
                         scoutDirection = hqLocation.directionTo(rcLocation);
                         stateLock = true;
                         scout(rc);
                     } else {
-                        // if we have discovered all wells, assemble a list of wells with our targetType and pick a random one
-                        discoveredAllWells(rc);
+                        // if we have discovered all wells, set our targetWell
+                        targetWellLocation = readWellLocation(rc, targetType, hqNum);
+                        state = CarrierState.MOVING;
+                        moveTowards(rc, targetWellLocation);
                         break;
                     }
                 } else {
@@ -109,42 +115,23 @@ public class Carrier {
             }
         }
 
-        // if all wells are discovered while scouting, move towards one
-        if (getNumWellsFound(rc) >= NUM_WELLS_STORED) {
-            discoveredAllWells(rc);
+        // if all wells are discovered while scouting, set our target well and move towards it
+        if (isWellDiscovered(rc, targetType, hqNum)) {
+            targetWellLocation = readWellLocation(rc, targetType, hqNum);
+            state = CarrierState.MOVING;
+            moveTowards(rc, targetWellLocation);
             return;
         }
 
         // when we discover a nearby well, make sure it is the right type and not already stored before we write it
         WellInfo[] wells = rc.senseNearbyWells(targetType);
         if (wells.length > 0) {
-            //TODO: Temp fix
             targetWellLocation = wells[0].getMapLocation();
-            // make a location list of all stored wells of our type
-            ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
-            }
-
-            // we only want to store numWellsStored/2 wells per type, not elixir yet
-            if (targetWellLocations.size() >= NUM_WELLS_STORED / 2) {
-                return;
-            }
-
-            // check if any wells we found are new and not stored
-            for (WellInfo well : wells) {
-                MapLocation loc = well.getMapLocation();
-                if (!targetWellLocations.contains(loc)) {
-                    // if we can write new well, do so
-                    if (rc.canWriteSharedArray(0, 1)) {
-                        writeWell(rc, targetType, loc);
-                    } else {
-                        // otherwise, return to hq to report
-                        reportingWell = true;
-                        state = CarrierState.RETURNING;
-                        break;
-                    }
-                }
+            if (rc.canWriteSharedArray(0, 1)) {
+                writeWell(rc, targetType, targetWellLocation, hqNum);
+            } else {
+                reportingWell = true;
+                state = CarrierState.RETURNING;
             }
         }
     }
@@ -182,6 +169,7 @@ public class Carrier {
                         rc.move(wallDir);
                         numMoves++;
                         moveTowards(rc, targetWellLocation);
+                        break;
                     }
                 }
             }
@@ -218,8 +206,12 @@ public class Carrier {
     }
 
     private static void farm(RobotController rc) throws GameActionException {
-        // if we can collect resources, do so
-        checkAndCollectResources(rc);
+        // if we can collect resources, do so, if we can no longer move back to well
+        if (!checkAndCollectResources(rc)) {
+            state = CarrierState.MOVING;
+            moveTowards(rc, targetWellLocation);
+            return;
+        }
 
         // once we reach maxCollectionCycles, return and move towards hq
         if (numCycles == maxCollectionCycles) {
@@ -244,33 +236,34 @@ public class Carrier {
         }
     }
 
+    //TODO: Max 9 carriers per well
+
     private static void returning(RobotController rc) throws GameActionException {
         if (reportingWell) {
-            ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                if (getWellType(rc, i) == targetType) targetWellLocations.add(getWellLocation(rc, i));
-            }
-
-            if (targetWellLocations.contains(targetWellLocation)) {
+            if (isWellDiscovered(rc, targetType, hqNum)) {
+                targetWellLocation = readWellLocation(rc, targetType, hqNum);
                 reportingWell = false;
-            } else if (rc.canWriteSharedArray(0, 1)) {
-                writeWell(rc, targetType, targetWellLocation);
 
-                System.out.println(targetType + " at " + targetWellLocation);
-                reportingWell = false;
                 state = CarrierState.MOVING;
                 moveTowards(rc, targetWellLocation);
+                return;
+            } else if (rc.canWriteSharedArray(0, 1)) {
+                writeWell(rc, targetType, targetWellLocation, hqNum);
+                reportingWell = false;
+
+                state = CarrierState.MOVING;
+                moveTowards(rc, targetWellLocation);
+            }
+        } else {
+            // if we are already at hq, transfer and set state to moving
+            if (checkHQAdjacencyAndTransfer(rc)) {
+                return;
             }
         }
 
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
 
 //        if (reportingEnemy) report(rc);
-
-        // if we are already at hq, transfer and set state to moving
-        if (checkHQAdjacencyAndTransfer(rc)) {
-            return;
-        }
 
         rcLocation = rc.getLocation();
         Direction hqDirection = rcLocation.directionTo(hqLocation);
@@ -301,22 +294,6 @@ public class Carrier {
         }
 
         checkHQAdjacencyAndTransfer(rc);
-    }
-    public static void discoveredAllWells(RobotController rc) throws GameActionException {
-        // assemble a list of the indices of wells of our type
-        // TODO: do not use random wells after scouting, use closest instead
-        ArrayList<Integer> targetWellIndices = new ArrayList<>();
-        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-            if (getWellType(rc, i).equals(targetType)) targetWellIndices.add(i);
-        }
-
-        // Pick a random well from our list of wells with the correct type
-        Collections.shuffle(targetWellIndices);
-        int targetIndex = targetWellIndices.get(0);
-
-        targetWellLocation = getWellLocation(rc, targetIndex);
-        targetType = getWellType(rc, targetIndex);
-        state = CarrierState.MOVING;
     }
 
     //Stuff added for integration purposes:
@@ -362,7 +339,7 @@ public class Carrier {
 
 //    private static void senseEnemies(RobotController rc) throws GameActionException {
 //        // If a headquarters is detected, report it back to HQ
-//        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
+//        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
 //        for (RobotInfo enemy : enemies) {
 //            if (enemy.getType() == RobotType.HEADQUARTERS) {
 //                int pos = locToInt(enemy.getLocation());
@@ -471,11 +448,27 @@ public class Carrier {
         return false;
     }
 
-    private static void checkAndCollectResources(RobotController rc) throws GameActionException {
+    private static boolean checkAndCollectResources(RobotController rc) throws GameActionException {
         if (rc.canCollectResource(targetWellLocation, -1)) {
             rc.collectResource(targetWellLocation, -1);
             numCycles++;
             rc.setIndicatorString(state.toString() + " CYCLE " + numCycles + "/" + maxCollectionCycles);
+            return true;
         }
+        return false;
+    }
+
+    // Determines which HQ spawned us by finding our ID amongst a list of IDs spawned
+    private static int getHQNum(RobotController rc) throws GameActionException {
+        int[] IDs = readCarrierSpawnIDs(rc);
+        int rcID = rc.getID();
+
+        for (int i = 0; i < IDs.length; i++) {
+            if (IDs[i] == rcID) {
+                return i;
+            }
+        }
+
+        throw new GameActionException(GameActionExceptionType.OUT_OF_RANGE, "Could not find HQ ID!");
     }
 }

@@ -43,15 +43,6 @@ public strictfp class RobotPlayer {
             Direction.NORTHWEST,
     };
 
-    static MapLocation headquarters = new MapLocation(0, 0);
-    static MapLocation corner = new MapLocation(-1, -1);
-    static MapLocation[] hqList;
-    static MapLocation[] allOpposingHQ;
-    static MapLocation newKnownHQ;
-    static MapLocation enemyLoc;
-
-    static int[] awayFromHQ;
-
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * It is like the main function for your robot. If this method returns, the robot dies!
@@ -68,30 +59,6 @@ public strictfp class RobotPlayer {
 
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Spawned");
-
-        //TODO: Refactor into headquarters and HQSync
-        if (rc.getType() == RobotType.HEADQUARTERS) {
-            headquarters = rc.getLocation();
-            int numHQ = rc.readSharedArray(8);
-            rc.writeSharedArray(8, numHQ + 1);
-            //Write position in #HQ index as x * 60 + y.
-            rc.writeSharedArray(numHQ, locToInt(headquarters));
-            //awayFromHQ = new int[numHQ + 1];
-            //awayFromHQ[numHQ] = towards(rc.getLocation(), new MapLocation(rc.getMapWidth() - rc.getLocation().x, rc.getMapHeight() - rc.getLocation().y));
-            Headquarters.hqLocation = rc.getLocation();
-        } else {
-            hqList = new MapLocation[rc.readSharedArray(8) % 10];
-            allOpposingHQ = new MapLocation[hqList.length];
-            //awayFromHQ = new int[allHQ.length];
-            for (int i = 0; i < hqList.length; i++) {
-                hqList[i] = intToLoc(rc.readSharedArray(i) % 10000);
-                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
-                //awayFromHQ[i] = towards(allHQ[i], new MapLocation(rc.getMapWidth() - allHQ[i].x, rc.getMapHeight() - allHQ[i].y));
-            }
-            headquarters = closest(rc.getLocation(), hqList);
-            corner = headquarters;
-            setSuspected(rc); //Needed to report enemy HQ
-        }
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite

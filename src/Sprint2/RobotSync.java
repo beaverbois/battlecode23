@@ -14,6 +14,7 @@ public class RobotSync {
 
     static int minReportDist = 3, maxSwarmDist = 10;
     static int enemyLocMin = 32, enemyLocMax = 44;
+    private static final int ISLAND_INDEX = 54;
 
     public static MapLocation[] readOppHeadquarters(RobotController rc, MapLocation[] knownOppHQ) throws GameActionException {
         for (int i = 0; i < knownOppHQ.length; i++) {
@@ -70,5 +71,19 @@ public class RobotSync {
                 rc.writeSharedArray(i, 0);
             }
         }
+    }
+
+    // TODO: eventually remove external writes
+    public static void writeIsland(RobotController rc, int value) throws GameActionException {
+        if (!rc.canWriteSharedArray(0, 1)) {
+            System.out.println("Could not write to shared array!");
+            return;
+        }
+
+        rc.writeSharedArray(ISLAND_INDEX, value);
+    }
+
+    public static int readIsland(RobotController rc) throws GameActionException {
+        return rc.readSharedArray(ISLAND_INDEX);
     }
 }

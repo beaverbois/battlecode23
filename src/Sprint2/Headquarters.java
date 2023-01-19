@@ -7,15 +7,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static Sprint1.RobotPlayer.directions;
 import static Sprint2.CarrierSync.*;
+import static Sprint2.HQSync.*;
 import static Sprint2.RobotPlayer.rng;
+import static Sprint2.RobotSync.*;
 import static Sprint2.Util.*;
 
 public class Headquarters {
 
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
+    static int hqNum = 0;
     public static ResourceType carrierAssignment = null;
     static final double MANA_TARGET_RATE = 0.69; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
@@ -26,18 +28,27 @@ public class Headquarters {
     static int MAP_HEIGHT;
     static int numAnchors = 0;
     static RobotType robotBuildType = null;
-    static double[] resourceGenDerivative = new double[2]; // track resource generation
+    static int previousCarrierID = 0;
+    static double adIncome;
+    static double mnIncome;
+    ArrayList<Integer> Well0Robots = new ArrayList<>();
+    ArrayList<Integer> Well1Robots = new ArrayList<>();
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
         if (!stateLock) {
             MAP_WIDTH = rc.getMapWidth();
             MAP_HEIGHT = rc.getMapHeight();
+            hqLocation = rc.getLocation();
 
-            // sense any nearby wells and write them
+            hqNum = readNumHQs(rc);
+            writeHQLocation(rc, hqLocation, hqNum);
+            System.out.println("Created HQ " + hqNum + " at " + readHQLocation(rc, hqNum));
+
+            // sense any nearby wells and write them, maximum of 2 assigned per hq
             WellInfo[] wells = rc.senseNearbyWells();
-            for (WellInfo well : wells) {
-                writeWell(rc, well.getResourceType(), well.getMapLocation());
+            for (int i = 0; i < Math.min(wells.length, 2); i++) {
+                writeWell(rc, wells[i].getResourceType(), wells[i].getMapLocation(), hqNum);
             }
 
             stateLock = true;
@@ -45,9 +56,9 @@ public class Headquarters {
 
         // TODO: Merge to CarrierSync
         //Make island carriers late-game.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) rc.writeSharedArray(ISLAND_INDEX, 1);
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) writeIsland(rc, 1);
         //In case we start losing, swap back.
-        else if (rc.readSharedArray(ISLAND_INDEX) == 1) rc.writeSharedArray(ISLAND_INDEX, 0);
+        else if (readIsland(rc) == 1) writeIsland(rc, 0);
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
@@ -56,8 +67,10 @@ public class Headquarters {
             numAnchors++;
         }
 
+        writeCarrierSpawnID(rc, previousCarrierID, hqNum);
+
         // Spawn launchers towards any enemies in vision.
-        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, rc.getTeam().opponent());
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
@@ -134,16 +147,17 @@ public class Headquarters {
     static void buildCarrier(RobotController rc) throws GameActionException {
         if (rc.isActionReady()) {
             // Set the resource target of carrier spawns
+            // TODO: HQ active count of number of carriers for each well, distributed with small multiplier for mana
             if (rng.nextDouble() > MANA_TARGET_RATE) {
-                setCarrierAssignment(rc, ResourceType.ADAMANTIUM);
+                writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqNum);
                 carrierAssignment = ResourceType.ADAMANTIUM;
             } else {
-                setCarrierAssignment(rc, ResourceType.MANA);
+                writeCarrierAssignment(rc, ResourceType.MANA, hqNum);
                 carrierAssignment = ResourceType.MANA;
             }
 
             // If not all wells have been found, spawn scout carrier in random location
-            if (getNumWellsFound(rc) < NUM_WELLS_STORED) {
+            if (readNumWellsFound(rc, hqNum) < 2) {
                 // Create a list of random spawn locations sorted farthest from hq
                 MapLocation[] spawnLocations = farthestLocationsInActionRadius(rc, hqLocation, hqLocation);
                 List<MapLocation> randomSpawnLocations = Arrays.asList(spawnLocations);
@@ -152,27 +166,23 @@ public class Headquarters {
                 for (MapLocation loc : randomSpawnLocations) {
                     if (rc.canBuildRobot(RobotType.CARRIER, loc)) {
                         rc.buildRobot(RobotType.CARRIER, loc);
+
+                        previousCarrierID = rc.senseRobotAtLocation(loc).getID();
+                        System.out.println("Built carrier " + rc.senseRobotAtLocation(loc).getID());
+                        break;
                     }
                 }
 
             } else {
-                // Spawn carriers in direction of closest random well of selected type
-                ArrayList<Integer> targetWellIndices = new ArrayList<>();
-                for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                    if (getWellType(rc, i).equals(carrierAssignment)) targetWellIndices.add(i);
-                }
-
-                // Pick a random well from our list of wells with the correct type
-                Collections.shuffle(targetWellIndices);
-                int wellIndex = targetWellIndices.get(0);
-
                 // Spawn as close to the well as possible
-                MapLocation wellLocation = getWellLocation(rc, wellIndex);
+                MapLocation wellLocation = readWellLocation(rc, carrierAssignment, hqNum);
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, wellLocation);
 
                 for (MapLocation loc : spawnLocations) {
                     if (rc.canBuildRobot(RobotType.CARRIER, loc)) {
                         rc.buildRobot(RobotType.CARRIER, loc);
+                        previousCarrierID = rc.senseRobotAtLocation(loc).getID();
+                        System.out.println("Built carrier " + rc.senseRobotAtLocation(loc).getID());
                         break;
                     }
                 }

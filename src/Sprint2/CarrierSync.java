@@ -1,89 +1,128 @@
 package Sprint2;
 
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.ResourceType;
-import battlecode.common.RobotController;
-import battlecode.world.Island;
+import battlecode.common.*;
+
+import javax.annotation.Resource;
 
 import static Sprint2.Util.intToLoc;
 import static Sprint2.Util.locToInt;
 
 public class CarrierSync {
+    private static final int WELL_MIN_INDEX = 56;
+    private static final int SPAWN_ID_MIN_INDEX = 48;
+    private static final int CARRIER_ASSIGNMENT_INDEX = 55;
 
-    public static final int NUM_WELLS_STORED = 2;
-    public static final int WELL_INDEX_MIN = 56;
-    //TODO: This eventually needs to be (numHQ)*2 up to 63
-    public static final int WELL_INDEX_MAX = 59;
-    public static final int CARRIER_ASSIGNMENT_INDEX = 55;
-    public static final int ISLAND_INDEX = 54;
+    public static void writeWell(RobotController rc, ResourceType type, MapLocation loc, int hqNum) throws IndexOutOfBoundsException, GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
 
-    public static void writeWell(RobotController rc, ResourceType type, MapLocation loc) throws GameActionException {
-
-        // if we are too far to write
-        if (!rc.canWriteSharedArray(WELL_INDEX_MIN, 1)) {
+        // If we are too far to write
+        if (!rc.canWriteSharedArray(0, 1)) {
             System.out.println("Could not write to shared array!");
             return;
         }
-        // search until we find an available index to write
-        int index;
-        for (index = WELL_INDEX_MIN; index <= WELL_INDEX_MAX; index++) {
-            if (rc.readSharedArray(index) == 0) {
-                rc.writeSharedArray(index, type.resourceID * 10000 + locToInt(loc));
-                return;
-            }
+
+        int index = WELL_MIN_INDEX + (2 * hqNum);
+        if (type == ResourceType.MANA) {
+            index++;
         }
+
+        rc.writeSharedArray(index, type.resourceID * 10000 + locToInt(loc));
     }
 
-    public static MapLocation getWellLocation(RobotController rc, int index) throws IndexOutOfBoundsException, GameActionException {
-        if (index < WELL_INDEX_MIN || index > WELL_INDEX_MAX)
-            throw new IndexOutOfBoundsException("Well index out of bounds");
-        else if (rc.readSharedArray(index) == 0) {
-            System.out.println("Shared array is empty at index " + index);
+    public static boolean isWellDiscovered(RobotController rc, ResourceType type, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
+
+        int index = WELL_MIN_INDEX + (2 * hqNum);
+        if (type == ResourceType.MANA) {
+            index++;
+        }
+
+        return rc.readSharedArray(index) != 0;
+    }
+
+    public static MapLocation readWellLocation(RobotController rc, ResourceType type, int hqNum) throws IndexOutOfBoundsException, GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
+
+        int index = WELL_MIN_INDEX + (2 * hqNum);
+        if (type == ResourceType.MANA) {
+            index++;
+        }
+
+        if (rc.readSharedArray(index) == 0) {
+            System.out.println("Shared array is empty at index " + index + " for HQ " + hqNum);
         }
 
         return intToLoc(rc.readSharedArray(index) % 10000);
     }
 
-    public static ResourceType getWellType(RobotController rc, int index) throws GameActionException {
-        if (index < WELL_INDEX_MIN || index > WELL_INDEX_MAX)
-            throw new IndexOutOfBoundsException("Well index out of bounds");
-        else if (rc.readSharedArray(index) == 0) {
-            System.out.println("Shared array is empty at index " + index);
+    public static int readNumWellsFound(RobotController rc, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
 
-        return ResourceType.values()[rc.readSharedArray(index) / 10000];
-    }
-
-    public static int getNumWellsFound(RobotController rc) throws GameActionException {
-        // sum the total number of non-0 value wells
         int total = 0;
-        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-            if (rc.readSharedArray(i) != 0) {
-                total++;
-            }
-        }
+        int index = WELL_MIN_INDEX + (2 * hqNum);
+        if (rc.readSharedArray(index) != 0) total++;
+        if (rc.readSharedArray(++index) != 0) total++;
+
         return total;
     }
 
-    public static ResourceType getCarrierAssignment(RobotController rc) throws GameActionException {
-        return ResourceType.values()[rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX) / 10000];
-    }
-
-    public static void setCarrierAssignment(RobotController rc, ResourceType type) throws GameActionException {
-        if (rc.canWriteSharedArray(CARRIER_ASSIGNMENT_INDEX, 1)) {
-            //Accounts for both cases, as if readSharedArray returns 0 then modding by 10000 is still 0.
-            rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, type.resourceID * 10000 + rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX) % 10000);
-        } else {
-            System.out.println(rc.getID() + " Could not write to shared array!");
+    public static ResourceType readCarrierAssignment(RobotController rc, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
+
+        String data = String.valueOf(rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX));
+        int val = Integer.parseInt(String.valueOf(data.charAt(hqNum)));
+        System.out.println("Carrier assigned " + val + " for HQ " + hqNum);
+        return ResourceType.values()[val];
     }
 
-    public static void writeIsland(RobotController rc) {
+    public static void writeCarrierAssignment(RobotController rc, ResourceType type, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
 
+        if (!rc.canWriteSharedArray(0, 1)) {
+            System.out.println("Could not write to shared array!");
+            return;
+        }
+
+        // modify the digit located at index hqNum of carrier assignment index in the shared array using strings
+        int read = rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX);
+        StringBuilder data = (read == 0) ? new StringBuilder("00000") : new StringBuilder(String.valueOf(read));
+        data.setCharAt(hqNum, String.valueOf(type.resourceID).charAt(0));
+
+        rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, Integer.parseInt(String.valueOf(data)));
     }
 
-    public static int readIsland(RobotController rc) {
-        return 0;
+    public static int[] readCarrierSpawnIDs(RobotController rc) throws GameActionException {
+        int[] IDs = new int[GameConstants.MAX_STARTING_HEADQUARTERS];
+        for (int i = 0; i < IDs.length; i++) {
+            IDs[i] = rc.readSharedArray(SPAWN_ID_MIN_INDEX + i);
+        }
+
+        return IDs;
+    }
+
+    public static void writeCarrierSpawnID(RobotController rc, int ID, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
+
+        if (!rc.canWriteSharedArray(0, 1)) {
+            System.out.println("Could not write to shared array!");
+            return;
+        }
+
+        int index = SPAWN_ID_MIN_INDEX + hqNum;
+        rc.writeSharedArray(index, ID);
     }
 }

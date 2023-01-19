@@ -2,45 +2,38 @@ package Sprint2;
 
 import battlecode.common.*;
 
+import static Sprint2.Util.intToLoc;
+import static Sprint2.Util.locToInt;
+
 public class HQSync {
 
-    public static int hqMinIndex = 0;
-
-//    public static MapLocation getHQLocation (RobotController rc, int hqNum) {
-//        if (hqIndex < wellIndexMin || index > wellIndexMax)
-//            throw new IndexOutOfBoundsException("HQ index out of bounds");
-//        else if (rc.readSharedArray(index) == 0) {
-//            return null;
-//        }
-//    }
-
-    public static void addHQLocation(RobotController rc) throws GameActionException {
-        int numHQ = getNumHQ(rc);
-
-        if (numHQ > GameConstants.MAX_STARTING_HEADQUARTERS) {
-            throw new GameActionException(GameActionExceptionType.CANT_DO_THAT, "Cannot add hq: max number reached");
+    public static void writeHQLocation(RobotController rc, MapLocation location, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
 
-        int hqIndex = numHQ + hqMinIndex;
-
-        if (rc.canWriteSharedArray(0,1)) {
-
-        } else {
-            System.out.println(rc.getID() + " Could not write to shared array!");
+        if (!rc.canWriteSharedArray(0, 1)) {
+            System.out.println("Could not write to shared array!");
+            return;
         }
 
+        rc.writeSharedArray(hqNum, Integer.parseInt("0" + locToInt(location)));
     }
 
-    public static MapLocation getClosestHQ(RobotController rc, MapLocation loc) {
-        return null;
+    public static MapLocation readHQLocation(RobotController rc, int hqNum) throws GameActionException {
+        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+            throw new IndexOutOfBoundsException("Hq num out of bounds");
+        }
+
+        return intToLoc(rc.readSharedArray(hqNum) % 10000);
     }
 
-    public static int getNumHQ(RobotController rc) {
+    public static int readNumHQs(RobotController rc) throws GameActionException {
+        int total = 0;
         for (int i = 0; i < GameConstants.MAX_STARTING_HEADQUARTERS; i++) {
-//            if (rc.readSharedArray()) //TODO: can read
-
+            if (rc.readSharedArray(i) != 0) total++;
         }
-        return 0;
-    }
 
+        return total;
+    }
 }

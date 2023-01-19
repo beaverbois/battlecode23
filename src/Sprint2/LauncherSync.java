@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import static Sprint2.CarrierSync.*;
 import static Sprint2.Launcher.*;
+import static Sprint2.Launcher.allOpposingHQ;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
 
@@ -34,7 +35,7 @@ public class LauncherSync {
             }
             if(read != 0) count++;
         }
-        if(count == hqList.length) foundHQ = true;
+        if(count == allHQ.length) foundHQ = true;
     }
 
     public static MapLocation[] closestTargetHQ(RobotController rc) throws GameActionException {
@@ -70,7 +71,7 @@ public class LauncherSync {
     public static void reportHQ(RobotController rc) throws GameActionException {
         //Update suspectedHQ with the correct info.
         if(!foundHQ) {
-            for (int i = 0; i < hqList.length; i++) {
+            for (int i = 0; i < allHQ.length; i++) {
                 for (int j = 0; j < 3; j++) {
                     if (suspectedOppHQ[3 * i + j].equals(newKnownHQ)) {
                         suspectCount = j;
@@ -101,38 +102,39 @@ public class LauncherSync {
         }
     }
 
-    public static void reportWell(RobotController rc, MapLocation targetWellLocation, ResourceType targetWellType) throws GameActionException {
-        //ONLY CALL IF CAN WRITE
-        ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-
-        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-            if (getWellType(rc, i) == targetWellType) targetWellLocations.add(getWellLocation(rc, i));
-        }
-
-        if (targetWellLocations.contains(targetWellLocation)) {
-            return;
-        }
-
-        writeWell(rc, targetWellType, targetWellLocation);
-    }
+    // TODO: Eventually migrate to new well system
+//    public static void reportWell(RobotController rc, MapLocation targetWellLocation, ResourceType targetWellType) throws GameActionException {
+//        //ONLY CALL IF CAN WRITE
+//        ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
+//
+//        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
+//            if (getWellType(rc, i) == targetWellType) targetWellLocations.add(readWellLocation(rc, i));
+//        }
+//
+//        if (targetWellLocations.contains(targetWellLocation)) {
+//            return;
+//        }
+//
+//        writeWell(rc, targetWellType, targetWellLocation);
+//    }
 
     public static void setSuspected(RobotController rc) throws GameActionException {
-        suspectedOppHQ = new MapLocation[hqList.length * 3];
+        suspectedOppHQ = new MapLocation[allHQ.length * 3];
 
         //First, store each possible location.
-        for(int i = 0; i < hqList.length; i++) {
+        for(int i = 0; i < allHQ.length; i++) {
             int width = rc.getMapWidth() - 1, height = rc.getMapHeight() - 1;
             //Rotated
-            suspectedOppHQ[3 * i] = new MapLocation(width - hqList[i].x, height - hqList[i].y);
+            suspectedOppHQ[3 * i] = new MapLocation(width - allHQ[i].x, height - allHQ[i].y);
             //Reflected over x
-            suspectedOppHQ[3 * i + 1] = new MapLocation(hqList[i].x, height - hqList[i].y);
+            suspectedOppHQ[3 * i + 1] = new MapLocation(allHQ[i].x, height - allHQ[i].y);
             //Reflected over y
-            suspectedOppHQ[3 * i + 2] = new MapLocation(width - hqList[i].x, hqList[i].y);
+            suspectedOppHQ[3 * i + 2] = new MapLocation(width - allHQ[i].x, allHQ[i].y);
         }
 
         //Now, replace any confirmed location with [120, 120], as they will never be pathed to.
         MapLocation nonexistent = new MapLocation(120, 120);
-        for (int i = 0; i < hqList.length; i++) {
+        for (int i = 0; i < allHQ.length; i++) {
             int read = rc.readSharedArray(i + suspectedHQMin);
             if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
             if(read / 10 % 10 == 2) suspectedOppHQ[3 * i + 1] = nonexistent;
@@ -143,7 +145,7 @@ public class LauncherSync {
     public static void updateSuspected(RobotController rc) throws GameActionException {
         //Iterate through suspectedOppHQ and set any locations confirmed to not exist to [120, 120].
         MapLocation nonexistent = new MapLocation(120, 120);
-        for (int i = 0; i < hqList.length; i++) {
+        for (int i = 0; i < allHQ.length; i++) {
             //Assuming we will never incorrectly identify where the HQ is.
             int read = rc.readSharedArray(i + suspectedHQMin);
             if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
@@ -176,7 +178,7 @@ public class LauncherSync {
             }
 
             //Update known enemy HQ location.
-            for(int i = 0; i < hqList.length; i++) {
+            for(int i = 0; i < allHQ.length; i++) {
                 int read = rc.readSharedArray(i + 4);
                 rc.writeSharedArray(i + 4, read / 10000 + locToInt(suspectedOppHQ[3 * i + suspectCount % 3]));
             }

@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.List;
 
 import static Sprint2.CarrierSync.*;
+import static Sprint2.HQSync.readHQLocation;
 import static Sprint2.LauncherSync.*;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
@@ -53,11 +54,30 @@ public class Launcher {
 
     static MapLocation[] suspectedOppHQ;
     static int suspectCount = 0;
+    static boolean stateLock = false;
+    static MapLocation[] allHQ = new MapLocation[GameConstants.MAX_STARTING_HEADQUARTERS];
+    static MapLocation[] allOpposingHQ = new MapLocation[allHQ.length];
+    static MapLocation headquarters = new MapLocation(0, 0);
+    static MapLocation corner = new MapLocation(-1, -1);
+    static MapLocation newKnownHQ;
 
     static Direction pastWall;
     static boolean stuck = false;
 
     static void run(RobotController rc) throws GameActionException {
+        if (!stateLock) {
+            for (int i = 0; i < allHQ.length; i++) {
+                allHQ[i] = readHQLocation(rc, i);
+                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
+            }
+
+            headquarters = closest(rc.getLocation(), allHQ);
+            corner = headquarters;
+            setSuspected(rc); //Needed to report enemy HQ
+
+            stateLock = true;
+        }
+
         rc.setIndicatorString(lstate.toString());
 
         switch(lstate) {
@@ -114,11 +134,11 @@ public class Launcher {
             //If an enemy launcher is seen, move some units towards it.
             //Trying moving towards the center of all HQ, then moving out as a pack.
             int centerX = 0, centerY = 0;
-            for (MapLocation mapLocation : hqList) {
+            for (MapLocation mapLocation : allHQ) {
                 centerX += mapLocation.x;
                 centerY += mapLocation.y;
             }
-            MapLocation hqCenter = new MapLocation(centerX / hqList.length, centerY / hqList.length);
+            MapLocation hqCenter = new MapLocation(centerX / allHQ.length, centerY / allHQ.length);
 
             int towardsCenterX, towardsCenterY;
 
@@ -222,14 +242,15 @@ public class Launcher {
             }
 
             if (reportingWell) {
-                reportWell(rc, targetWellLocation, targetWellType);
+                // TODO: Eventually ugprade to new well system
+//                reportWell(rc, targetWellLocation, targetWellType);
                 reportingWell = false;
             }
 
             lstate = LauncherState.GATHERING;
         } else if (rc.isMovementReady()) {
             //Move towards closest headquarters.
-            headquarters = closest(pos, hqList);
+            headquarters = closest(pos, allHQ);
             moveTowards(rc, headquarters);
         }
 
@@ -344,12 +365,13 @@ public class Launcher {
     }
 
     private static void scout(RobotController rc) throws GameActionException {
-        lookForWells(rc);
+        //TODO: Uncomment
+//        lookForWells(rc);
 
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
                 int loc = locToInt(enemy.getLocation());
-                int numHQ = hqList.length;
+                int numHQ = allHQ.length;
                 for (int i = 0; i < numHQ; i++) {
                     int val = locToInt(allOpposingHQ[i]);
                     if (val == loc) {
@@ -369,53 +391,54 @@ public class Launcher {
         }
     }
 
-    private static void lookForWells(RobotController rc) throws GameActionException {
-        //Well scouting
-        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
-
-        boolean foundAll = true;
-
-        //Make sure we haven't found every well yet.
-        for (int i = WELL_INDEX_MIN; i < WELL_INDEX_MAX; i++) {
-            if (rc.readSharedArray(i) == 0) {
-                foundAll = false;
-                break;
-            }
-        }
-
-        if (foundAll) return;
-
-        WellInfo[] wells = rc.senseNearbyWells();
-
-        if (wells.length > 0) {
-            // make a location list of all stored wells of each type
-            ArrayList<MapLocation> adWellLocations = new ArrayList<>();
-            ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
-            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-                int read = rc.readSharedArray(i);
-                if (ResourceType.values()[read / 10000] == ResourceType.ADAMANTIUM) adWellLocations.add(intToLoc(read % 10000));
-                else if (ResourceType.values()[read / 10000] == ResourceType.MANA) mnWellLocations.add(intToLoc(read % 10000));
-            }
-
-            // we only want to store numWellsStored/2 wells per type, not elixir yet
-            if (adWellLocations.size() < NUM_WELLS_STORED / 2 || mnWellLocations.size() < NUM_WELLS_STORED / 2) {
-                // check if any wells we found are new and not stored
-                for (WellInfo well : wells) {
-                    MapLocation loc = well.getMapLocation();
-                    ResourceType type = well.getResourceType();
-                    if ((type == ResourceType.MANA && mnWellLocations.size() < NUM_WELLS_STORED / 2 && !mnWellLocations.contains(loc))
-                            || (type == ResourceType.ADAMANTIUM && adWellLocations.size() < NUM_WELLS_STORED / 2 && !adWellLocations.contains(loc))) {
-                        targetWellLocation = loc;
-                        targetWellType = type;
-                        // otherwise, return to hq to report
-                        reportingWell = true;
-                        lstate = LauncherState.REPORTING;
-                        return;
-                    }
-                }
-            }
-        }
-    }
+    // TODO: Migrate to new well system
+//    private static void lookForWells(RobotController rc) throws GameActionException {
+//        //Well scouting
+//        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
+//
+//        boolean foundAll = true;
+//
+//        //Make sure we haven't found every well yet.
+//        for (int i = WELL_INDEX_MIN; i < WELL_INDEX_MAX; i++) {
+//            if (rc.readSharedArray(i) == 0) {
+//                foundAll = false;
+//                break;
+//            }
+//        }
+//
+//        if (foundAll) return;
+//
+//        WellInfo[] wells = rc.senseNearbyWells();
+//
+//        if (wells.length > 0) {
+//            // make a location list of all stored wells of each type
+//            ArrayList<MapLocation> adWellLocations = new ArrayList<>();
+//            ArrayList<MapLocation> mnWellLocations = new ArrayList<>();
+//            for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
+//                int read = rc.readSharedArray(i);
+//                if (ResourceType.values()[read / 10000] == ResourceType.ADAMANTIUM) adWellLocations.add(intToLoc(read % 10000));
+//                else if (ResourceType.values()[read / 10000] == ResourceType.MANA) mnWellLocations.add(intToLoc(read % 10000));
+//            }
+//
+//            // we only want to store numWellsStored/2 wells per type, not elixir yet
+//            if (adWellLocations.size() < NUM_WELLS_STORED / 2 || mnWellLocations.size() < NUM_WELLS_STORED / 2) {
+//                // check if any wells we found are new and not stored
+//                for (WellInfo well : wells) {
+//                    MapLocation loc = well.getMapLocation();
+//                    ResourceType type = well.getResourceType();
+//                    if ((type == ResourceType.MANA && mnWellLocations.size() < NUM_WELLS_STORED / 2 && !mnWellLocations.contains(loc))
+//                            || (type == ResourceType.ADAMANTIUM && adWellLocations.size() < NUM_WELLS_STORED / 2 && !adWellLocations.contains(loc))) {
+//                        targetWellLocation = loc;
+//                        targetWellType = type;
+//                        // otherwise, return to hq to report
+//                        reportingWell = true;
+//                        lstate = LauncherState.REPORTING;
+//                        return;
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     private static void attack(RobotController rc) throws GameActionException {
         int targetPrio;
