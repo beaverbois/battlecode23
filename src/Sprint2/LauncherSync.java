@@ -34,31 +34,43 @@ public class LauncherSync {
             }
             if(read != 0) count++;
         }
-        if(count == allHQ.length) foundHQ = true;
+        if(count == hqList.length) foundHQ = true;
     }
 
-    public static MapLocation closestTargetHQ(RobotController rc) throws GameActionException {
+    public static MapLocation[] closestTargetHQ(RobotController rc) throws GameActionException {
         MapLocation rcLocation = rc.getLocation();
 
-        ArrayList<MapLocation> untakenHQ = new ArrayList<>();
+        MapLocation[] untakenHQ = new MapLocation[allOpposingHQ.length];
+        int count = 0;
         for (int i = 0; i < allOpposingHQ.length; i++) {
             if (locToInt(allOpposingHQ[i]) == 0) break;
-            if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ.add(allOpposingHQ[i]);
+            if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ[count++] = allOpposingHQ[i];
         }
-        if (untakenHQ.size() != 0) {
-            MapLocation close = closest(rcLocation, untakenHQ.toArray(new MapLocation[0]));
-            if (distance(rcLocation, close) < maxSwarmDist) {
-                return close;
+        if (count > 0) {
+            for(int i = 1; i < count; i++) {
+                double dist = dist(untakenHQ[i], rcLocation);
+                for(int j = i; j > 0; j--) {
+                    if(dist < dist(untakenHQ[j-1], rcLocation)) {
+                        MapLocation temp = untakenHQ[j-1];
+                        untakenHQ[j-1] = untakenHQ[j];
+                        untakenHQ[j] = temp;
+                    } else break;
+                }
             }
+
+            MapLocation[] close = new MapLocation[count];
+            System.arraycopy(untakenHQ, 0, close, 0, count);
+
+            return close;
         }
 
         return null;
     }
 
-    public static void reportHQ(RobotController rc, MapLocation[] oppHQ) throws GameActionException {
+    public static void reportHQ(RobotController rc) throws GameActionException {
         //Update suspectedHQ with the correct info.
         if(!foundHQ) {
-            for (int i = 0; i < allHQ.length; i++) {
+            for (int i = 0; i < hqList.length; i++) {
                 for (int j = 0; j < 3; j++) {
                     if (suspectedOppHQ[3 * i + j].equals(newKnownHQ)) {
                         suspectCount = j;
@@ -70,13 +82,11 @@ public class LauncherSync {
             foundHQ = true;
         }
 
-        //Update shared array with enemy HQ and status updates on suppressed HQ.
-        for (int i = 0; i < oppHQ.length; i++) {
-            int read = rc.readSharedArray(4+i);
-            int hq = locToInt(oppHQ[i]);
-            if (hq != 0 && (read == 0 || (target != null && target.equals(oppHQ[i])))) {
-                if (target != null && target.equals(oppHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
-                else rc.writeSharedArray(4 + i, hq);
+        //Update shared array with status updates on suppressed HQ.
+        for (int i = 0; i < allOpposingHQ.length; i++) {
+            int hq = locToInt(allOpposingHQ[i]);
+            if (target != null && target.equals(allOpposingHQ[i])) {
+                rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
             }
         }
     }
@@ -110,14 +120,14 @@ public class LauncherSync {
         suspectedOppHQ = new MapLocation[hqList.length * 3];
 
         //First, store each possible location.
-        for(int i = 0; i < allHQ.length; i++) {
+        for(int i = 0; i < hqList.length; i++) {
             int width = rc.getMapWidth() - 1, height = rc.getMapHeight() - 1;
             //Rotated
-            suspectedOppHQ[3 * i] = new MapLocation(width - allHQ[i].x, height - allHQ[i].y);
+            suspectedOppHQ[3 * i] = new MapLocation(width - hqList[i].x, height - hqList[i].y);
             //Reflected over x
-            suspectedOppHQ[3 * i + 1] = new MapLocation(allHQ[i].x, height - allHQ[i].y);
+            suspectedOppHQ[3 * i + 1] = new MapLocation(hqList[i].x, height - hqList[i].y);
             //Reflected over y
-            suspectedOppHQ[3 * i + 2] = new MapLocation(width - allHQ[i].x, allHQ[i].y);
+            suspectedOppHQ[3 * i + 2] = new MapLocation(width - hqList[i].x, hqList[i].y);
         }
 
         //Now, replace any confirmed location with [120, 120], as they will never be pathed to.
@@ -166,7 +176,7 @@ public class LauncherSync {
             }
 
             //Update known enemy HQ location.
-            for(int i = 0; i < allHQ.length; i++) {
+            for(int i = 0; i < hqList.length; i++) {
                 int read = rc.readSharedArray(i + 4);
                 rc.writeSharedArray(i + 4, read / 10000 + locToInt(suspectedOppHQ[3 * i + suspectCount % 3]));
             }

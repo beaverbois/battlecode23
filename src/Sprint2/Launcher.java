@@ -54,6 +54,9 @@ public class Launcher {
     static MapLocation[] suspectedOppHQ;
     static int suspectCount = 0;
 
+    static Direction pastWall;
+    static boolean stuck = false;
+
     static void run(RobotController rc) throws GameActionException {
         rc.setIndicatorString(lstate.toString());
 
@@ -130,18 +133,64 @@ public class Launcher {
 
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
-            if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+            if(!stuck) {
+                Direction[] close = closestDirections(pos, gatherPoint, true);
+                boolean testStuck = true;
+                for (int i = 0; i < 3; i++) {
+                    if (rc.canMove(close[i])) {
+                        testStuck = false;
+                        break;
+                    }
+                }
+                stuck = testStuck;
+                if(stuck) {
+                    for (int i = 3; i < close.length; i++) {
+                        if (close[i] != Direction.CENTER && rc.canMove(close[i])) {
+                            pastWall = close[i];
+                            break;
+                        }
+                    }
+                    if (pastWall == null) {
+                        //Literally no possible moves, just chill.
+                        stuck = false;
+                        attack(rc);
+                        packStatus = allies;
+                        return;
+                    }
+                    System.out.println("Stuck, moving " + pastWall);
+                }
+            }
 
-            MapLocation t = closestTargetHQ(rc);
+            //Choose a direction and stick to it.
+            if(distance(pos, gatherPoint) > 1 && stuck) {
+                if(rc.canMove(pos.directionTo(gatherPoint))) {
+                    stuck = false;
+                    pastWall = null;
+                    moveTowards(rc, gatherPoint);
+                } else if(!rc.canMove(pastWall)) {
+                    Direction[] close = closestDirections(pos, gatherPoint);
+                    for(int i = 0; i < close.length; i++) {
+                        if(distance(pos.add(close[i]), pos.add(pastWall)) > 1) continue;
+                        if(rc.canMove(close[i])) {
+                            pastWall = close[i];
+                            rc.move(pastWall);
+                        }
+                    }
+                    //Shouldn't ever get past the last case.
+                } else if(rc.canMove(pastWall)) rc.move(pastWall);
+            }
+
+            else if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+
+            MapLocation[] t = closestTargetHQ(rc);
 
             if(t != null && allies.length > MIN_PACK_SIZE) {
                 lstate = LauncherState.SWARMING;
-                target = t;
+                target = t[0];
             }
             else if(allies.length > MIN_PACK_SIZE) {
                 lstate = LauncherState.PACK;
                 target = suspectedOppHQ[suspectCount];
-                System.out.println("Target: " + target);
             }
 
             attack(rc);
@@ -158,7 +207,7 @@ public class Launcher {
 
         if (rc.canWriteSharedArray(0, 0)) {
             if (reportingHQ) {
-                reportHQ(rc, allOpposingHQ);
+                reportHQ(rc);
                 reportingHQ = false;
             }
 
@@ -213,16 +262,20 @@ public class Launcher {
         else if(distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
         else moveTowards(rc, target);
 
-        //If within vision distance of target and there are no enemies, swap target.
-        packStatus = allies;
-
         if(distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
         if(distance(pos, target) < 3 && allies.length - enemies.length > suppressiveForce) {
-            oppHQStatus = 1;
-            lstate = LauncherState.REPORTING;
+            MapLocation[] close = closestTargetHQ(rc);
+            if(close != null && close[0] == target) {
+                oppHQStatus = 1;
+                lstate = LauncherState.REPORTING;
+                reportingHQ = true;
+            }
+            else if(close != null) target = close[0];
         }
 
         attack(rc);
+
+        packStatus = allies;
     }
 
     private static void suppressing(RobotController rc) throws GameActionException {
@@ -231,7 +284,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if (rc.isMovementReady() && distance(pos, target) > 4) moveTowards(rc, target);
+        else if (rc.isMovementReady() && dist(pos, target) > 4) moveTowards(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -251,8 +304,6 @@ public class Launcher {
 
         target = suspectedOppHQ[suspectCount];
         rc.setIndicatorString("Pack " + target);
-
-        if(foundHQ) lstate = LauncherState.SWARMING;
 
         attack(rc);
 
