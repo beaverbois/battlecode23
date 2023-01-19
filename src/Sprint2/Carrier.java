@@ -22,7 +22,7 @@ public class Carrier {
     private static Direction scoutDirection = null;
     static CarrierState state = null;
     static boolean stateLock = false;
-    static int hqNum = 0;
+    static int hqID = 0;
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
     static MapLocation rcLocation = null;
@@ -42,9 +42,9 @@ public class Carrier {
             // this will run when the bot is created
             state = CarrierState.SCOUTING;
             rcLocation = rc.getLocation();
-            hqNum = getHQNum(rc);
-            hqLocation = readHQLocation(rc, hqNum);
-            targetType = readCarrierAssignment(rc, hqNum);
+            hqID = getHQNum(rc);
+            hqLocation = readHQLocation(rc, hqID);
+            targetType = readCarrierAssignment(rc, hqID);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
             Collections.shuffle(shuffledDir);
@@ -61,14 +61,14 @@ public class Carrier {
             case SCOUTING:
                 // if we have not discovered all wells, pick a random direction to go in and discover them
                 if (!stateLock) {
-                    if (readNumWellsFound(rc, hqNum) < 2) {
+                    if (readNumWellsFound(rc, hqID) < 2) {
                         rcLocation = rc.getLocation();
                         scoutDirection = hqLocation.directionTo(rcLocation);
                         stateLock = true;
                         scout(rc);
                     } else {
                         // if we have discovered all wells, set our targetWell
-                        targetWellLocation = readWellLocation(rc, targetType, hqNum);
+                        targetWellLocation = readWellLocation(rc, targetType, hqID);
                         state = CarrierState.MOVING;
                         moveTowards(rc, targetWellLocation);
                         break;
@@ -119,8 +119,8 @@ public class Carrier {
         }
 
         // if all wells are discovered while scouting, set our target well and move towards it
-        if (isWellDiscovered(rc, targetType, hqNum)) {
-            targetWellLocation = readWellLocation(rc, targetType, hqNum);
+        if (isWellDiscovered(rc, targetType, hqID)) {
+            targetWellLocation = readWellLocation(rc, targetType, hqID);
             state = CarrierState.MOVING;
             moveTowards(rc, targetWellLocation);
             return;
@@ -131,7 +131,7 @@ public class Carrier {
         if (wells.length > 0) {
             targetWellLocation = wells[0].getMapLocation();
             if (rc.canWriteSharedArray(0, 1)) {
-                writeWell(rc, targetType, targetWellLocation, hqNum);
+                writeWell(rc, targetType, targetWellLocation, hqID);
             } else {
                 reportingWell = true;
                 state = CarrierState.RETURNING;
@@ -232,15 +232,15 @@ public class Carrier {
 
     private static void returning(RobotController rc) throws GameActionException {
         if (reportingWell) {
-            if (isWellDiscovered(rc, targetType, hqNum)) {
-                targetWellLocation = readWellLocation(rc, targetType, hqNum);
+            if (isWellDiscovered(rc, targetType, hqID)) {
+                targetWellLocation = readWellLocation(rc, targetType, hqID);
                 reportingWell = false;
 
                 state = CarrierState.MOVING;
                 moveTowards(rc, targetWellLocation);
                 return;
             } else if (rc.canWriteSharedArray(0, 1)) {
-                writeWell(rc, targetType, targetWellLocation, hqNum);
+                writeWell(rc, targetType, targetWellLocation, hqID);
                 reportingWell = false;
 
                 state = CarrierState.MOVING;
