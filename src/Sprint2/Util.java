@@ -13,7 +13,9 @@ import static Sprint2.RobotPlayer.directions;
  */
 public class Util {
 
-    /** Array containing all the possible movement directions. */
+    /**
+     * Array containing all the possible movement directions.
+     */
 
     public static final int LOC_MULTIPLIER = 100; // originally GameConstants.MAP_MAX_WIDTH
 
@@ -75,9 +77,9 @@ public class Util {
         //Sort the array
         for (int i = 1; i < directions.length; i++) {
             for (int j = i; j > 0; j--) {
-                if (close[j] % 100 < close[j-1] % 100) {
-                    double temp = close[j-1];
-                    close[j-1] = close[j];
+                if (close[j] % 100 < close[j - 1] % 100) {
+                    double temp = close[j - 1];
+                    close[j - 1] = close[j];
                     close[j] = temp;
                 } else break;
             }
@@ -86,7 +88,7 @@ public class Util {
         //Add to directions array
         Direction[] dir = new Direction[directions.length];
 
-        for(int i = 0; i < directions.length; i++) {
+        for (int i = 0; i < directions.length; i++) {
             dir[i] = directions[(int) (close[i] / 100)];
         }
 
@@ -110,9 +112,9 @@ public class Util {
         //Sort the array
         for (int i = 1; i < directionList.length; i++) {
             for (int j = i; j > 0; j--) {
-                if (close[j] % 100 < close[j-1] % 100) {
-                    double temp = close[j-1];
-                    close[j-1] = close[j];
+                if (close[j] % 100 < close[j - 1] % 100) {
+                    double temp = close[j - 1];
+                    close[j - 1] = close[j];
                     close[j] = temp;
                 } else break;
             }
@@ -140,9 +142,9 @@ public class Util {
         //Sort the array
         for (int i = 1; i < directions.length; i++) {
             for (int j = i; j > 0; j--) {
-                if (close[j] % 100 > close[j-1] % 100) {
-                    double temp = close[j-1];
-                    close[j-1] = close[j];
+                if (close[j] % 100 > close[j - 1] % 100) {
+                    double temp = close[j - 1];
+                    close[j - 1] = close[j];
                     close[j] = temp;
                 } else break;
             }
@@ -161,21 +163,48 @@ public class Util {
     // TODO: Fix collisions in TreeMap
     // returns a list of sorted MapLocations distances to a fixed MapLocation within an action radius of a robot
     public static MapLocation[] closestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
-        Map<Double, MapLocation> map = new TreeMap<>();
-        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
-            map.put(dist(loc, to), loc);
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared);
+        int[] close = new int[locs.length];
+        for (int i = 0; i < locs.length; i++) {
+            close[i] = 10000 * distance(locs[i], to) + locToInt(locs[i]);
+            System.out.println("Byte 2x: " + Clock.getBytecodeNum());
         }
 
-        return map.values().toArray(new MapLocation[0]);
+        System.out.println("Byte 3: " + Clock.getBytecodeNum());
+
+        Arrays.sort(locs);
+
+        System.out.println("Byte 4: " + Clock.getBytecodeNum());
+
+        for(int i = 0; i < close.length; i++) {
+            locs[i] = intToLoc(close[i] % 10000);
+        }
+
+        System.out.println("Byte 5: " + Clock.getBytecodeNum());
+
+        return locs;
+//        Map<Double, MapLocation> map = new TreeMap<>();
+//        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
+//            map.put(dist(loc, to), loc);
+//        }
+//
+//        return map.values().toArray(new MapLocation[0]);
     }
 
     public static MapLocation[] farthestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
-        Map<Integer, MapLocation> map = new TreeMap<>();
-        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
-            map.put(-1 * distance(loc, to), loc);
+        MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared);
+        int[] close = new int[locs.length];
+        for (int i = 0; i < locs.length; i++) {
+            close[i] = -1 * (10000 * distance(locs[i], to) + locToInt(locs[i]));
         }
 
-        return map.values().toArray(new MapLocation[0]);
+        Arrays.sort(close);
+
+        for (int i = 0; i < close.length; i++) {
+            locs[i] = intToLoc(close[i] * -1 % 10000);
+        }
+
+        return locs;
     }
 
 
@@ -184,7 +213,7 @@ public class Util {
             MapLocation pos = rc.getLocation();
             Direction[] closest = closestDirections(pos, target);
 
-            for(int i = 0; i < closest.length; i++) {
+            for (int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
                 if (rc.canMove(dir)) {
                     rc.move(dir);
