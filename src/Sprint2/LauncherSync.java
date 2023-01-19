@@ -11,38 +11,41 @@ import java.util.Map;
 import static Sprint2.CarrierSync.*;
 import static Sprint2.CarrierSync.getNumWellsFound;
 import static Sprint2.Launcher.*;
-import static Sprint2.RobotPlayer.allHQ;
+import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
 
 public class LauncherSync {
 
-    static int minReportDist = 3, maxSwarmDist = 10;
+    static int minReportDist = 3, maxSwarmDist = 20;
     static int enemyLocMin = 32, enemyLocMax = 44, suspectedHQMin = 9, suspectedHQMax = 12;
 
-    public static MapLocation[] readOppHeadquarters(RobotController rc, MapLocation[] knownOppHQ) throws GameActionException {
-        for (int i = 0; i < knownOppHQ.length; i++) {
+    static boolean foundHQ = false;
+
+    public static void readOppHeadquarters(RobotController rc) throws GameActionException {
+        int count = 0;
+        for (int i = 0; i < allOpposingHQ.length; i++) {
             int read = rc.readSharedArray(i + 4) % 10000;
-            if (read != 0 && read != locToInt(knownOppHQ[i])) {
-                if (locToInt(knownOppHQ[i]) == 0) {
-                    knownOppHQ[i] = intToLoc(read);
+            if (read != 0 && read != locToInt(allOpposingHQ[i])) {
+                if (locToInt(allOpposingHQ[i]) == 0) {
+                    allOpposingHQ[i] = intToLoc(read);
                 }
-                else if (i < knownOppHQ.length - 1) {
-                    knownOppHQ[i + 1] = knownOppHQ[i];
-                    knownOppHQ[i] = intToLoc(read);
+                else if (i < allOpposingHQ.length - 1) {
+                    allOpposingHQ[i + 1] = allOpposingHQ[i];
+                    allOpposingHQ[i] = intToLoc(read);
                 }
             }
+            if(read != 0) count++;
         }
-
-        return knownOppHQ;
+        if(count == allHQ.length) foundHQ = true;
     }
 
-    public static MapLocation closestTargetHQ(RobotController rc, MapLocation[] knownOppHQ) throws GameActionException {
+    public static MapLocation closestTargetHQ(RobotController rc) throws GameActionException {
         MapLocation rcLocation = rc.getLocation();
 
         ArrayList<MapLocation> untakenHQ = new ArrayList<>();
-        for (int i = 0; i < knownOppHQ.length; i++) {
-            if (locToInt(knownOppHQ[i]) == 0) break;
-            if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ.add(knownOppHQ[i]);
+        for (int i = 0; i < allOpposingHQ.length; i++) {
+            if (locToInt(allOpposingHQ[i]) == 0) break;
+            if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ.add(allOpposingHQ[i]);
         }
         if(untakenHQ.size() != 0) {
             MapLocation close = closest(rcLocation, untakenHQ.toArray(new MapLocation[0]));
@@ -55,6 +58,20 @@ public class LauncherSync {
     }
 
     public static void reportHQ(RobotController rc, MapLocation[] oppHQ) throws GameActionException {
+        //Update suspectedHQ with the correct info.
+        if(!foundHQ) {
+            for (int i = 0; i < allHQ.length; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (suspectedOppHQ[3 * i + j].equals(newKnownHQ)) {
+                        suspectCount = j;
+                        writeSuspected(rc, true);
+                        break;
+                    }
+                }
+            }
+            foundHQ = true;
+        }
+
         //Update shared array with enemy HQ and status updates on suppressed HQ.
         for(int i = 0; i < oppHQ.length; i++) {
             int read = rc.readSharedArray(4+i);
@@ -96,34 +113,34 @@ public class LauncherSync {
 
         //First, store each possible location.
         for(int i = 0; i < allHQ.length; i++) {
-            int width = rc.getMapWidth(), height = rc.getMapHeight();
+            int width = rc.getMapWidth() - 1, height = rc.getMapHeight() - 1;
             //Rotated
-            suspectedOppHQ[0] = new MapLocation(width - allHQ[0].x, height - allHQ[0].y);
+            suspectedOppHQ[3 * i] = new MapLocation(width - allHQ[i].x, height - allHQ[i].y);
             //Reflected over x
-            suspectedOppHQ[1] = new MapLocation(allHQ[0].x, height - allHQ[0].y);
+            suspectedOppHQ[3 * i + 1] = new MapLocation(allHQ[i].x, height - allHQ[i].y);
             //Reflected over y
-            suspectedOppHQ[2] = new MapLocation(width - allHQ[0].x, allHQ[0].y);
+            suspectedOppHQ[3 * i + 2] = new MapLocation(width - allHQ[i].x, allHQ[i].y);
         }
 
-        //Now, replace any confirmed location with [120, 120], as it will never be pathed to.
+        //Now, replace any confirmed location with [120, 120], as they will never be pathed to.
         MapLocation nonexistent = new MapLocation(120, 120);
         for(int i = 0; i < allHQ.length; i++) {
             int read = rc.readSharedArray(i + suspectedHQMin);
-            if(read % 10 != 0) suspectedOppHQ[3 * i] = nonexistent;
-            if(read / 10 % 10 != 0) suspectedOppHQ[3 * i + 1] = nonexistent;
-            if(read / 100 % 10 != 0) suspectedOppHQ[3 * i + 2] = nonexistent;
+            if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
+            if(read / 10 % 10 == 2) suspectedOppHQ[3 * i + 1] = nonexistent;
+            if(read / 100 % 10 == 2) suspectedOppHQ[3 * i + 2] = nonexistent;
         }
     }
 
     public static void updateSuspected(RobotController rc) throws GameActionException {
-        //Iterate through suspectedOppHQ and set any confirmed locations to [120, 120].
+        //Iterate through suspectedOppHQ and set any locations confirmed to not exist to [120, 120].
         MapLocation nonexistent = new MapLocation(120, 120);
         for(int i = 0; i < allHQ.length; i++) {
             //Assuming we will never incorrectly identify where the HQ is.
             int read = rc.readSharedArray(i + suspectedHQMin);
-            if(read % 10 != 0) suspectedOppHQ[3 * i] = nonexistent;
-            if(read / 10 % 10 != 0) suspectedOppHQ[3 * i + 1] = nonexistent;
-            if(read / 100 % 10 != 0) suspectedOppHQ[3 * i + 2] = nonexistent;
+            if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
+            if(read / 10 % 10 == 2) suspectedOppHQ[3 * i + 1] = nonexistent;
+            if(read / 100 % 10 == 2) suspectedOppHQ[3 * i + 2] = nonexistent;
         }
     }
 
@@ -133,14 +150,37 @@ public class LauncherSync {
             System.out.println("Trying to write when unable.");
             return;
         }
+        if(foundHQ) {
+            System.out.println("Trying to write when already found.");
+            return;
+        }
+        System.out.println("Writing " + suspectCount + ", " + exists);
 
-        //Next, update the correct HQ using suspectCount.
+        //If exists, then we know for certain the location of EVERY headquarters.
+        int div = (int) (Math.pow(10, suspectCount % 3));
+        if(exists) {
+            foundHQ = true;
+
+            //If suspectCount % 3 = 0, we know the map is rotated. If 1, then reflected over x, and if 2, then over y.
+            int write = 222 - div;
+            for(int i = suspectedHQMin; i < suspectedHQMax; i++) {
+                rc.writeSharedArray(i, write);
+            }
+
+            //Update known enemy HQ location.
+            for(int i = 0; i < allHQ.length; i++) {
+                int read = rc.readSharedArray(i + 4);
+                rc.writeSharedArray(i + 4, read / 10000 + locToInt(suspectedOppHQ[3 * i + suspectCount % 3]));
+            }
+            return;
+        }
+
+        //Otherwise, update the correct HQ using suspectCount.
         int read = rc.readSharedArray(suspectCount / 3 + suspectedHQMin);
         //Modifiers to test our specific index.
-        int div = (int) Math.pow(10, suspectCount % 3 + 1);
         if(read / div % 10 == 0) {
-            //Build an int with the updated value, preserving the other data.
-            int write = read % div + read / (div * 100) + (exists ? 1 : 2) * div;
+            //Build an int with the updated value, preserving the other data if !exists.
+            int write = read % div + read / (div * 100) + 2 * div;
             rc.writeSharedArray(suspectCount / 3 + suspectedHQMin, write);
         }
     }

@@ -69,7 +69,7 @@ public class Util {
         for (int i = 0; i < directions.length; i++) {
             double rand = rng.nextDouble();
             double distance = dist((from.add(directions[i])), to) + rand;
-            close[i] = distance + i * 100;
+            close[i] = distance + (i * 100);
         }
 
         //Sort the array
@@ -87,7 +87,7 @@ public class Util {
         Direction[] dir = new Direction[directions.length];
 
         for(int i = 0; i < directions.length; i++) {
-            dir[i] = directions[(int) close[i] / 100];
+            dir[i] = directions[(int) (close[i] / 100)];
         }
 
         return dir;
@@ -185,7 +185,6 @@ public class Util {
             Direction[] closest = closestDirections(pos, target);
 
             for(int i = 0; i < closest.length; i++) {
-                rc.setIndicatorString("Closest: " + closest[0]);
                 Direction dir = closest[i];
                 if(rc.canMove(dir)) {
                     rc.move(dir);

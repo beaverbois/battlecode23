@@ -47,6 +47,7 @@ public strictfp class RobotPlayer {
     static MapLocation corner = new MapLocation(-1, -1);
     static MapLocation[] allHQ;
     static MapLocation[] allOpposingHQ;
+    static MapLocation newKnownHQ;
     static MapLocation enemyLoc;
 
     static int[] awayFromHQ;
@@ -89,9 +90,8 @@ public strictfp class RobotPlayer {
             }
             headquarters = closest(rc.getLocation(), allHQ);
             corner = headquarters;
+            setSuspected(rc); //Needed to report enemy HQ
         }
-
-        if(rc.getType() == RobotType.LAUNCHER) setSuspected(rc);
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
