@@ -73,9 +73,9 @@ public class Util {
         }
 
         //Sort the array
-        for(int i = 1; i < directions.length; i++) {
-            for(int j = i; j > 0; j--) {
-                if(close[j] % 100 < close[j-1] % 100) {
+        for (int i = 1; i < directions.length; i++) {
+            for (int j = i; j > 0; j--) {
+                if (close[j] % 100 < close[j-1] % 100) {
                     double temp = close[j-1];
                     close[j-1] = close[j];
                     close[j] = temp;
@@ -108,9 +108,9 @@ public class Util {
         }
 
         //Sort the array
-        for(int i = 1; i < directionList.length; i++) {
-            for(int j = i; j > 0; j--) {
-                if(close[j] % 100 < close[j-1] % 100) {
+        for (int i = 1; i < directionList.length; i++) {
+            for (int j = i; j > 0; j--) {
+                if (close[j] % 100 < close[j-1] % 100) {
                     double temp = close[j-1];
                     close[j-1] = close[j];
                     close[j] = temp;
@@ -121,7 +121,7 @@ public class Util {
         //Add to directions array
         Direction[] dir = new Direction[directionList.length];
 
-        for(int i = 0; i < directionList.length; i++) {
+        for (int i = 0; i < directionList.length; i++) {
             dir[i] = directionList[(int) close[i] / 100];
         }
 
@@ -138,9 +138,9 @@ public class Util {
         }
 
         //Sort the array
-        for(int i = 1; i < directions.length; i++) {
-            for(int j = i; j > 0; j--) {
-                if(close[j] % 100 > close[j-1] % 100) {
+        for (int i = 1; i < directions.length; i++) {
+            for (int j = i; j > 0; j--) {
+                if (close[j] % 100 > close[j-1] % 100) {
                     double temp = close[j-1];
                     close[j-1] = close[j];
                     close[j] = temp;
@@ -151,7 +151,7 @@ public class Util {
         //Add to directions array
         Direction[] dir = new Direction[directions.length];
 
-        for(int i = 0; i < directions.length; i++) {
+        for (int i = 0; i < directions.length; i++) {
             dir[i] = directions[(int) close[i] / 100];
         }
 
@@ -180,16 +180,16 @@ public class Util {
 
 
     public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        if(rc.isMovementReady()) {
+        if (rc.isMovementReady()) {
             MapLocation pos = rc.getLocation();
             Direction[] closest = closestDirections(pos, target);
 
             for(int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
-                if(rc.canMove(dir)) {
+                if (rc.canMove(dir)) {
                     rc.move(dir);
                     //Accounts multiple movements
-                    if(!rc.isMovementReady()) break;
+                    if (!rc.isMovementReady()) break;
                     closest = closestDirections(rc.getLocation(), target);
                     i = 0;
                 }
@@ -202,13 +202,13 @@ public class Util {
         MapLocation pos = rc.getLocation();
 
         Direction[] closest = farthestDirections(pos, target);
-        if(rc.isMovementReady()) {
-            for(int i = 0; i < closest.length; i++) {
+        if (rc.isMovementReady()) {
+            for (int i = 0; i < closest.length; i++) {
                 Direction dir = closest[i];
-                if(rc.canMove(dir)) {
+                if (rc.canMove(dir)) {
                     rc.move(dir);
                     //Accounts for multiple movements
-                    if(!rc.isMovementReady()) break;
+                    if (!rc.isMovementReady()) break;
                     closest = farthestDirections(rc.getLocation(), target);
                     i = 0;
                 }

@@ -85,9 +85,9 @@ public class Launcher {
         List<RobotInfo> alliesL = new ArrayList<>();
         List<RobotInfo> enemiesL = new ArrayList<>();
 
-        for(RobotInfo bot : nearbyRobots) {
-            if(bot.team == rc.getTeam() && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
-            else if(bot.team == rc.getTeam().opponent()) enemiesL.add(bot);
+        for (RobotInfo bot : nearbyRobots) {
+            if (bot.team == rc.getTeam() && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
+            else if (bot.team == rc.getTeam().opponent()) enemiesL.add(bot);
         }
 
         allies = new RobotInfo[alliesL.size()];
@@ -96,7 +96,7 @@ public class Launcher {
         allies = alliesL.toArray(allies);
         enemies = enemiesL.toArray(enemies);
 
-        if(packStatus == null) packStatus = allies;
+        if (packStatus == null) packStatus = allies;
     }
 
     private static void gathering(RobotController rc) throws GameActionException {
@@ -105,17 +105,17 @@ public class Launcher {
         attack(rc);
 
         scout(rc);
-        if(lstate == LauncherState.REPORTING) return;
+        if (lstate == LauncherState.REPORTING) return;
 
         if (rc.isMovementReady()) {
             //If an enemy launcher is seen, move some units towards it.
             //Trying moving towards the center of all HQ, then moving out as a pack.
             int centerX = 0, centerY = 0;
-            for (MapLocation mapLocation : allHQ) {
+            for (MapLocation mapLocation : hqList) {
                 centerX += mapLocation.x;
                 centerY += mapLocation.y;
             }
-            MapLocation hqCenter = new MapLocation(centerX / allHQ.length, centerY / allHQ.length);
+            MapLocation hqCenter = new MapLocation(centerX / hqList.length, centerY / hqList.length);
 
             int towardsCenterX, towardsCenterY;
 
@@ -130,7 +130,7 @@ public class Launcher {
 
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
-            if(distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+            if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
 
             MapLocation t = closestTargetHQ(rc);
 
@@ -157,7 +157,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.canWriteSharedArray(0, 0)) {
-            if(reportingHQ) {
+            if (reportingHQ) {
                 reportHQ(rc, allOpposingHQ);
                 reportingHQ = false;
             }
@@ -172,7 +172,7 @@ public class Launcher {
                 reportingEnemy = false;
             }
 
-            if(reportingWell) {
+            if (reportingWell) {
                 reportWell(rc, targetWellLocation, targetWellType);
                 reportingWell = false;
             }
@@ -180,7 +180,7 @@ public class Launcher {
             lstate = LauncherState.GATHERING;
         } else if (rc.isMovementReady()) {
             //Move towards closest headquarters.
-            headquarters = closest(pos, allHQ);
+            headquarters = closest(pos, hqList);
             moveTowards(rc, headquarters);
         }
 
@@ -230,8 +230,8 @@ public class Launcher {
 
         attack(rc);
 
-        if(rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if(rc.isMovementReady() && distance(pos, target) > 4) moveTowards(rc, target);
+        if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
+        else if (rc.isMovementReady() && distance(pos, target) > 4) moveTowards(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -239,7 +239,7 @@ public class Launcher {
 //
 //        int numAttackers = allies.length;
 //
-//        for(RobotInfo bot : allies) if(bot.getType() != RobotType.LAUNCHER) numAttackers--;
+//        for (RobotInfo bot : allies) if (bot.getType() != RobotType.LAUNCHER) numAttackers--;
 //
 //        if(distance(pos, target) > 1 && numAttackers > 3) lstate = LauncherState.GATHERING;
 
@@ -274,7 +274,7 @@ public class Launcher {
         int avrX = pos.x, avrY = pos.y;
 
         //TODO: Implement moving towards injured allies (aka health decreased since last turn).
-        for(RobotInfo ally : allies) {
+        for (RobotInfo ally : allies) {
             avrX += ally.getLocation().x;
             avrY += ally.getLocation().y;
         }
@@ -282,9 +282,9 @@ public class Launcher {
         MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
 
         //If too far ahead, don't move.
-        if(distance(pos, target) > distance(avrPos, target) + 2);
+        if (distance(pos, target) > distance(avrPos, target) + 2);
         //If far from pack, move towards them.
-        else if(distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
+        else if (distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
         else moveTowards(rc, target);
 
         //If within vision distance of target and there are no enemies, swap target.
@@ -298,7 +298,7 @@ public class Launcher {
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
                 int loc = locToInt(enemy.getLocation());
-                int numHQ = allHQ.length;
+                int numHQ = hqList.length;
                 for (int i = 0; i < numHQ; i++) {
                     int val = locToInt(allOpposingHQ[i]);
                     if (val == loc) {
@@ -325,14 +325,14 @@ public class Launcher {
         boolean foundAll = true;
 
         //Make sure we haven't found every well yet.
-        for(int i = WELL_INDEX_MIN; i < WELL_INDEX_MAX; i++) {
-            if(rc.readSharedArray(i) == 0) {
+        for (int i = WELL_INDEX_MIN; i < WELL_INDEX_MAX; i++) {
+            if (rc.readSharedArray(i) == 0) {
                 foundAll = false;
                 break;
             }
         }
 
-        if(foundAll) return;
+        if (foundAll) return;
 
         WellInfo[] wells = rc.senseNearbyWells();
 
@@ -374,7 +374,7 @@ public class Launcher {
             MapLocation targetLoc = enemies[0].location;
             for (RobotInfo enemy : enemies) {
                 MapLocation loc = enemy.location;
-                if(!enemy.getType().equals(RobotType.HEADQUARTERS) && rc.canActLocation(loc)) {
+                if (!enemy.getType().equals(RobotType.HEADQUARTERS) && rc.canActLocation(loc)) {
                     RobotType etype = enemy.getType();
                     int eprio = launcherPriority.indexOf(etype);
                     if (eprio < targetPrio || (eprio <= targetPrio && enemy.getHealth() < targetHealth)) {
@@ -386,7 +386,7 @@ public class Launcher {
             }
             if (rc.canSenseRobotAtLocation(targetLoc) && !rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.HEADQUARTERS) && rc.canAttack(targetLoc)) {
                 rc.attack(targetLoc);
-                if(rc.isMovementReady()) {
+                if (rc.isMovementReady()) {
                     moveAway(rc, targetLoc);
                 }
             }

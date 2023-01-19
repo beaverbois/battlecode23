@@ -45,7 +45,7 @@ public strictfp class RobotPlayer {
 
     static MapLocation headquarters = new MapLocation(0, 0);
     static MapLocation corner = new MapLocation(-1, -1);
-    static MapLocation[] allHQ;
+    static MapLocation[] hqList;
     static MapLocation[] allOpposingHQ;
     static MapLocation newKnownHQ;
     static MapLocation enemyLoc;
@@ -80,15 +80,15 @@ public strictfp class RobotPlayer {
             //awayFromHQ[numHQ] = towards(rc.getLocation(), new MapLocation(rc.getMapWidth() - rc.getLocation().x, rc.getMapHeight() - rc.getLocation().y));
             Headquarters.hqLocation = rc.getLocation();
         } else {
-            allHQ = new MapLocation[rc.readSharedArray(8) % 10];
-            allOpposingHQ = new MapLocation[allHQ.length];
+            hqList = new MapLocation[rc.readSharedArray(8) % 10];
+            allOpposingHQ = new MapLocation[hqList.length];
             //awayFromHQ = new int[allHQ.length];
-            for (int i = 0; i < allHQ.length; i++) {
-                allHQ[i] = intToLoc(rc.readSharedArray(i) % 10000);
+            for (int i = 0; i < hqList.length; i++) {
+                hqList[i] = intToLoc(rc.readSharedArray(i) % 10000);
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
                 //awayFromHQ[i] = towards(allHQ[i], new MapLocation(rc.getMapWidth() - allHQ[i].x, rc.getMapHeight() - allHQ[i].y));
             }
-            headquarters = closest(rc.getLocation(), allHQ);
+            headquarters = closest(rc.getLocation(), hqList);
             corner = headquarters;
             setSuspected(rc); //Needed to report enemy HQ
         }

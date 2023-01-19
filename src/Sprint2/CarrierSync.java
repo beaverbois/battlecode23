@@ -4,13 +4,14 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
+import battlecode.world.Island;
 
 import static Sprint2.Util.intToLoc;
 import static Sprint2.Util.locToInt;
 
 public class CarrierSync {
 
-    public static final int NUM_WELLS_STORED = 4;
+    public static final int NUM_WELLS_STORED = 2;
     public static final int WELL_INDEX_MIN = 56;
     //TODO: This eventually needs to be (numHQ)*2 up to 63
     public static final int WELL_INDEX_MAX = 59;
@@ -76,5 +77,13 @@ public class CarrierSync {
         } else {
             System.out.println(rc.getID() + " Could not write to shared array!");
         }
+    }
+
+    public static void writeIsland(RobotController rc) {
+
+    }
+
+    public static int readIsland(RobotController rc) {
+        return 0;
     }
 }

@@ -6,10 +6,8 @@ import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import static Sprint2.CarrierSync.*;
-import static Sprint2.CarrierSync.getNumWellsFound;
 import static Sprint2.Launcher.*;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
@@ -47,9 +45,9 @@ public class LauncherSync {
             if (locToInt(allOpposingHQ[i]) == 0) break;
             if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ.add(allOpposingHQ[i]);
         }
-        if(untakenHQ.size() != 0) {
+        if (untakenHQ.size() != 0) {
             MapLocation close = closest(rcLocation, untakenHQ.toArray(new MapLocation[0]));
-            if(distance(rcLocation, close) < maxSwarmDist) {
+            if (distance(rcLocation, close) < maxSwarmDist) {
                 return close;
             }
         }
@@ -73,11 +71,11 @@ public class LauncherSync {
         }
 
         //Update shared array with enemy HQ and status updates on suppressed HQ.
-        for(int i = 0; i < oppHQ.length; i++) {
+        for (int i = 0; i < oppHQ.length; i++) {
             int read = rc.readSharedArray(4+i);
             int hq = locToInt(oppHQ[i]);
             if (hq != 0 && (read == 0 || (target != null && target.equals(oppHQ[i])))) {
-                if(target != null && target.equals(oppHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
+                if (target != null && target.equals(oppHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
                 else rc.writeSharedArray(4 + i, hq);
             }
         }
@@ -109,7 +107,7 @@ public class LauncherSync {
     }
 
     public static void setSuspected(RobotController rc) throws GameActionException {
-        suspectedOppHQ = new MapLocation[allHQ.length * 3];
+        suspectedOppHQ = new MapLocation[hqList.length * 3];
 
         //First, store each possible location.
         for(int i = 0; i < allHQ.length; i++) {
@@ -124,7 +122,7 @@ public class LauncherSync {
 
         //Now, replace any confirmed location with [120, 120], as they will never be pathed to.
         MapLocation nonexistent = new MapLocation(120, 120);
-        for(int i = 0; i < allHQ.length; i++) {
+        for (int i = 0; i < hqList.length; i++) {
             int read = rc.readSharedArray(i + suspectedHQMin);
             if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
             if(read / 10 % 10 == 2) suspectedOppHQ[3 * i + 1] = nonexistent;
@@ -135,7 +133,7 @@ public class LauncherSync {
     public static void updateSuspected(RobotController rc) throws GameActionException {
         //Iterate through suspectedOppHQ and set any locations confirmed to not exist to [120, 120].
         MapLocation nonexistent = new MapLocation(120, 120);
-        for(int i = 0; i < allHQ.length; i++) {
+        for (int i = 0; i < hqList.length; i++) {
             //Assuming we will never incorrectly identify where the HQ is.
             int read = rc.readSharedArray(i + suspectedHQMin);
             if(read % 10 == 2) suspectedOppHQ[3 * i] = nonexistent;
@@ -146,7 +144,7 @@ public class LauncherSync {
 
     public static void writeSuspected(RobotController rc, boolean exists) throws GameActionException {
         //First, make sure we can write.
-        if(!rc.canWriteSharedArray(0, 0)) {
+        if (!rc.canWriteSharedArray(0, 0)) {
             System.out.println("Trying to write when unable.");
             return;
         }
