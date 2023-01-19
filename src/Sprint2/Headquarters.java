@@ -56,11 +56,9 @@ public class Headquarters {
 
         // TODO: Merge to CarrierSync
         //Make island carriers late-game.
-        System.out.println("Bytecode 1: " + Clock.getBytecodeNum());
         if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) writeIsland(rc, 1);
         //In case we start losing, swap back.
         else if (readIsland(rc) == 1) writeIsland(rc, 0);
-        System.out.println("Bytecode 2: " + Clock.getBytecodeNum());
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
@@ -68,14 +66,11 @@ public class Headquarters {
             rc.buildAnchor(Anchor.STANDARD);
             numAnchors++;
         }
-        System.out.println("Bytecode 3: " + Clock.getBytecodeNum());
 
         writeCarrierSpawnID(rc, previousCarrierID, hqID);
-        System.out.println("Bytecode 4: " + Clock.getBytecodeNum());
 
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        System.out.println("Bytecode 5: " + Clock.getBytecodeNum());
         if (enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
@@ -108,16 +103,12 @@ public class Headquarters {
             }
         }
 
-        System.out.println("Bytecode 6: " + Clock.getBytecodeNum());
-
         //If we need to build anchors and don't have the resources, only build with excess.
         if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8 && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor");
             return;
         }
-
-        System.out.println("Bytecode 7: " + Clock.getBytecodeNum());
 
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
@@ -139,8 +130,6 @@ public class Headquarters {
             rc.setIndicatorString("Max robots reached");
         }
 
-        System.out.println("Bytecode 8: " + Clock.getBytecodeNum());
-
         switch (robotBuildType) {
             case CARRIER:
                 buildCarrier(rc);
@@ -156,7 +145,6 @@ public class Headquarters {
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
-        System.out.println("Bytecode 10: " + Clock.getBytecodeNum());
         if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
             // Set the resource target of carrier spawns
             // TODO: HQ active count of number of carriers for each well, distributed with small multiplier for mana
@@ -168,8 +156,6 @@ public class Headquarters {
                 carrierAssignment = ResourceType.MANA;
             }
 
-            System.out.println("Bytecode 11: " + Clock.getBytecodeNum());
-
             // If not all wells have been found, spawn scout carrier in random location
             if (readNumWellsFound(rc, hqID) < 2) {
                 // Create a list of random spawn locations sorted farthest from hq
@@ -179,13 +165,10 @@ public class Headquarters {
                 //this is ONLY called when there is plenty of space.
                 //List<MapLocation> randomSpawnLocations = Arrays.asList(spawnLocations);
                 //Collections.shuffle(randomSpawnLocations);
-                System.out.println("Bytecode 12: " + Clock.getBytecodeNum());
                 MapLocation[] farthestLayer = new MapLocation[12];
 
-                System.out.println("Bytecode 13: " + Clock.getBytecodeNum());
                 System.arraycopy(spawnLocations, 0, farthestLayer, 0, farthestLayer.length);
                 for (MapLocation loc : farthestLayer) {
-                    System.out.println("Bytecode 1x: " + Clock.getBytecodeNum() + ", " + loc + ", " + rc.isLocationOccupied(loc));
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
 
@@ -195,17 +178,13 @@ public class Headquarters {
                         break;
                     }
                 }
-                System.out.println("Bytecode 15: " + Clock.getBytecodeNum());
 
             } else {
                 // Spawn as close to the well as possible
                 MapLocation wellLocation = readWellLocation(rc, carrierAssignment, hqID);
-                System.out.println("Bytecode 16: " + Clock.getBytecodeNum());
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, wellLocation);
-                System.out.println("Bytecode 17: " + Clock.getBytecodeNum() + ", " + spawnLocations[0]);
 
                 for (MapLocation loc : spawnLocations) {
-                    System.out.println("Bytecode 18x: " + Clock.getBytecodeNum());
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
 
@@ -215,29 +194,22 @@ public class Headquarters {
                         break;
                     }
                 }
-                System.out.println("Bytecode 19: " + Clock.getBytecodeNum());
             }
         }
     }
 
     // Build launchers closest to middle of the map
     static void buildLauncher(RobotController rc) throws GameActionException {
-        System.out.println("Bytecode 20: " + Clock.getBytecodeNum());
         if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
             MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
             MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 
-            System.out.println("Bytecode 21: " + Clock.getBytecodeNum());
-
             for (MapLocation loc : spawnLocations) {
-                System.out.println("Bytecode 2x: " + Clock.getBytecodeNum());
                 if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
                     rc.buildRobot(RobotType.LAUNCHER, loc);
                     break;
                 }
             }
-
-            System.out.println("Bytecode 23: " + Clock.getBytecodeNum());
         }
     }
 }

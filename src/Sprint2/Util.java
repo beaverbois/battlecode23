@@ -67,33 +67,33 @@ public class Util {
 
 //     returns list of directions sorted by distance from a MapLocation to another for optimized path finding
     public static Direction[] closestDirections(RobotController rc, MapLocation from, MapLocation to) {
-       ArrayList<Direction> openDirections = new ArrayList<>();
-       Direction closest = from.directionTo(to);
-       if (rc.canMove(closest)) {
-           openDirections.add(closest);
-       }
-
-       Direction nextDir = closest.rotateRight();
-       Direction delta = from.add(nextDir).directionTo(from.add(closest));
-       for (int i = 0; i < 3; i++) {
-           if (rc.canMove(nextDir)) {
-               openDirections.add(nextDir);
-           }
-
-           Direction oppositeDir = from.directionTo(from.add(nextDir).add(delta).add(delta));
-
-           if (rc.canMove(oppositeDir)) {
-               openDirections.add(oppositeDir);
-           }
-
-           nextDir = nextDir.rotateRight();
-       }
-
-        if (rc.canMove(nextDir)) {
-            openDirections.add(nextDir);
+        ArrayList<Direction> openDirections = new ArrayList<>();
+        Direction closest = from.directionTo(to);
+        if (rc.canMove(closest)) {
+            openDirections.add(closest);
         }
 
-        return openDirections.toArray(new Direction[0]);
+        Direction nextDir = closest.rotateRight();
+        Direction delta = from.add(nextDir).directionTo(from.add(closest));
+        for (int i = 0; i < 3; i++) {
+            if (rc.canMove(nextDir)) {
+                openDirections.add(nextDir);
+            }
+
+            Direction oppositeDir = from.directionTo(from.add(nextDir).add(delta).add(delta));
+
+            if (rc.canMove(oppositeDir)) {
+                openDirections.add(oppositeDir);
+            }
+
+            nextDir = nextDir.rotateRight();
+        }
+
+         if (rc.canMove(nextDir)) {
+             openDirections.add(nextDir);
+         }
+
+         return openDirections.toArray(new Direction[0]);
     }
 
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
@@ -133,20 +133,13 @@ public class Util {
         int[] close = new int[locs.length];
         for (int i = 0; i < locs.length; i++) {
             close[i] = 10000 * distance(locs[i], to) + locToInt(locs[i]);
-            System.out.println("Byte 2x: " + Clock.getBytecodeNum());
         }
 
-        System.out.println("Byte 3: " + Clock.getBytecodeNum());
-
         Arrays.sort(locs);
-
-        System.out.println("Byte 4: " + Clock.getBytecodeNum());
 
         for(int i = 0; i < close.length; i++) {
             locs[i] = intToLoc(close[i] % 10000);
         }
-
-        System.out.println("Byte 5: " + Clock.getBytecodeNum());
 
         return locs;
 //        Map<Double, MapLocation> map = new TreeMap<>();
