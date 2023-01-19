@@ -8,6 +8,7 @@ import java.util.List;
 
 import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.readHQLocation;
+import static Sprint2.HQSync.readNumHQs;
 import static Sprint2.LauncherSync.*;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
@@ -55,8 +56,8 @@ public class Launcher {
     static MapLocation[] suspectedOppHQ;
     static int suspectCount = 0;
     static boolean stateLock = false;
-    static MapLocation[] allHQ = new MapLocation[GameConstants.MAX_STARTING_HEADQUARTERS];
-    static MapLocation[] allOpposingHQ = new MapLocation[allHQ.length];
+    static MapLocation[] allHQ;
+    static MapLocation[] allOpposingHQ;
     static MapLocation headquarters = new MapLocation(0, 0);
     static MapLocation corner = new MapLocation(-1, -1);
     static MapLocation newKnownHQ;
@@ -66,6 +67,11 @@ public class Launcher {
 
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
+            int numHQ = readNumHQs(rc);
+
+            allHQ = new MapLocation[numHQ];
+            allOpposingHQ = new MapLocation[numHQ];
+
             for (int i = 0; i < allHQ.length; i++) {
                 allHQ[i] = readHQLocation(rc, i);
                 allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
@@ -177,7 +183,6 @@ public class Launcher {
                         packStatus = allies;
                         return;
                     }
-                    System.out.println("Stuck, moving " + pastWall);
                 }
             }
 
