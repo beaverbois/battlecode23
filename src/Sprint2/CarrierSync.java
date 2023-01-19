@@ -81,7 +81,6 @@ public class CarrierSync {
 
         String data = String.valueOf(rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX));
         int val = Integer.parseInt(String.valueOf(data.charAt(hqNum)));
-        System.out.println("Carrier assigned " + val + " for HQ " + hqNum);
         return ResourceType.values()[val];
     }
 

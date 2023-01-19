@@ -168,7 +168,6 @@ public class Headquarters {
                         rc.buildRobot(RobotType.CARRIER, loc);
 
                         previousCarrierID = rc.senseRobotAtLocation(loc).getID();
-                        System.out.println("Built carrier " + rc.senseRobotAtLocation(loc).getID());
                         break;
                     }
                 }
@@ -182,7 +181,6 @@ public class Headquarters {
                     if (rc.canBuildRobot(RobotType.CARRIER, loc)) {
                         rc.buildRobot(RobotType.CARRIER, loc);
                         previousCarrierID = rc.senseRobotAtLocation(loc).getID();
-                        System.out.println("Built carrier " + rc.senseRobotAtLocation(loc).getID());
                         break;
                     }
                 }

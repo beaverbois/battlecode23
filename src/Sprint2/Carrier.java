@@ -32,6 +32,10 @@ public class Carrier {
     public static ResourceType targetType = null;
 
     static boolean reportingEnemy = false;
+    static boolean pathBlocked = false;
+    static Direction blockedTraverseDirection = null;
+    static Direction blockedTargetDirection = null;
+    static int numMoves = 0;
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
@@ -39,7 +43,6 @@ public class Carrier {
             state = CarrierState.SCOUTING;
             rcLocation = rc.getLocation();
             hqNum = getHQNum(rc);
-            System.out.println("MY NUMBER IS " + hqNum);
             hqLocation = readHQLocation(rc, hqNum);
             targetType = readCarrierAssignment(rc, hqNum);
 
@@ -144,9 +147,14 @@ public class Carrier {
 
         // move towards square around target well closest to us
         rcLocation = rc.getLocation();
-        int numMoves = 0;
-        for (Direction dir : closestDirections(targetWellLocation, rcLocation, true)) {
-            MapLocation closestSquare = targetWellLocation.add(dir);
+        numMoves = 0;
+
+        if (checkIfBlocked(rc, location)) {
+            return;
+        }
+
+        for (Direction dir : closestDirections(location, rcLocation, true)) {
+            MapLocation closestSquare = location.add(dir);
             Direction closestSquareDir = rcLocation.directionTo(closestSquare);
 
             // ensure we do not move towards a wall/impassible square
@@ -154,41 +162,25 @@ public class Carrier {
                 continue;
             }
 
-            // if there is a wall in front of us, traverse the wall right/left
-            // TODO: Better pathfinding around walls
-            MapLocation front = rcLocation.add(closestSquareDir);
-            if (!rc.canSenseRobotAtLocation(front) && !rc.sensePassability(front)) {
-                Direction[] wallFollow = {
-                        closestSquareDir.rotateRight().rotateRight(),
-                        closestSquareDir.rotateLeft().rotateLeft()
-                };
-
-                // Call moveTowards again to see if we are near well/still stuck
-                for (Direction wallDir : wallFollow) {
-                    if (rc.canMove(wallDir)) {
-                        rc.move(wallDir);
-                        numMoves++;
-                        moveTowards(rc, targetWellLocation);
-                        break;
-                    }
-                }
-            }
-
             if (rc.canMove(closestSquareDir)) {
                 rc.move(closestSquareDir);
-                rc.setIndicatorString(state.toString() + " TO " + closestSquare + " FOR " + targetType.toString() + " AT " + targetWellLocation);
+                rc.setIndicatorString(state.toString() + " TO " + closestSquare + " DESTINATION " + location);
                 numMoves++;
                 break;
             }
         }
 
+        if (checkIfBlocked(rc, location)) {
+            return;
+        }
+
         // robot has not moved, so move to a random square around us closest to well
         if (numMoves == 0) {
             rcLocation = rc.getLocation();
-            for (Direction dir : closestDirections(rcLocation, targetWellLocation)) {
+            for (Direction dir : closestDirections(rcLocation, location)) {
                 if (rc.canMove(dir)) {
                     rc.move(dir);
-                    rc.setIndicatorString(state.toString() + " TO " + rcLocation.add(dir) + " FOR " + targetType.toString() + " AT " + targetWellLocation);
+                    rc.setIndicatorString(state.toString() + " TO " + rcLocation.add(dir) + " DESTINATION " + location);
                     break;
                 }
             }
@@ -201,7 +193,7 @@ public class Carrier {
 
         // move a second time if we can
         if (rc.isMovementReady()) {
-            moveTowards(rc, targetWellLocation);
+            moveTowards(rc, location);
         }
     }
 
@@ -261,11 +253,16 @@ public class Carrier {
             }
         }
 
+        numMoves = 0;
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
 
 //        if (reportingEnemy) report(rc);
 
         rcLocation = rc.getLocation();
+        if (checkIfBlocked(rc, hqLocation)) {
+            return;
+        }
+
         Direction hqDirection = rcLocation.directionTo(hqLocation);
         if (rc.canMove(hqDirection)) {
             rc.move(hqDirection);
@@ -418,6 +415,50 @@ public class Carrier {
 //        }
 //    }
 
+    private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
+        rc.setIndicatorString("Blocked!");
+        rcLocation = rc.getLocation();
+        Direction targetDir = (pathBlocked) ? blockedTargetDirection: rcLocation.directionTo(target);
+        MapLocation front = rcLocation.add(targetDir);
+
+        if (rc.canSenseLocation(front) && !rc.canSenseRobotAtLocation(front) && !rc.sensePassability(front)) {
+            Direction[] wallFollow = {
+                    targetDir.rotateRight().rotateRight(),
+                    targetDir.rotateLeft().rotateLeft()};
+
+            // Move in the same direction as we previously were when blocked
+            if (pathBlocked) {
+                if (rc.canMove(blockedTraverseDirection)) {
+                    rc.move(blockedTraverseDirection);
+                    numMoves++;
+                    return true;
+                } else {
+                    blockedTraverseDirection = blockedTraverseDirection.opposite();
+                    if (rc.canMove(blockedTraverseDirection)) {
+                        rc.move(blockedTraverseDirection);
+                        numMoves++;
+                        return true;
+                    }
+                }
+            } else {
+                // Call moveTowards again to see if we are near well/still stuck
+                for (Direction wallDir : wallFollow) {
+                    if (rc.canMove(wallDir)) {
+                        pathBlocked = true;
+                        blockedTargetDirection = rcLocation.directionTo(target);
+                        blockedTraverseDirection = wallDir;
+
+                        rc.move(wallDir);
+                        numMoves++;
+                        return true;
+                    }
+                }
+            }
+        } else {
+            pathBlocked = false;
+        }
+        return false;
+    }
     private static boolean checkHQAdjacencyAndTransfer(RobotController rc) throws GameActionException{
         rcLocation = rc.getLocation();
         if (rcLocation.isAdjacentTo(hqLocation)) {
@@ -449,7 +490,8 @@ public class Carrier {
     }
 
     private static boolean checkAndCollectResources(RobotController rc) throws GameActionException {
-        if (rc.canCollectResource(targetWellLocation, -1)) {
+        rcLocation = rc.getLocation();
+        if (rcLocation.isAdjacentTo(targetWellLocation) && rc.canCollectResource(targetWellLocation, -1)) {
             rc.collectResource(targetWellLocation, -1);
             numCycles++;
             rc.setIndicatorString(state.toString() + " CYCLE " + numCycles + "/" + maxCollectionCycles);
