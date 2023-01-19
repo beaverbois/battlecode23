@@ -7,8 +7,8 @@ import static Sprint2.Util.locToInt;
 
 public class HQSync {
 
-    public static void writeHQLocation(RobotController rc, MapLocation location, int hqNum) throws GameActionException {
-        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+    public static void writeHQLocation(RobotController rc, MapLocation location, int hqID) throws GameActionException {
+        if (hqID < 0 || hqID > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
             throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
 
@@ -17,15 +17,15 @@ public class HQSync {
             return;
         }
 
-        rc.writeSharedArray(hqNum, Integer.parseInt("0" + locToInt(location)));
+        rc.writeSharedArray(hqID, Integer.parseInt("0" + locToInt(location)));
     }
 
-    public static MapLocation readHQLocation(RobotController rc, int hqNum) throws GameActionException {
-        if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
+    public static MapLocation readHQLocation(RobotController rc, int hqID) throws GameActionException {
+        if (hqID < 0 || hqID > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
             throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
 
-        return intToLoc(rc.readSharedArray(hqNum) % 10000);
+        return intToLoc(rc.readSharedArray(hqID) % 10000);
     }
 
     public static int readNumHQs(RobotController rc) throws GameActionException {

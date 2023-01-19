@@ -17,7 +17,7 @@ public class Headquarters {
 
     static boolean stateLock = false;
     static MapLocation hqLocation = null;
-    static int hqNum = 0;
+    static int hqID = 0;
     public static ResourceType carrierAssignment = null;
     static final double MANA_TARGET_RATE = 0.69; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
@@ -41,14 +41,14 @@ public class Headquarters {
             MAP_HEIGHT = rc.getMapHeight();
             hqLocation = rc.getLocation();
 
-            hqNum = readNumHQs(rc);
-            writeHQLocation(rc, hqLocation, hqNum);
-            System.out.println("Created HQ " + hqNum + " at " + readHQLocation(rc, hqNum));
+            hqID = readNumHQs(rc);
+            writeHQLocation(rc, hqLocation, hqID);
+            System.out.println("Created HQ " + hqID + " at " + readHQLocation(rc, hqID));
 
             // sense any nearby wells and write them, maximum of 2 assigned per hq
             WellInfo[] wells = rc.senseNearbyWells();
             for (int i = 0; i < Math.min(wells.length, 2); i++) {
-                writeWell(rc, wells[i].getResourceType(), wells[i].getMapLocation(), hqNum);
+                writeWell(rc, wells[i].getResourceType(), wells[i].getMapLocation(), hqID);
             }
 
             stateLock = true;
@@ -161,17 +161,17 @@ public class Headquarters {
             // Set the resource target of carrier spawns
             // TODO: HQ active count of number of carriers for each well, distributed with small multiplier for mana
             if (rng.nextDouble() > MANA_TARGET_RATE) {
-                writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqNum);
+                writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
                 carrierAssignment = ResourceType.ADAMANTIUM;
             } else {
-                writeCarrierAssignment(rc, ResourceType.MANA, hqNum);
+                writeCarrierAssignment(rc, ResourceType.MANA, hqID);
                 carrierAssignment = ResourceType.MANA;
             }
 
             System.out.println("Bytecode 11: " + Clock.getBytecodeNum());
 
             // If not all wells have been found, spawn scout carrier in random location
-            if (readNumWellsFound(rc, hqNum) < 2) {
+            if (readNumWellsFound(rc, hqID) < 2) {
                 // Create a list of random spawn locations sorted farthest from hq
                 MapLocation[] spawnLocations = farthestLocationsInActionRadius(rc, hqLocation, hqLocation);
                 //Huge bytecode cost. Also farthestLocationsInActionRadius returns everything, so this
