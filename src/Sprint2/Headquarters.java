@@ -26,6 +26,7 @@ public class Headquarters {
     static int MAP_HEIGHT;
     static int numAnchors = 0;
     static RobotType robotBuildType = null;
+    static double[] resourceGenDerivative = new double[2]; // track resource generation
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -46,7 +47,7 @@ public class Headquarters {
         //Make island carriers late-game.
         if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) rc.writeSharedArray(ISLAND_INDEX, 1);
         //In case we start losing, swap back.
-        else if(rc.readSharedArray(ISLAND_INDEX) == 1) rc.writeSharedArray(ISLAND_INDEX, 0);
+        else if (rc.readSharedArray(ISLAND_INDEX) == 1) rc.writeSharedArray(ISLAND_INDEX, 0);
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
@@ -90,7 +91,7 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if(rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8 && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8 && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor");
             return;

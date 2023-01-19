@@ -7,7 +7,7 @@ import battlecode.common.RobotController;
 import java.util.ArrayList;
 
 import static Sprint2.Launcher.oppHQStatus;
-import static Sprint2.Launcher.target;
+//import static Sprint2.Launcher.target;
 import static Sprint2.Util.*;
 
 public class RobotSync {
@@ -40,9 +40,9 @@ public class RobotSync {
             if (locToInt(knownOppHQ[i]) == 0) break;
             if (rc.readSharedArray(i + 4) / 10000 == 0) untakenHQ.add(knownOppHQ[i]);
         }
-        if(untakenHQ.size() != 0) {
+        if (untakenHQ.size() != 0) {
             MapLocation close = closest(rcLocation, untakenHQ.toArray(new MapLocation[0]));
-            if(distance(rcLocation, close) < maxSwarmDist) {
+            if (distance(rcLocation, close) < maxSwarmDist) {
                 return close;
             }
         }
@@ -50,17 +50,17 @@ public class RobotSync {
         return null;
     }
 
-    public static void reportHQ(RobotController rc, MapLocation[] oppHQ) throws GameActionException {
-        //Update shared array with enemy HQ and status updates on suppressed HQ.
-        for(int i = 0; i < oppHQ.length; i++) {
-            int read = rc.readSharedArray(4+i);
-            int hq = locToInt(oppHQ[i]);
-            if (hq != 0 && (read == 0 || (target != null && target.equals(oppHQ[i])))) {
-                if(target != null && target.equals(oppHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
-                else rc.writeSharedArray(4 + i, hq);
-            }
-        }
-    }
+//    public static void reportHQ(RobotController rc, MapLocation[] oppHQ) throws GameActionException {
+//        //Update shared array with enemy HQ and status updates on suppressed HQ.
+//        for (int i = 0; i < oppHQ.length; i++) {
+//            int read = rc.readSharedArray(4+i);
+//            int hq = locToInt(oppHQ[i]);
+//            if (hq != 0 && (read == 0 || (target != null && target.equals(oppHQ[i])))) {
+//                if (target != null && target.equals(oppHQ[i])) rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
+//                else rc.writeSharedArray(4 + i, hq);
+//            }
+//        }
+//    }
 
     public static void reportEnemy(RobotController rc, MapLocation enemyLoc) throws GameActionException {
         for (int i = enemyLocMin; i < enemyLocMax; i++) {
