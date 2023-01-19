@@ -153,7 +153,7 @@ public class Carrier {
             return;
         }
 
-        for (Direction dir : closestDirections(location, rcLocation, true)) {
+        for (Direction dir : closestDirections(rc, location, rcLocation)) {
             MapLocation closestSquare = location.add(dir);
             Direction closestSquareDir = rcLocation.directionTo(closestSquare);
 
@@ -177,7 +177,7 @@ public class Carrier {
         // robot has not moved, so move to a random square around us closest to well
         if (numMoves == 0) {
             rcLocation = rc.getLocation();
-            for (Direction dir : closestDirections(rcLocation, location)) {
+            for (Direction dir : closestDirections(rc, rcLocation, location)) {
                 if (rc.canMove(dir)) {
                     rc.move(dir);
                     rc.setIndicatorString(state.toString() + " TO " + rcLocation.add(dir) + " DESTINATION " + location);
@@ -189,7 +189,7 @@ public class Carrier {
         // check if we are adjacent to a well and change state accordingly
         if (checkWellAdjacencyAndCollect(rc)) {
             return;
-        };
+        }
 
         // move a second time if we can
         if (rc.isMovementReady()) {
@@ -216,7 +216,7 @@ public class Carrier {
                 rc.move(hqDirection);
             } else {
                 // if path towards hq is blocked, find another random direction
-                for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                for (Direction dir : closestDirections(rc, rcLocation, hqLocation)) {
                     if (rc.canMove(dir)) {
                         rc.move(dir);
                         break;
@@ -269,7 +269,7 @@ public class Carrier {
         } else {
             // if path is blocked, move to different square around hq
             int numMoves = 0;
-            for (Direction dir : closestDirections(hqLocation, rcLocation)) {
+            for (Direction dir : closestDirections(rc, hqLocation, rcLocation)) {
                 MapLocation closestSquare = hqLocation.add(dir);
                 Direction closestSquareDir = rcLocation.directionTo(closestSquare);
                 if (rc.canMove(closestSquareDir)) {
@@ -281,7 +281,7 @@ public class Carrier {
 
             // if we are still blocked, pick a random square around us to move to
             if (numMoves == 0 && rc.isMovementReady()) {
-                for (Direction dir : closestDirections(rcLocation, hqLocation)) {
+                for (Direction dir : closestDirections(rc, rcLocation, hqLocation)) {
                     if (rc.canMove(dir)) {
                         rc.move(dir);
                         break;
