@@ -70,7 +70,7 @@ public class Headquarters {
         }
         System.out.println("Bytecode 3: " + Clock.getBytecodeNum());
 
-        writeCarrierSpawnID(rc, previousCarrierID, hqNum);
+        writeCarrierSpawnID(rc, previousCarrierID, hqID);
         System.out.println("Bytecode 4: " + Clock.getBytecodeNum());
 
         // Spawn launchers towards any enemies in vision.
@@ -199,7 +199,7 @@ public class Headquarters {
 
             } else {
                 // Spawn as close to the well as possible
-                MapLocation wellLocation = readWellLocation(rc, carrierAssignment, hqNum);
+                MapLocation wellLocation = readWellLocation(rc, carrierAssignment, hqID);
                 System.out.println("Bytecode 16: " + Clock.getBytecodeNum());
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, wellLocation);
                 System.out.println("Bytecode 17: " + Clock.getBytecodeNum() + ", " + spawnLocations[0]);
