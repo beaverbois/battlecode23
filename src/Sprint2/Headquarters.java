@@ -168,6 +168,7 @@ public class Headquarters {
                 MapLocation[] farthestLayer = new MapLocation[12];
 
                 System.arraycopy(spawnLocations, 0, farthestLayer, 0, farthestLayer.length);
+
                 for (MapLocation loc : farthestLayer) {
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;

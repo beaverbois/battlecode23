@@ -43,6 +43,7 @@ public class Launcher {
     static int oppHQStatus = 0;
 
     static int targetEnemy = 0;
+    static boolean targetReported = false;
 
     static final int MIN_PACK_SIZE = 6, RETREAT = 3;
 
@@ -215,7 +216,7 @@ public class Launcher {
             }
             else if(allies.length > MIN_PACK_SIZE) {
                 lstate = LauncherState.PACK;
-                target = suspectedOppHQ[suspectCount];
+                chooseTarget(rc);
             }
 
             attack(rc);
@@ -242,7 +243,7 @@ public class Launcher {
             }
 
             if(reportingEnemy) {
-                reportEnemy(rc, intToLoc(targetEnemy));
+                reportEnemy(rc, intToLoc(targetEnemy), targetReported);
                 reportingEnemy = false;
             }
 
@@ -327,8 +328,8 @@ public class Launcher {
 
     private static void pack(RobotController rc) throws GameActionException {
         turnStart(rc);
+        chooseTarget(rc);
 
-        target = suspectedOppHQ[suspectCount];
         rc.setIndicatorString("Pack " + target);
 
         attack(rc);
@@ -338,9 +339,11 @@ public class Launcher {
         if(enemies.length == 0 && rc.canSenseLocation(target)) {
             System.out.println("Spotted empty, " + target);
             lstate = LauncherState.REPORTING;
-            reportingSuspect = true;
+            if(targetReported) reportingEnemy = true;
+            else reportingSuspect = true;
             return;
         }
+
 
 
         if(allies.length < RETREAT) {

@@ -15,8 +15,8 @@ import static Sprint2.Util.*;
 
 public class LauncherSync {
 
-    static int minReportDist = 3, maxSwarmDist = 20;
-    static int enemyLocMin = 32, enemyLocMax = 44, suspectedHQMin = 9, suspectedHQMax = 12;
+    static int minReportDist = 3;
+    static int enemyLocMin = 13, enemyLocMax = 23, suspectedHQMin = 9, suspectedHQMax = 12;
 
     static boolean foundHQ = false;
 
@@ -92,12 +92,27 @@ public class LauncherSync {
         }
     }
 
-    public static void reportEnemy(RobotController rc, MapLocation enemyLoc) throws GameActionException {
+    public static void reportEnemy(RobotController rc, MapLocation enemyLoc, boolean clear) throws GameActionException {
+        if(!rc.canWriteSharedArray(0, 0)) {
+            System.out.println("Trying to write when unable");
+            return;
+        }
+
         for (int i = enemyLocMin; i < enemyLocMax; i++) {
             int read = rc.readSharedArray(i);
             int dist = distance(enemyLoc, intToLoc(read));
             if (dist < minReportDist) {
+                if(clear) return;
                 rc.writeSharedArray(i, 0);
+            }
+        }
+
+        if(clear) return;
+
+        for (int i = enemyLocMin; i < enemyLocMax; i++) {
+            int read = rc.readSharedArray(i);
+            if(read == 0) {
+                rc.writeSharedArray(i, locToInt(enemyLoc));
             }
         }
     }
@@ -193,5 +208,24 @@ public class LauncherSync {
             int write = read % div + read / (div * 100) + 2 * div;
             rc.writeSharedArray(suspectCount / 3 + suspectedHQMin, write);
         }
+    }
+
+    public static void chooseTarget(RobotController rc) throws GameActionException {
+        MapLocation pos = rc.getLocation();
+        double minDist = 100;
+        int index = 0;
+        for(int i = enemyLocMin; i < enemyLocMax; i++) {
+            int read = rc.readSharedArray(i);
+            double dist = dist(pos, intToLoc(read));
+            if(read != 0 && dist < minDist) {
+                minDist = dist;
+                index = i;
+            }
+        }
+
+        if(index == 0) target = suspectedOppHQ[suspectCount];
+        else target = intToLoc(rc.readSharedArray(index));
+
+        targetReported = (index != 0);
     }
 }
