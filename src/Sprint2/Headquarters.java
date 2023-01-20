@@ -9,6 +9,7 @@ import java.util.List;
 
 import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.*;
+import static Sprint2.LauncherSync.reportEnemy;
 import static Sprint2.RobotPlayer.rng;
 import static Sprint2.RobotSync.*;
 import static Sprint2.Util.*;
@@ -88,19 +89,7 @@ public class Headquarters {
             }
 
             //TODO: Move to LauncherSync
-            for (int j = 32; j < 44; j++) {
-                int read = rc.readSharedArray(j);
-                int dist = distance(enemy.location, intToLoc(read));
-                if (dist < 3) {
-                    return;
-                }
-            }
-            for (int j = 32; j < 44; j++) {
-                if (rc.readSharedArray(j) == 0) {
-                    rc.writeSharedArray(j, locToInt(enemy.location));
-                    return;
-                }
-            }
+            reportEnemy(rc, enemy.location, false);
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.

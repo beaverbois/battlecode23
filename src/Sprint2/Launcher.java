@@ -161,7 +161,7 @@ public class Launcher {
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
             if(!stuck) {
-                Direction[] close = closestDirections(rc, pos, gatherPoint);
+                Direction[] close = closeDirections(rc, pos, gatherPoint);
                 boolean testStuck = true;
                 for (int i = 0; i < 3; i++) {
                     if (rc.canMove(close[i])) {
@@ -194,7 +194,7 @@ public class Launcher {
                     pastWall = null;
                     moveTowards(rc, gatherPoint);
                 } else if(!rc.canMove(pastWall)) {
-                    Direction[] close = closestDirections(rc, pos, gatherPoint);
+                    Direction[] close = closeDirections(rc, pos, gatherPoint);
                     for(int i = 0; i < close.length; i++) {
                         if(distance(pos.add(close[i]), pos.add(pastWall)) > 1) continue;
                         if(rc.canMove(close[i])) {

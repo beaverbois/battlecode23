@@ -6,6 +6,7 @@ import java.util.*;
 
 import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.readHQLocation;
+import static Sprint2.LauncherSync.reportEnemy;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.Util.*;
 
@@ -55,7 +56,7 @@ public class Carrier {
 //            }
         }
 
-//        senseEnemies(rc);
+        senseEnemies(rc);
 
         switch (state) {
             case SCOUTING:
@@ -256,7 +257,7 @@ public class Carrier {
         numMoves = 0;
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
 
-//        if (reportingEnemy) report(rc);
+        if (reportingEnemy && rc.canWriteSharedArray(0, 0)) reportEnemy(rc, Launcher.target, false);
 
         rcLocation = rc.getLocation();
         if (checkIfBlocked(rc, hqLocation)) {
@@ -334,33 +335,19 @@ public class Carrier {
 //        }
 //    }
 
-//    private static void senseEnemies(RobotController rc) throws GameActionException {
-//        // If a headquarters is detected, report it back to HQ
-//        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-//        for (RobotInfo enemy : enemies) {
-//            if (enemy.getType() == RobotType.HEADQUARTERS) {
-//                int pos = locToInt(enemy.getLocation());
-//                int numHQ = hqList.length;
-//                for (int i = 0; i < numHQ; i++) {
-//                    int val = locToInt(allOpposingHQ[i]);
-//                    if (val == pos) {
-//                        break;
-//                    } else if (val == 0) {
-//                        allOpposingHQ[i] = intToLoc(pos);
-//                        state = CarrierState.RETURNING;
-//                        reportingEnemy = true;
-//                        return;
-//                    }
-//                }
-//            } else if (enemy.getType() == RobotType.LAUNCHER || enemy.getType() == RobotType.DESTABILIZER) {
-//                //If a fighting enemy is detected, report it back to HQ
-//                enemyLoc = enemy.getLocation();
-//                state = CarrierState.RETURNING;
-//                reportingEnemy = true;
-//                return;
-//            }
-//        }
-//    }
+    private static void senseEnemies(RobotController rc) throws GameActionException {
+        // If a headquarters is detected, report it back to HQ
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        for (RobotInfo enemy : enemies) {
+            if (enemy.getType() == RobotType.LAUNCHER || enemy.getType() == RobotType.DESTABILIZER) {
+                //If a fighting enemy is detected, report it back to HQ
+                Launcher.target = enemy.getLocation();
+                state = CarrierState.RETURNING;
+                reportingEnemy = true;
+                return;
+            }
+        }
+    }
 
 //    private static void reportEnemy(RobotController rc) throws GameActionException {
 //        for (int i = 0; i < hqList.length; i++) {

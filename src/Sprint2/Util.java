@@ -96,6 +96,36 @@ public class Util {
          return openDirections.toArray(new Direction[0]);
     }
 
+    public static Direction[] closeDirections(RobotController rc, MapLocation from, MapLocation to) {
+        double[] close = new double[directions.length];
+        for (int i = 0; i < directions.length; i++) {
+            double rand = rng.nextDouble();
+            double distance = dist((from.add(directions[i])), to) + rand;
+            close[i] = distance + (i * 100);
+        }
+
+        //Sort the array
+        for (int i = 1; i < directions.length; i++) {
+            for (int j = i; j > 0; j--) {
+                if (close[j] % 100 < close[j - 1] % 100) {
+                    double temp = close[j - 1];
+                    close[j - 1] = close[j];
+                    close[j] = temp;
+                } else break;
+            }
+        }
+
+        //Add to directions array
+        Direction[] dir = new Direction[directions.length];
+
+        for (int i = 0; i < directions.length; i++) {
+            dir[i] = directions[(int) (close[i] / 100)];
+        }
+
+        return dir;
+    }
+
+
     // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
     public static Direction[] farthestDirections(MapLocation from, MapLocation to) {
         double[] close = new double[directions.length];

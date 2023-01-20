@@ -63,15 +63,16 @@ public class RobotSync {
 //        }
 //    }
 
-    public static void reportEnemy(RobotController rc, MapLocation enemyLoc) throws GameActionException {
-        for (int i = enemyLocMin; i < enemyLocMax; i++) {
-            int read = rc.readSharedArray(i);
-            int dist = distance(enemyLoc, intToLoc(read));
-            if (dist < minReportDist) {
-                rc.writeSharedArray(i, 0);
-            }
-        }
-    }
+    //Using the version in LauncherSync
+//    public static void reportEnemy(RobotController rc, MapLocation enemyLoc) throws GameActionException {
+//        for (int i = enemyLocMin; i < enemyLocMax; i++) {
+//            int read = rc.readSharedArray(i);
+//            int dist = distance(enemyLoc, intToLoc(read));
+//            if (dist < minReportDist) {
+//                rc.writeSharedArray(i, 0);
+//            }
+//        }
+//    }
 
     // TODO: eventually remove external writes
     public static void writeIsland(RobotController rc, int value) throws GameActionException {
