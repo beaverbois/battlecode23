@@ -68,20 +68,7 @@ public class Launcher {
 
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
-            int numHQ = readNumHQs(rc);
-
-            allHQ = new MapLocation[numHQ];
-            allOpposingHQ = new MapLocation[numHQ];
-
-            for (int i = 0; i < allHQ.length; i++) {
-                allHQ[i] = readHQLocation(rc, i);
-                allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
-            }
-
-            headquarters = closest(rc.getLocation(), allHQ);
-            corner = headquarters;
-            setSuspected(rc); //Needed to report enemy HQ
-
+            setup(rc);
             stateLock = true;
         }
 

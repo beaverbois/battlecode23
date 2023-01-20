@@ -8,6 +8,8 @@ import battlecode.common.RobotController;
 import java.util.ArrayList;
 
 import static Sprint2.CarrierSync.*;
+import static Sprint2.HQSync.readHQLocation;
+import static Sprint2.HQSync.readNumHQs;
 import static Sprint2.Launcher.*;
 import static Sprint2.Launcher.allOpposingHQ;
 import static Sprint2.RobotPlayer.*;
@@ -19,6 +21,22 @@ public class LauncherSync {
     static int enemyLocMin = 13, enemyLocMax = 23, suspectedHQMin = 9, suspectedHQMax = 12;
 
     static boolean foundHQ = false;
+
+    public static void setup(RobotController rc) throws GameActionException {
+        int numHQ = readNumHQs(rc);
+
+        allHQ = new MapLocation[numHQ];
+        allOpposingHQ = new MapLocation[numHQ];
+
+        for (int i = 0; i < allHQ.length; i++) {
+            allHQ[i] = readHQLocation(rc, i);
+            allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
+        }
+
+        headquarters = closest(rc.getLocation(), allHQ);
+        corner = headquarters;
+        setSuspected(rc); //Needed to report enemy HQ
+    }
 
     public static void readOppHeadquarters(RobotController rc) throws GameActionException {
         int count = 0;
