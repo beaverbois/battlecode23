@@ -243,7 +243,7 @@ public class Launcher {
             }
 
             if(reportingEnemy) {
-                reportEnemy(rc, intToLoc(targetEnemy), targetReported);
+                reportEnemy(rc, target, targetReported);
                 reportingEnemy = false;
             }
 

@@ -102,7 +102,7 @@ public class LauncherSync {
             int read = rc.readSharedArray(i);
             int dist = distance(enemyLoc, intToLoc(read));
             if (dist < minReportDist) {
-                if(clear) return;
+                if(!clear) return;
                 rc.writeSharedArray(i, 0);
             }
         }
