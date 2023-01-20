@@ -336,7 +336,7 @@ public class Launcher {
 
         scout(rc);
         if(lstate == LauncherState.REPORTING) return;
-        if(enemies.length == 0 && rc.canSenseLocation(target)) {
+        if(enemies.length == 0 && distance(pos, target) < 3) {
             System.out.println("Spotted empty, " + target);
             lstate = LauncherState.REPORTING;
             if(targetReported) reportingEnemy = true;
