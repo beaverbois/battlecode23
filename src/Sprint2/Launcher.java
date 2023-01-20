@@ -42,7 +42,7 @@ public class Launcher {
     static MapLocation target;
     static int oppHQStatus = 0;
 
-    static int targetEnemy = 0;
+    static boolean withinOppHQRange = false;
     static boolean targetReported = false;
 
     static final int MIN_PACK_SIZE = 6, RETREAT = 3;
@@ -66,6 +66,9 @@ public class Launcher {
     static Direction pastWall;
     static boolean stuck = false;
 
+    static ArrayList<MapLocation> lastPos = new ArrayList<>();
+    static int lastPosSize = 5;
+
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
             setup(rc);
@@ -81,6 +84,9 @@ public class Launcher {
             case SUPPRESSING: suppressing(rc); break;
             case PACK: pack(rc); break;
         }
+
+        lastPos.add(pos);
+        if(lastPos.size() > lastPosSize) lastPos.remove(0);
     }
 
     private static void turnStart(RobotController rc) throws GameActionException {
@@ -114,6 +120,8 @@ public class Launcher {
         enemies = enemiesL.toArray(enemies);
 
         if (packStatus == null) packStatus = allies;
+
+        scout(rc);
     }
 
     private static void gathering(RobotController rc) throws GameActionException {
@@ -121,7 +129,6 @@ public class Launcher {
 
         attack(rc);
 
-        scout(rc);
         if (lstate == LauncherState.REPORTING) return;
 
         if (rc.isMovementReady()) {
@@ -148,18 +155,32 @@ public class Launcher {
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
             if(!stuck) {
-                Direction[] close = closeDirections(rc, pos, gatherPoint);
                 boolean testStuck = true;
-                for (int i = 0; i < 3; i++) {
-                    if (rc.canMove(close[i])) {
-                        testStuck = false;
-                        break;
+                if(lastPos.size() >= lastPosSize) {
+                    double avrX = 0, avrY = 0;
+                    for(MapLocation loc : lastPos) {
+                        avrX += loc.x;
+                        avrY += loc.y;
+                    }
+                    avrX /= lastPos.size();
+                    avrY /= lastPos.size();
+
+                    if(Math.abs(avrX - pos.x) >= 2 || Math.abs(avrY - pos.y) >= 2) testStuck = false;
+                }
+                Direction[] close = closeDirections(rc, pos, gatherPoint);
+                if(!testStuck) {
+                    testStuck = true;
+                    for (int i = 0; i < 2; i++) {
+                        if (rc.canMove(close[i])) {
+                            testStuck = false;
+                            break;
+                        }
                     }
                 }
                 stuck = testStuck;
                 if(stuck) {
                     for (int i = 3; i < close.length; i++) {
-                        if (close[i] != Direction.CENTER && rc.canMove(close[i])) {
+                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
                             pastWall = close[i];
                             break;
                         }
@@ -176,28 +197,30 @@ public class Launcher {
 
             //Choose a direction and stick to it.
             if(distance(pos, gatherPoint) > 1 && stuck) {
+                rc.setIndicatorString("Stuck, " + gatherPoint + ", " + pastWall);
                 if(rc.canMove(pos.directionTo(gatherPoint))) {
                     stuck = false;
                     pastWall = null;
                     moveTowards(rc, gatherPoint);
-                } else if(!rc.canMove(pastWall)) {
+                } else if(pastWall == null);
+                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
                     Direction[] close = closeDirections(rc, pos, gatherPoint);
                     for(int i = 0; i < close.length; i++) {
-                        if(distance(pos.add(close[i]), pos.add(pastWall)) > 1) continue;
+                        if(close[i].opposite() == pastWall) continue;
                         if(rc.canMove(close[i])) {
                             pastWall = close[i];
                             rc.move(pastWall);
                         }
                     }
                     //Shouldn't ever get past the last case.
-                } else if(rc.canMove(pastWall)) rc.move(pastWall);
+                } else moveTowards(rc, pos.add(pastWall));
             }
 
             else if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
 
             MapLocation[] t = closestTargetHQ(rc);
 
-            if(t != null && allies.length > MIN_PACK_SIZE) {
+            if(t != null && (allies.length > MIN_PACK_SIZE || withinOppHQRange)) {
                 lstate = LauncherState.SWARMING;
                 target = t[0];
             }
@@ -255,7 +278,7 @@ public class Launcher {
 
         attack(rc);
 
-        if(allies.length < RETREAT) {
+        if(allies.length < RETREAT && !withinOppHQRange) {
             lstate = LauncherState.GATHERING;
             return;
         }
@@ -321,7 +344,6 @@ public class Launcher {
 
         attack(rc);
 
-        scout(rc);
         if(lstate == LauncherState.REPORTING) return;
         if(enemies.length == 0 && distance(pos, target) < 3) {
             System.out.println("Spotted empty, " + target);
@@ -365,6 +387,7 @@ public class Launcher {
 
         for (RobotInfo enemy : enemies) {
             if (enemy.getType() == RobotType.HEADQUARTERS) {
+                withinOppHQRange = true;
                 int loc = locToInt(enemy.getLocation());
                 int numHQ = allHQ.length;
                 for (int i = 0; i < numHQ; i++) {
@@ -384,6 +407,8 @@ public class Launcher {
                 return;
             }
         }
+
+        withinOppHQRange = false;
     }
 
     // TODO: Migrate to new well system
@@ -455,7 +480,7 @@ public class Launcher {
             }
             if (rc.canSenseRobotAtLocation(targetLoc) && !rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.HEADQUARTERS) && rc.canAttack(targetLoc)) {
                 rc.attack(targetLoc);
-                if (rc.isMovementReady()) {
+                if (rc.isMovementReady() && rc.canSenseRobotAtLocation(targetLoc) && rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.LAUNCHER)) {
                     moveAway(rc, targetLoc);
                 }
             }

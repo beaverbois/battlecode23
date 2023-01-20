@@ -157,12 +157,12 @@ public class LauncherSync {
         //First, store each possible location.
         for(int i = 0; i < allHQ.length; i++) {
             int width = rc.getMapWidth() - 1, height = rc.getMapHeight() - 1;
-            //Rotated
-            suspectedOppHQ[3 * i] = new MapLocation(width - allHQ[i].x, height - allHQ[i].y);
+            //Reflected over y
+            suspectedOppHQ[3 * i] = new MapLocation(width - allHQ[i].x, allHQ[i].y);
             //Reflected over x
             suspectedOppHQ[3 * i + 1] = new MapLocation(allHQ[i].x, height - allHQ[i].y);
-            //Reflected over y
-            suspectedOppHQ[3 * i + 2] = new MapLocation(width - allHQ[i].x, allHQ[i].y);
+            //Rotated
+            suspectedOppHQ[3 * i + 2] = new MapLocation(width - allHQ[i].x, height - allHQ[i].y);
         }
 
         //Now, replace any confirmed location with [120, 120], as they will never be pathed to.
