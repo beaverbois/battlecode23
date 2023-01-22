@@ -154,7 +154,10 @@ public class Headquarters {
                 //this is ONLY called when there is plenty of space.
                 //List<MapLocation> randomSpawnLocations = Arrays.asList(spawnLocations);
                 //Collections.shuffle(randomSpawnLocations);
-                MapLocation[] farthestLayer = new MapLocation[12];
+                int numFar = 12, posX = rc.getLocation().x, posY = rc.getLocation().y;
+                if(posX == 0 || posX == rc.getMapWidth() - 1) numFar = numFar / 2 + 1;
+                if(posY == 0 || posY == rc.getMapHeight() - 1) numFar = numFar / 2 + 1;
+                MapLocation[] farthestLayer = new MapLocation[numFar];
 
                 System.arraycopy(spawnLocations, 0, farthestLayer, 0, farthestLayer.length);
 

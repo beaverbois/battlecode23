@@ -45,7 +45,7 @@ public class Launcher {
     static boolean withinOppHQRange = false;
     static boolean targetReported = false;
 
-    static final int MIN_PACK_SIZE = 6, RETREAT = 3;
+    static final int MIN_PACK_SIZE = 5, RETREAT = 3;
 
     //Wells
     static boolean reportingWell = false, reportingEnemy = false, reportingHQ = false, reportingSuspect = false;
@@ -217,22 +217,22 @@ public class Launcher {
             }
 
             else if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
-
-            MapLocation[] t = closestTargetHQ(rc);
-
-            if(t != null && (allies.length > MIN_PACK_SIZE || withinOppHQRange)) {
-                lstate = LauncherState.SWARMING;
-                target = t[0];
-            }
-            else if(allies.length > MIN_PACK_SIZE) {
-                lstate = LauncherState.PACK;
-                chooseTarget(rc);
-            }
-
-            attack(rc);
-
-            packStatus = allies;
         }
+
+        MapLocation[] t = closestTargetHQ(rc);
+
+        if(t != null && (allies.length > MIN_PACK_SIZE || withinOppHQRange)) {
+            lstate = LauncherState.SWARMING;
+            target = t[0];
+        }
+        else if(allies.length > MIN_PACK_SIZE) {
+            lstate = LauncherState.PACK;
+            chooseTarget(rc);
+        }
+
+        attack(rc);
+
+        packStatus = allies;
     }
 
     private static void reporting(RobotController rc) throws GameActionException {
@@ -285,7 +285,6 @@ public class Launcher {
 
         int avrX = pos.x, avrY = pos.y, suppressiveForce = 6;
 
-        //TODO: Implement moving towards injured allies (aka health decreased since last turn).
         for(RobotInfo ally : allies) {
             avrX += ally.getLocation().x;
             avrY += ally.getLocation().y;
@@ -293,9 +292,75 @@ public class Launcher {
 
         MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
 
+        if (rc.isMovementReady() && distance(pos, target) < distance(avrPos, target) + 3) {
+            if(!stuck) {
+                boolean testStuck = true;
+                if(lastPos.size() >= lastPosSize) {
+                    double sumX = 0, sumY = 0;
+                    for(MapLocation loc : lastPos) {
+                        sumX += loc.x;
+                        sumY += loc.y;
+                    }
+                    sumX /= lastPos.size();
+                    sumY /= lastPos.size();
+
+                    if(Math.abs(sumX - pos.x) >= 2 || Math.abs(sumY - pos.y) >= 2) testStuck = false;
+                }
+                Direction[] close = closeDirections(rc, pos, target);
+                if(!testStuck) {
+                    testStuck = true;
+                    for (int i = 0; i < 2; i++) {
+                        if (rc.canMove(close[i])) {
+                            testStuck = false;
+                            break;
+                        }
+                    }
+                }
+                stuck = testStuck;
+                if(stuck) {
+                    for (int i = 3; i < close.length; i++) {
+                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
+                            pastWall = close[i];
+                            break;
+                        }
+                    }
+                    if (pastWall == null) {
+                        //Literally no possible moves, just chill.
+                        stuck = false;
+                        attack(rc);
+                        packStatus = allies;
+                        return;
+                    }
+                }
+            }
+
+            //Choose a direction and stick to it.
+            if(distance(pos, target) > 1 && stuck) {
+                rc.setIndicatorString("Stuck, " + target + ", " + pastWall);
+                if(rc.canMove(pos.directionTo(target))) {
+                    stuck = false;
+                    pastWall = null;
+                    moveTowards(rc, target);
+                } else if(pastWall == null);
+                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
+                    Direction[] close = closeDirections(rc, pos, target);
+                    for(int i = 0; i < close.length; i++) {
+                        if(close[i].opposite() == pastWall) continue;
+                        if(rc.canMove(close[i])) {
+                            pastWall = close[i];
+                            rc.move(pastWall);
+                        }
+                    }
+                    //Shouldn't ever get past the last case.
+                } else moveTowards(rc, pos.add(pastWall));
+            }
+
+            else if (distance(pos, target) > 0) moveTowards(rc, target);
+        }
+
         //If too far ahead, don't move.
-        if(distance(pos, target) > distance(avrPos, target) + 2);
-            //If far from pack, move towards them.
+        if(distance(pos, target) > distance(avrPos, target) + 3);
+        //If far from pack, move towards them.
         else if(distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
         else moveTowards(rc, target);
 
@@ -321,7 +386,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if (rc.isMovementReady() && dist(pos, target) > 4) moveTowards(rc, target);
+        else if (rc.isMovementReady() && dist(pos, target) > 4.5) moveTowards(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -338,13 +403,14 @@ public class Launcher {
 
     private static void pack(RobotController rc) throws GameActionException {
         turnStart(rc);
+        if(lstate == LauncherState.REPORTING) return;
+
         chooseTarget(rc);
 
         rc.setIndicatorString("Pack " + target);
 
         attack(rc);
 
-        if(lstate == LauncherState.REPORTING) return;
         if(enemies.length == 0 && distance(pos, target) < 3) {
             System.out.println("Spotted empty, " + target);
             lstate = LauncherState.REPORTING;
@@ -352,8 +418,6 @@ public class Launcher {
             else reportingSuspect = true;
             return;
         }
-
-
 
         if(allies.length < RETREAT) {
             lstate = LauncherState.GATHERING;
@@ -370,11 +434,11 @@ public class Launcher {
 
         MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
 
-        //If too far ahead, don't move.
-        if (distance(pos, target) > distance(avrPos, target) + 2);
         //If far from pack, move towards them.
-        else if (distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
+        if (distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
         else moveTowards(rc, target);
+
+        if(distance(pos, target) < 3 && withinOppHQRange) lstate = LauncherState.SUPPRESSING;
 
         //If within vision distance of target and there are no enemies, swap target.
         packStatus = allies;

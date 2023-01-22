@@ -241,8 +241,9 @@ public class LauncherSync {
             }
         }
 
-        if(index == 0) target = suspectedOppHQ[suspectCount];
-        else target = intToLoc(rc.readSharedArray(index));
+        if(index == 0 && !foundHQ) target = suspectedOppHQ[suspectCount];
+        else if(index != 0) target = intToLoc(rc.readSharedArray(index));
+        else target = allOpposingHQ[rng.nextInt(allOpposingHQ.length)];
 
         targetReported = (index != 0);
     }
