@@ -24,6 +24,7 @@ public class Headquarters {
     static final double MANA_TARGET_RATE = 0.69; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
+    static final double MAX_ROBOTS_BEFORE_ISLANDS = 0.1; // ratio of map size before we stop producing non-islands robots.
     static final double MIN_ROBOTS_FOR_ANCHOR = 40; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
     static int MAP_WIDTH;
@@ -62,7 +63,7 @@ public class Headquarters {
 
         // TODO: Merge to CarrierSync
         //Make island carriers late-game.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH / 8) writeIsland(rc, 1);
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS_BEFORE_ISLANDS) writeIsland(rc, 1);
         //In case we start losing, swap back.
         else if (readIsland(rc) == 1) writeIsland(rc, 0);
 
@@ -98,7 +99,7 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * (MAX_ROBOTS - 0.1) && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
+        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS_BEFORE_ISLANDS && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor");
             return;
