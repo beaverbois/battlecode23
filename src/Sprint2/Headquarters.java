@@ -37,11 +37,18 @@ public class Headquarters {
     static int numAdReturns = 0; //Total number of carriers tracked as returning from farming.
     static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
     static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
+<<<<<<< HEAD
     static double mnAvgFarmTime = 0;
     static int numMnReturns = 0; //Total number of carriers tracked as returning from farming.
     static final int MAX_AD_CARRIERS = 12; // per well
     static final int MAX_MN_CARRIERS = 16; // per well
     static final double EXPIRED_CARRIER_TOLERNACE = 1.8; // multiplied by avg farm time to determine if carrier is expired
+=======
+    static int mnAvgFarmTime = 0;
+    static final int MAX_AD_CARRIERS = 9; // per well
+    static final int MAX_MN_CARRIERS = 11; // per well
+    static final double EXPIRED_CARRIER_TOLERNACE = 1.6; // multiplied by avg farm time to determine if carrier is expired
+>>>>>>> main
     static boolean carrierCapacityReached = false;
 
     static void run(RobotController rc) throws GameActionException {
