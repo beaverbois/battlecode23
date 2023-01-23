@@ -21,7 +21,7 @@ public class Headquarters {
     static final double MANA_TARGET_RATE = 0.72; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
-    static final double MAX_ROBOTS_BEFORE_ISLANDS = 0.1; // ratio of map size before we stop producing non-islands robots.
+    static final double MIN_ROBOTS_BEFORE_ISLANDS = 60; // # of robots before we save up for islands
     static final double MIN_ROBOTS_FOR_ANCHOR = 40; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
     static int MAP_WIDTH;
@@ -33,13 +33,15 @@ public class Headquarters {
     static double mnIncome;
     static ArrayList<Integer> adCarrierIDs = new ArrayList<>();
     static ArrayList<Integer> adCarriersLastSeen = new ArrayList<>();
-    static int adAvgFarmTime = 0;
+    static double adAvgFarmTime = 0;
+    static int numAdReturns = 0; //Total number of carriers tracked as returning from farming.
     static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
     static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
-    static int mnAvgFarmTime = 0;
-    static final int MAX_AD_CARRIERS = 11; // per well
-    static final int MAX_MN_CARRIERS = 13; // per well
-    static final double EXPIRED_CARRIER_TOLERNACE = 1.6; // multiplied by avg farm time to determine if carrier is expired
+    static double mnAvgFarmTime = 0;
+    static int numMnReturns = 0; //Total number of carriers tracked as returning from farming.
+    static final int MAX_AD_CARRIERS = 12; // per well
+    static final int MAX_MN_CARRIERS = 16; // per well
+    static final double EXPIRED_CARRIER_TOLERNACE = 1.8; // multiplied by avg farm time to determine if carrier is expired
     static boolean carrierCapacityReached = false;
 
     static void run(RobotController rc) throws GameActionException {
@@ -63,7 +65,7 @@ public class Headquarters {
         }
 
         //Make island carriers late-game.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS_BEFORE_ISLANDS) writeIsland(rc, 1);
+        if (rc.getRobotCount() > MIN_ROBOTS_BEFORE_ISLANDS) writeIsland(rc, 1);
             //In case we start losing, swap back.
         else if (readIsland(rc) == 1) writeIsland(rc, 0);
 
@@ -99,7 +101,7 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS_BEFORE_ISLANDS && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
+        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor");
             return;
@@ -140,6 +142,7 @@ public class Headquarters {
         if (robotBuildType != RobotType.CARRIER) {
             // Spawn limits for carriers
             RobotInfo[] nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
+            int mnCarrierCount = 0, adCarrierCount = 0;
             for (RobotInfo carrier : nearbyCarriers) {
                 if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
                     continue;
@@ -154,24 +157,14 @@ public class Headquarters {
                     }
 
                     // set only once
-                    if (mnAvgFarmTime == 0) {
-                        mnAvgFarmTime = (int) ((turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERNACE);
+                    int turn = turnCount - mnCarriersLastSeen.get(mnIndex);
+                    if(turn > 10) {
+                        numMnReturns++;
+                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERNACE;
+                        System.out.println("Avg: " + mnAvgFarmTime + ", " + mnAvgFarmTime / numMnReturns);
                     }
 
                     mnCarriersLastSeen.set(mnIndex, turnCount);
-
-                    //TODO: This really should be a map
-                    ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
-                    ArrayList<Integer> expiredCarrierTurns = new ArrayList<>();
-                    for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
-                        int val = mnCarriersLastSeen.get(i);
-                        if (val > mnAvgFarmTime) {
-                            expiredCarrierIDs.add(mnCarrierIDs.get(i));
-                            expiredCarrierTurns.add(val);
-                        }
-                    }
-                    mnCarrierIDs.remove(expiredCarrierIDs);
-                    mnCarriersLastSeen.remove(expiredCarrierTurns);
 
                 } else if (adIndex != -1) {
                     if (rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
@@ -179,25 +172,46 @@ public class Headquarters {
                     }
 
                     // set only once
-                    if (adAvgFarmTime == 0) {
-                        adAvgFarmTime = (int) ((turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERNACE);
+                    int turn = turnCount - adCarriersLastSeen.get(adIndex);
+                    if(turn > 10) {
+                        numAdReturns++;
+                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERNACE;
+                        System.out.println("Avg: " + adAvgFarmTime + ", " + adAvgFarmTime / numAdReturns);
                     }
 
                     adCarriersLastSeen.set(adIndex, turnCount);
-
-                    //TODO: This really should be a map
-                    ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
-                    ArrayList<Integer> expiredCarrierTurns = new ArrayList<>();
-                    for (int i = 0; i < adCarriersLastSeen.size(); i++) {
-                        int val = adCarriersLastSeen.get(i);
-                        if (val > adAvgFarmTime) {
-                            expiredCarrierIDs.add(adCarrierIDs.get(i));
-                            expiredCarrierTurns.add(val);
-                        }
-                    }
-                    adCarrierIDs.remove(expiredCarrierIDs);
-                    adCarriersLastSeen.remove(expiredCarrierTurns);
                 }
+            }
+
+            double avgAdFarm = adAvgFarmTime / numAdReturns;
+            double avgMnFarm = mnAvgFarmTime / numMnReturns;
+
+            System.out.println("Farm: " + avgMnFarm + ", " + avgAdFarm);
+
+            //TODO: This really should be a map
+            ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
+            for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
+                int val = turnCount - mnCarriersLastSeen.get(i);
+                if ((mnAvgFarmTime != 0 && val > avgMnFarm) || val > 40) {
+                    expiredCarrierIDs.add(mnCarrierIDs.get(i));
+                }
+            }
+            for(Integer id : expiredCarrierIDs) {
+                mnCarriersLastSeen.remove(mnCarrierIDs.indexOf(id));
+                mnCarrierIDs.remove(id);
+            }
+
+            //TODO: This really should be a map
+            expiredCarrierIDs = new ArrayList<>();
+            for (int i = 0; i < adCarriersLastSeen.size(); i++) {
+                int val = turnCount - adCarriersLastSeen.get(i);
+                if ((adAvgFarmTime != 0 && val > avgAdFarm) || val > 40) {
+                    expiredCarrierIDs.add(adCarrierIDs.get(i));
+                }
+            }
+            for(Integer id : expiredCarrierIDs) {
+                adCarriersLastSeen.remove(adCarrierIDs.indexOf(id));
+                adCarrierIDs.remove(id);
             }
         }
     }
