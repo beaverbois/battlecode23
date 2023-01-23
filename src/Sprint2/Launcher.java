@@ -412,7 +412,6 @@ public class Launcher {
         attack(rc);
 
         if(enemies.length == 0 && distance(pos, target) < 3) {
-            System.out.println("Spotted empty, " + target);
             lstate = LauncherState.REPORTING;
             if(targetReported) reportingEnemy = true;
             else reportingSuspect = true;

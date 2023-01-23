@@ -60,6 +60,8 @@ public class Carrier {
 
         senseEnemies(rc);
 
+        rc.setIndicatorString(state.toString());
+
         switch (state) {
             case SCOUTING:
                 // if we have not discovered all wells, scout in a direction away from hq
@@ -146,6 +148,8 @@ public class Carrier {
     }
 
     private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
+        boolean moved = false;
+
         // check if we are already adjacent to a well or if we cannot move
         if (checkWellAdjacencyAndCollect(rc) || !rc.isMovementReady()) {
             return;
@@ -170,6 +174,7 @@ public class Carrier {
 
             if (rc.canMove(closestSquareDir)) {
                 rc.move(closestSquareDir);
+                moved = true;
                 rc.setIndicatorString(state.toString() + " TO " + closestSquare + " DESTINATION " + location);
                 numMoves++;
                 break;
@@ -186,6 +191,7 @@ public class Carrier {
             for (Direction dir : closestDirections(rc, rcLocation, location)) {
                 if (rc.canMove(dir)) {
                     rc.move(dir);
+                    moved = true;
                     rc.setIndicatorString(state.toString() + " TO " + rcLocation.add(dir) + " DESTINATION " + location);
                     break;
                 }
@@ -198,7 +204,7 @@ public class Carrier {
         }
 
         // move a second time if we can
-        if (rc.isMovementReady()) {
+        if (rc.isMovementReady() && moved) {
             moveTowards(rc, location);
         }
     }
@@ -238,6 +244,7 @@ public class Carrier {
 
     private static void returning(RobotController rc) throws GameActionException {
         if (reportingWell) {
+            rc.setIndicatorString("1");
             if (isWellDiscovered(rc, targetType, hqID)) {
                 targetWellLocation = readWellLocation(rc, targetType, hqID);
                 reportingWell = false;
@@ -317,10 +324,12 @@ public class Carrier {
             MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
             islandLocs.addAll(Arrays.asList(thisIslandLocs));
         }
-        if (rcLocation.isAdjacentTo(hqLocation) && rc.getAnchor() == null) {
+        if (rc.canSenseLocation(hqLocation) && rc.canTakeAnchor(hqLocation, Anchor.STANDARD) && rc.getAnchor() == null) {
             if (rc.canTakeAnchor(hqLocation, Anchor.STANDARD)) rc.takeAnchor(hqLocation, Anchor.STANDARD);
+            rc.setIndicatorString("Acquiring anchor");
         }
         if (islandLocs.size() > 0) {
+            rc.setIndicatorString("Moving to island");
             int index = 0;
             MapLocation islandLocation = islandLocs.iterator().next();
             if (rc.getAnchor() == null) {
@@ -336,7 +345,8 @@ public class Carrier {
             }
 
         } else if (rc.isMovementReady()) {
-            moveAway(rc, corner);
+            rc.setIndicatorString("Moving to center");
+            Util.moveTowards(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
         }
     }
 
@@ -455,13 +465,14 @@ public class Carrier {
     private static boolean checkHQAdjacencyAndTransfer(RobotController rc) throws GameActionException{
         rcLocation = rc.getLocation();
         if (rcLocation.isAdjacentTo(hqLocation)) {
-            if (rc.canTransferResource(hqLocation, targetType, rc.getResourceAmount(targetType))) {
+            if (rc.canTransferResource(hqLocation, targetType, 1)) {
                 rc.transferResource(hqLocation, targetType, rc.getResourceAmount(targetType));
+            }
 
-                if (!reportingWell) {
-                    state = CarrierState.MOVING;
-                    moveTowards(rc, targetWellLocation);
-                }
+            if (!reportingWell) {
+                state = CarrierState.MOVING;
+                if(targetWellLocation == null) targetWellLocation = readWellLocation(rc, targetType, hqID);
+                moveTowards(rc, targetWellLocation);
             }
 
             return true;
