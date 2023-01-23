@@ -18,7 +18,7 @@ public class Headquarters {
     static MapLocation hqLocation = null;
     static int hqID = 0;
     public static ResourceType carrierAssignment = null;
-    static final double MANA_TARGET_RATE = 0.69; // between 0 - 1
+    static final double MANA_TARGET_RATE = 0.72; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static final double MAX_ROBOTS_BEFORE_ISLANDS = 0.1; // ratio of map size before we stop producing non-islands robots.
@@ -37,8 +37,8 @@ public class Headquarters {
     static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
     static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
     static int mnAvgFarmTime = 0;
-    static final int MAX_AD_CARRIERS = 9; // per well
-    static final int MAX_MN_CARRIERS = 9; // per well
+    static final int MAX_AD_CARRIERS = 11; // per well
+    static final int MAX_MN_CARRIERS = 13; // per well
     static final double EXPIRED_CARRIER_TOLERNACE = 1.6; // multiplied by avg farm time to determine if carrier is expired
     static boolean carrierCapacityReached = false;
 
@@ -136,12 +136,12 @@ public class Headquarters {
             rc.setIndicatorString("Max robots reached");
         }
 
-        rc.setIndicatorString(mnCarrierIDs.toString());
+        rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
         if (robotBuildType != RobotType.CARRIER) {
             // Spawn limits for carriers
             RobotInfo[] nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
             for (RobotInfo carrier : nearbyCarriers) {
-                if (carrier.getType() != RobotType.CARRIER || carrier.getID() == previousCarrierID) {
+                if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
                     continue;
                 }
 
@@ -208,9 +208,11 @@ public class Headquarters {
             if (adCarrierIDs.size() < MAX_AD_CARRIERS && rng.nextDouble() > MANA_TARGET_RATE) {
                 writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
                 carrierAssignment = ResourceType.ADAMANTIUM;
-            } else {
+            } else if (mnCarrierIDs.size() < MAX_MN_CARRIERS){
                 writeCarrierAssignment(rc, ResourceType.MANA, hqID);
                 carrierAssignment = ResourceType.MANA;
+            } else {
+                return;
             }
 
             // If not all wells have been found, spawn scout carrier in random location
