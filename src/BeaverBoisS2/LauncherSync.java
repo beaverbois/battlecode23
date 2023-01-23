@@ -1,19 +1,15 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
-import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 
-import java.util.ArrayList;
-
-import static Sprint2.CarrierSync.*;
-import static Sprint2.HQSync.readHQLocation;
-import static Sprint2.HQSync.readNumHQs;
-import static Sprint2.Launcher.*;
-import static Sprint2.Launcher.allOpposingHQ;
-import static Sprint2.RobotPlayer.*;
-import static Sprint2.Util.*;
+import static BeaverBoisS2.HQSync.readHQLocation;
+import static BeaverBoisS2.HQSync.readNumHQs;
+import static BeaverBoisS2.Launcher.*;
+import static BeaverBoisS2.Launcher.allOpposingHQ;
+import static BeaverBoisS2.RobotPlayer.*;
+import static BeaverBoisS2.Util.*;
 
 public class LauncherSync {
 

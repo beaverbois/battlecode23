@@ -1,17 +1,12 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.*;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-import static Sprint2.CarrierSync.*;
-import static Sprint2.HQSync.readHQLocation;
-import static Sprint2.HQSync.readNumHQs;
-import static Sprint2.LauncherSync.*;
-import static Sprint2.RobotPlayer.*;
-import static Sprint2.Util.*;
+import static BeaverBoisS2.LauncherSync.*;
+import static BeaverBoisS2.Util.*;
 
 public class Launcher {
 

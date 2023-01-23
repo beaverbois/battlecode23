@@ -1,11 +1,8 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.*;
 
 import java.util.Random;
-
-import static Sprint2.LauncherSync.setSuspected;
-import static Sprint2.Util.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.

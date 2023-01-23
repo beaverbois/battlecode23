@@ -1,11 +1,11 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-import static Sprint2.RobotPlayer.rng;
-import static Sprint2.RobotPlayer.directions;
+import static BeaverBoisS2.RobotPlayer.rng;
+import static BeaverBoisS2.RobotPlayer.directions;
 
 /**
  * Public utility class

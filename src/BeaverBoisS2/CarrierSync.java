@@ -1,11 +1,9 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.*;
 
-import javax.annotation.Resource;
-
-import static Sprint2.Util.intToLoc;
-import static Sprint2.Util.locToInt;
+import static BeaverBoisS2.Util.intToLoc;
+import static BeaverBoisS2.Util.locToInt;
 
 public class CarrierSync {
     private static final int WELL_MIN_INDEX = 56;

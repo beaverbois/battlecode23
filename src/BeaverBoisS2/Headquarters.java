@@ -1,16 +1,16 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.*;
 
 import java.util.ArrayList;
 
-import static Sprint2.CarrierSync.*;
-import static Sprint2.HQSync.*;
-import static Sprint2.LauncherSync.reportEnemy;
-import static Sprint2.RobotPlayer.rng;
-import static Sprint2.RobotPlayer.turnCount;
-import static Sprint2.RobotSync.*;
-import static Sprint2.Util.*;
+import static BeaverBoisS2.CarrierSync.*;
+import static BeaverBoisS2.HQSync.*;
+import static BeaverBoisS2.LauncherSync.reportEnemy;
+import static BeaverBoisS2.RobotPlayer.rng;
+import static BeaverBoisS2.RobotPlayer.turnCount;
+import static BeaverBoisS2.RobotSync.*;
+import static BeaverBoisS2.Util.*;
 
 public class Headquarters {
 

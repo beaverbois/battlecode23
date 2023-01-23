@@ -1,5 +1,5 @@
 
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.RobotController;
 

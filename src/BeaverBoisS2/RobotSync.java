@@ -1,14 +1,10 @@
-package Sprint2;
+package BeaverBoisS2;
 
 import battlecode.common.GameActionException;
-import battlecode.common.GameConstants;
-import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-import java.util.ArrayList;
-
 //import static Sprint2.Launcher.target;
-import static Sprint2.Util.*;
+
 
 public class RobotSync {
 
