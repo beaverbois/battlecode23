@@ -314,6 +314,7 @@ public class Carrier {
         //Camp on an island to destroy anchors or protect yours.
         if (rc.getAnchor() == null && rc.senseIsland(rcLocation) != -1) {
             //System.out.println("Camping");
+            rc.disintegrate();
             return;
         }
 
