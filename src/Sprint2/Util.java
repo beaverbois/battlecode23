@@ -1,7 +1,6 @@
 package Sprint2;
 
 import battlecode.common.*;
-import javafx.util.Pair;
 
 import java.util.*;
 
@@ -69,6 +68,7 @@ public class Util {
     public static Direction[] closestDirections(RobotController rc, MapLocation from, MapLocation to) {
         ArrayList<Direction> openDirections = new ArrayList<>();
         Direction closest = from.directionTo(to);
+        //TODO: Implementation of this don't need to check rc.canMove()
         if (rc.canMove(closest)) {
             openDirections.add(closest);
         }
@@ -92,7 +92,6 @@ public class Util {
          if (rc.canMove(nextDir)) {
              openDirections.add(nextDir);
          }
-
          return openDirections.toArray(new Direction[0]);
     }
 

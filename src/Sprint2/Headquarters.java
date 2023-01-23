@@ -11,6 +11,7 @@ import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.*;
 import static Sprint2.LauncherSync.reportEnemy;
 import static Sprint2.RobotPlayer.rng;
+import static Sprint2.RobotPlayer.turnCount;
 import static Sprint2.RobotSync.*;
 import static Sprint2.Util.*;
 
@@ -32,8 +33,12 @@ public class Headquarters {
     static int previousCarrierID = 0;
     static double adIncome;
     static double mnIncome;
-    ArrayList<Integer> Well0Robots = new ArrayList<>();
-    ArrayList<Integer> Well1Robots = new ArrayList<>();
+    static ArrayList<Integer> adBots = new ArrayList<>();
+    static ArrayList<Integer> adBotsLastSeen = new ArrayList<>();
+    static int adAvgFarmTime = 0;
+    static ArrayList<Integer> mnBots = new ArrayList<>();
+    static ArrayList<Integer> mnBotsLastSeen = new ArrayList<>();
+    static int mnAvgFarmTime = 0;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -165,9 +170,7 @@ public class Headquarters {
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
 
-                        rc.buildRobot(RobotType.CARRIER, loc);
-
-                        previousCarrierID = rc.senseRobotAtLocation(loc).getID();
+                        buildCarrier(rc, loc);
                         break;
                     }
                 }
@@ -181,9 +184,7 @@ public class Headquarters {
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
 
-                        rc.buildRobot(RobotType.CARRIER, loc);
-
-                        previousCarrierID = rc.senseRobotAtLocation(loc).getID();
+                        buildCarrier(rc, loc);
                         break;
                     }
                 }
@@ -203,6 +204,20 @@ public class Headquarters {
                     break;
                 }
             }
+        }
+    }
+
+    static void buildCarrier(RobotController rc, MapLocation loc) throws GameActionException {
+        rc.buildRobot(RobotType.CARRIER, loc);
+        int rcID = rc.senseRobotAtLocation(loc).getID();
+        previousCarrierID = rcID;
+
+        if (carrierAssignment == ResourceType.MANA) {
+            mnBots.add(rcID);
+            mnBotsLastSeen.add(turnCount);
+        } else {
+            adBots.add(rcID);
+            adBotsLastSeen.add(turnCount);
         }
     }
 }

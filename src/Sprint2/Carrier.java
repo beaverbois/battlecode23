@@ -8,6 +8,7 @@ import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.readHQLocation;
 import static Sprint2.LauncherSync.reportEnemy;
 import static Sprint2.RobotPlayer.*;
+import static Sprint2.RobotSync.readIsland;
 import static Sprint2.Util.*;
 
 public class Carrier {
@@ -37,7 +38,8 @@ public class Carrier {
     static Direction blockedTraverseDirection = null;
     static Direction blockedTargetDirection = null;
     static int numMoves = 0;
-
+    // TODO: Remove
+    static MapLocation corner = new MapLocation(-1, -1);
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
             // this will run when the bot is created
@@ -48,19 +50,19 @@ public class Carrier {
             targetType = readCarrierAssignment(rc, hqID);
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
-            Collections.shuffle(shuffledDir);
 
             //Do islands if instructed to.
-//            if (rc.readSharedArray(ISLAND_INDEX) == 1) {
-//                state = CarrierState.ISLAND;
-//            }
+            if (readIsland(rc) == 1) {
+                state = CarrierState.ISLAND;
+            }
+//            if (getI)
         }
 
         senseEnemies(rc);
 
         switch (state) {
             case SCOUTING:
-                // if we have not discovered all wells, pick a random direction to go in and discover them
+                // if we have not discovered all wells, scout in a direction away from hq
                 if (!stateLock) {
                     if (readNumWellsFound(rc, hqID) < 2) {
                         rcLocation = rc.getLocation();
@@ -96,7 +98,7 @@ public class Carrier {
                 returning(rc);
                 break;
             case ISLAND: {
-//                islands(rc);
+                islands(rc);
                 break;
             }
         }
@@ -107,9 +109,13 @@ public class Carrier {
         // once we have picked an initial direction, go in that direction till we can no longer
         if (rc.canMove(scoutDirection)) {
             rc.move(scoutDirection);
+            if (rc.canMove(scoutDirection)) {
+                rc.move(scoutDirection);
+            }
+            rc.setIndicatorLine(rcLocation, rcLocation.add(scoutDirection), 100,100,0);
         } else {
             // if we can't go that way, randomly pick another direction until one is found
-            Collections.shuffle(shuffledDir) ;
+            Collections.shuffle(shuffledDir);
             for (Direction dir : shuffledDir) {
                 if (rc.canMove(dir)) {
                     scoutDirection = dir;
@@ -124,18 +130,17 @@ public class Carrier {
             targetWellLocation = readWellLocation(rc, targetType, hqID);
             state = CarrierState.MOVING;
             moveTowards(rc, targetWellLocation);
-            return;
-        }
-
-        // when we discover a nearby well, make sure it is the right type and not already stored before we write it
-        WellInfo[] wells = rc.senseNearbyWells(targetType);
-        if (wells.length > 0) {
-            targetWellLocation = wells[0].getMapLocation();
-            if (rc.canWriteSharedArray(0, 1)) {
-                writeWell(rc, targetType, targetWellLocation, hqID);
-            } else {
-                reportingWell = true;
-                state = CarrierState.RETURNING;
+        } else {
+            // when we discover a nearby well, make sure it is the right type and not already stored before we write it
+            WellInfo[] wells = rc.senseNearbyWells(targetType);
+            if (wells.length > 0) {
+                targetWellLocation = wells[0].getMapLocation();
+                if (rc.canWriteSharedArray(0, 1)) {
+                    writeWell(rc, targetType, targetWellLocation, hqID);
+                } else {
+                    reportingWell = true;
+                    state = CarrierState.RETURNING;
+                }
             }
         }
     }
@@ -246,6 +251,7 @@ public class Carrier {
 
                 state = CarrierState.MOVING;
                 moveTowards(rc, targetWellLocation);
+                return;
             }
         } else {
             // if we are already at hq, transfer and set state to moving
@@ -294,46 +300,45 @@ public class Carrier {
         checkHQAdjacencyAndTransfer(rc);
     }
 
-    //Stuff added for integration purposes:
-//    private static void islands(RobotController rc) throws GameActionException {
-//        rc.setIndicatorString("ISLANDS");
-//        rcLocation = rc.getLocation();
-//
-//        //Camp on an island to destroy anchors or protect yours.
-//        if (rc.getAnchor() == null && rc.senseIsland(rcLocation) != -1) {
-//            //System.out.println("Camping");
-//            return;
-//        }
-//
-//        //Default code provided, just picks up anchors moves towards islands we know about.
-//        int[] islands = rc.senseNearbyIslands();
-//        Set<MapLocation> islandLocs = new HashSet<>();
-//        for (int id : islands) {
-//            MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
-//            islandLocs.addAll(Arrays.asList(thisIslandLocs));
-//        }
-//        if (rcLocation.isAdjacentTo(headquarters) && rc.getAnchor() == null) {
-//            if (rc.canTakeAnchor(headquarters, Anchor.STANDARD)) rc.takeAnchor(headquarters, Anchor.STANDARD);
-//        }
-//        if (islandLocs.size() > 0) {
-//            int index = 0;
-//            MapLocation islandLocation = islandLocs.iterator().next();
-//            if (rc.getAnchor() == null) {
-//                rc.setIndicatorString("Moving my anchor towards " + islandLocation);
-//                Util.moveTowards(rc, islandLocation);
-//            } else {
-//                while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
-//                if (!islandLocs.iterator().hasNext()) moveAway(rc, corner);
-//                Util.moveTowards(rc, islandLocation);
-//                if (rc.canPlaceAnchor()) {
-//                    rc.placeAnchor();
-//                }
-//            }
-//
-//        } else if (rc.isMovementReady()) {
-//            moveAway(rc, corner);
-//        }
-//    }
+    private static void islands(RobotController rc) throws GameActionException {
+        rc.setIndicatorString("ISLANDS");
+        rcLocation = rc.getLocation();
+
+        //Camp on an island to destroy anchors or protect yours.
+        if (rc.getAnchor() == null && rc.senseIsland(rcLocation) != -1) {
+            //System.out.println("Camping");
+            return;
+        }
+
+        //Default code provided, just picks up anchors moves towards islands we know about.
+        int[] islands = rc.senseNearbyIslands();
+        Set<MapLocation> islandLocs = new HashSet<>();
+        for (int id : islands) {
+            MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
+            islandLocs.addAll(Arrays.asList(thisIslandLocs));
+        }
+        if (rcLocation.isAdjacentTo(hqLocation) && rc.getAnchor() == null) {
+            if (rc.canTakeAnchor(hqLocation, Anchor.STANDARD)) rc.takeAnchor(hqLocation, Anchor.STANDARD);
+        }
+        if (islandLocs.size() > 0) {
+            int index = 0;
+            MapLocation islandLocation = islandLocs.iterator().next();
+            if (rc.getAnchor() == null) {
+                rc.setIndicatorString("Moving my anchor towards " + islandLocation);
+                Util.moveTowards(rc, islandLocation);
+            } else {
+                while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
+                if (!islandLocs.iterator().hasNext()) moveAway(rc, corner);
+                Util.moveTowards(rc, islandLocation);
+                if (rc.canPlaceAnchor()) {
+                    rc.placeAnchor();
+                }
+            }
+
+        } else if (rc.isMovementReady()) {
+            moveAway(rc, corner);
+        }
+    }
 
     private static void senseEnemies(RobotController rc) throws GameActionException {
         // If a headquarters is detected, report it back to HQ
@@ -446,6 +451,7 @@ public class Carrier {
         }
         return false;
     }
+
     private static boolean checkHQAdjacencyAndTransfer(RobotController rc) throws GameActionException{
         rcLocation = rc.getLocation();
         if (rcLocation.isAdjacentTo(hqLocation)) {
