@@ -37,8 +37,8 @@ public class Headquarters {
     static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
     static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
     static int mnAvgFarmTime = 0;
-    static final int MAX_AD_CARRIERS = 11; // per well
-    static final int MAX_MN_CARRIERS = 13; // per well
+    static final int MAX_AD_CARRIERS = 9; // per well
+    static final int MAX_MN_CARRIERS = 11; // per well
     static final double EXPIRED_CARRIER_TOLERNACE = 1.6; // multiplied by avg farm time to determine if carrier is expired
     static boolean carrierCapacityReached = false;
 
