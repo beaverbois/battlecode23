@@ -3,9 +3,6 @@ package Sprint2;
 import battlecode.common.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static Sprint2.CarrierSync.*;
 import static Sprint2.HQSync.*;
@@ -34,12 +31,16 @@ public class Headquarters {
     static int previousCarrierID = 0;
     static double adIncome;
     static double mnIncome;
-    static ArrayList<Integer> adBots = new ArrayList<>();
-    static ArrayList<Integer> adBotsLastSeen = new ArrayList<>();
+    static ArrayList<Integer> adCarrierIDs = new ArrayList<>();
+    static ArrayList<Integer> adCarriersLastSeen = new ArrayList<>();
     static int adAvgFarmTime = 0;
-    static ArrayList<Integer> mnBots = new ArrayList<>();
-    static ArrayList<Integer> mnBotsLastSeen = new ArrayList<>();
+    static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
+    static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
     static int mnAvgFarmTime = 0;
+    static final int MAX_AD_CARRIERS = 9; // per well
+    static final int MAX_MN_CARRIERS = 9; // per well
+    static final double EXPIRED_CARRIER_TOLERNACE = 1.6; // multiplied by avg farm time to determine if carrier is expired
+    static boolean carrierCapacityReached = false;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -61,10 +62,9 @@ public class Headquarters {
             stateLock = true;
         }
 
-        // TODO: Merge to CarrierSync
         //Make island carriers late-game.
         if (rc.getRobotCount() > MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS_BEFORE_ISLANDS) writeIsland(rc, 1);
-        //In case we start losing, swap back.
+            //In case we start losing, swap back.
         else if (readIsland(rc) == 1) writeIsland(rc, 0);
 
         // TODO: Need more robust island/anchor tracking
@@ -108,42 +108,104 @@ public class Headquarters {
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
+            carrierCapacityReached = carrierCapacityReached(rc);
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
-                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) > 50) {
+                if (carrierCapacityReached && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
                     robotBuildType = RobotType.CARRIER;
                 } else {
                     robotBuildType = RobotType.LAUNCHER;
                 }
             } else {
-                if (rc.getResourceAmount(ResourceType.MANA) > 60) {
+                if (rc.getResourceAmount(ResourceType.MANA) >= 60) {
                     robotBuildType = RobotType.LAUNCHER;
                 } else {
                     robotBuildType = RobotType.CARRIER;
+                }
+
+                switch (robotBuildType) {
+                    case CARRIER:
+                        if (!carrierCapacityReached) buildCarrier(rc);
+                        break;
+
+                    case LAUNCHER:
+                        buildLauncher(rc);
+                        break;
                 }
             }
         } else {
             rc.setIndicatorString("Max robots reached");
         }
 
-        switch (robotBuildType) {
-            case CARRIER:
-                buildCarrier(rc);
-                break;
+        rc.setIndicatorString(mnCarrierIDs.toString());
+        if (robotBuildType != RobotType.CARRIER) {
+            // Spawn limits for carriers
+            RobotInfo[] nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
+            for (RobotInfo carrier : nearbyCarriers) {
+                if (carrier.getType() != RobotType.CARRIER || carrier.getID() == previousCarrierID) {
+                    continue;
+                }
 
-            case LAUNCHER:
-                buildLauncher(rc);
-                break;
+                int mnIndex = mnCarrierIDs.indexOf(carrier.ID);
+                int adIndex = adCarrierIDs.indexOf(carrier.ID);
 
-            case HEADQUARTERS:
-                break;
+                if (mnIndex != -1) {
+                    if (rc.getResourceAmount(ResourceType.MANA) == 0) {
+                        continue;
+                    }
+
+                    // set only once
+                    if (mnAvgFarmTime == 0) {
+                        mnAvgFarmTime = (int) ((turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERNACE);
+                    }
+
+                    mnCarriersLastSeen.set(mnIndex, turnCount);
+
+                    //TODO: This really should be a map
+                    ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
+                    ArrayList<Integer> expiredCarrierTurns = new ArrayList<>();
+                    for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
+                        int val = mnCarriersLastSeen.get(i);
+                        if (val > mnAvgFarmTime) {
+                            expiredCarrierIDs.add(mnCarrierIDs.get(i));
+                            expiredCarrierTurns.add(val);
+                        }
+                    }
+                    mnCarrierIDs.remove(expiredCarrierIDs);
+                    mnCarriersLastSeen.remove(expiredCarrierTurns);
+
+                } else if (adIndex != -1) {
+                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
+                        continue;
+                    }
+
+                    // set only once
+                    if (adAvgFarmTime == 0) {
+                        adAvgFarmTime = (int) ((turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERNACE);
+                    }
+
+                    adCarriersLastSeen.set(adIndex, turnCount);
+
+                    //TODO: This really should be a map
+                    ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
+                    ArrayList<Integer> expiredCarrierTurns = new ArrayList<>();
+                    for (int i = 0; i < adCarriersLastSeen.size(); i++) {
+                        int val = adCarriersLastSeen.get(i);
+                        if (val > adAvgFarmTime) {
+                            expiredCarrierIDs.add(adCarrierIDs.get(i));
+                            expiredCarrierTurns.add(val);
+                        }
+                    }
+                    adCarrierIDs.remove(expiredCarrierIDs);
+                    adCarriersLastSeen.remove(expiredCarrierTurns);
+                }
+            }
         }
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
-        if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
+        if (!carrierCapacityReached && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             // Set the resource target of carrier spawns
-            // TODO: HQ active count of number of carriers for each well, distributed with small multiplier for mana
-            if (rng.nextDouble() > MANA_TARGET_RATE) {
+            if (adCarrierIDs.size() < MAX_AD_CARRIERS && rng.nextDouble() > MANA_TARGET_RATE) {
                 writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
                 carrierAssignment = ResourceType.ADAMANTIUM;
             } else {
@@ -213,12 +275,19 @@ public class Headquarters {
         int rcID = rc.senseRobotAtLocation(loc).getID();
         previousCarrierID = rcID;
 
-        if (carrierAssignment == ResourceType.MANA) {
-            mnBots.add(rcID);
-            mnBotsLastSeen.add(turnCount);
-        } else {
-            adBots.add(rcID);
-            adBotsLastSeen.add(turnCount);
+        if (readIsland(rc) == 0) {
+            if (carrierAssignment == ResourceType.MANA) {
+                mnCarrierIDs.add(rcID);
+                mnCarriersLastSeen.add(turnCount);
+            } else {
+                adCarrierIDs.add(rcID);
+                adCarriersLastSeen.add(turnCount);
+            }
         }
+    }
+
+    static boolean carrierCapacityReached(RobotController rc) throws GameActionException {
+        if (readIsland(rc) == 1) return false;
+        return adCarrierIDs.size() >= MAX_AD_CARRIERS && mnCarrierIDs.size() >= MAX_MN_CARRIERS;
     }
 }
