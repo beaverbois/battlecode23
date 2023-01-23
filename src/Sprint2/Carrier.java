@@ -482,7 +482,7 @@ public class Carrier {
 
     private static boolean checkWellAdjacencyAndCollect(RobotController rc) throws GameActionException {
         rcLocation = rc.getLocation();
-        if (rcLocation.isAdjacentTo(targetWellLocation)) {
+        if (rcLocation.isAdjacentTo(targetWellLocation) && rc.canCollectResource(targetWellLocation, -1)) {
             state = CarrierState.FARMING;
             numCycles = 0;
 
