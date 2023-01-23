@@ -312,8 +312,11 @@ public class Carrier {
         rcLocation = rc.getLocation();
 
         //Camp on an island to destroy anchors or protect yours.
-        if (rc.getAnchor() == null && rc.senseIsland(rcLocation) != -1) {
+        if (rc.senseIsland(rcLocation) != -1) {
             //System.out.println("Camping");
+            if (rc.getAnchor() != null && rc.canPlaceAnchor()) {
+                rc.placeAnchor();
+            }
             return;
         }
 
@@ -336,16 +339,11 @@ public class Carrier {
                 rc.setIndicatorString("Moving my anchor towards " + islandLocation);
                 Util.moveTowards(rc, islandLocation);
             } else {
-                while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
-                if (!islandLocs.iterator().hasNext()) moveAway(rc, corner);
-                Util.moveTowards(rc, islandLocation);
-                if (rc.canPlaceAnchor()) {
-                    rc.placeAnchor();
-                }
+                while(++index < islands.length && rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
+                if (!islandLocs.iterator().hasNext()) Util.moveTowards(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+                else Util.moveTowards(rc, islandLocation);
             }
-
         } else if (rc.isMovementReady()) {
-            rc.setIndicatorString("Moving to center");
             Util.moveTowards(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
         }
     }
