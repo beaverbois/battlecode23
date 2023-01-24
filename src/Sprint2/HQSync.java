@@ -1,9 +1,9 @@
-package BeaverBoisS2;
+package Sprint2;
 
 import battlecode.common.*;
 
-import static BeaverBoisS2.Util.intToLoc;
-import static BeaverBoisS2.Util.locToInt;
+import static Sprint2.Util.intToLoc;
+import static Sprint2.Util.locToInt;
 
 public class HQSync {
 

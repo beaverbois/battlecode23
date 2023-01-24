@@ -1,16 +1,18 @@
-package BeaverBoisS2;
+package USQualifiers;
 
 import battlecode.common.*;
 
 import java.util.ArrayList;
 
-import static BeaverBoisS2.CarrierSync.*;
-import static BeaverBoisS2.HQSync.*;
-import static BeaverBoisS2.LauncherSync.reportEnemy;
-import static BeaverBoisS2.RobotPlayer.rng;
-import static BeaverBoisS2.RobotPlayer.turnCount;
-import static BeaverBoisS2.RobotSync.*;
-import static BeaverBoisS2.Util.*;
+import static USQualifiers.CarrierSync.*;
+import static USQualifiers.HQSync.*;
+import static USQualifiers.LauncherSync.reportEnemy;
+import static USQualifiers.RobotPlayer.rng;
+import static USQualifiers.RobotPlayer.turnCount;
+import static USQualifiers.RobotSync.readIsland;
+import static USQualifiers.RobotSync.writeIsland;
+import static USQualifiers.Util.closestLocationsInActionRadius;
+import static USQualifiers.Util.farthestLocationsInActionRadius;
 
 public class Headquarters {
 

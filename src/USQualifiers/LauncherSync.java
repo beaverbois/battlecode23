@@ -1,15 +1,14 @@
-package BeaverBoisS2;
+package USQualifiers;
 
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-import static BeaverBoisS2.HQSync.readHQLocation;
-import static BeaverBoisS2.HQSync.readNumHQs;
-import static BeaverBoisS2.Launcher.*;
-import static BeaverBoisS2.Launcher.allOpposingHQ;
-import static BeaverBoisS2.RobotPlayer.*;
-import static BeaverBoisS2.Util.*;
+import static USQualifiers.HQSync.readHQLocation;
+import static USQualifiers.HQSync.readNumHQs;
+import static USQualifiers.Launcher.*;
+import static USQualifiers.RobotPlayer.rng;
+import static USQualifiers.Util.*;
 
 public class LauncherSync {
 

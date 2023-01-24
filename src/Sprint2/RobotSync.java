@@ -1,4 +1,4 @@
-package BeaverBoisS2;
+package Sprint2;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;

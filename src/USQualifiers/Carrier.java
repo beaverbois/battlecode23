@@ -1,15 +1,16 @@
-package BeaverBoisS2;
+package USQualifiers;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-import static BeaverBoisS2.CarrierSync.*;
-import static BeaverBoisS2.HQSync.readHQLocation;
-import static BeaverBoisS2.LauncherSync.reportEnemy;
-import static BeaverBoisS2.RobotPlayer.*;
-import static BeaverBoisS2.RobotSync.readIsland;
-import static BeaverBoisS2.Util.*;
+import static USQualifiers.CarrierSync.*;
+import static USQualifiers.HQSync.readHQLocation;
+import static USQualifiers.LauncherSync.reportEnemy;
+import static USQualifiers.RobotPlayer.directions;
+import static USQualifiers.RobotSync.readIsland;
+import static USQualifiers.Util.closestDirections;
+import static USQualifiers.Util.moveAway;
 
 public class Carrier {
     enum CarrierState {
