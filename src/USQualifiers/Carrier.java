@@ -6,6 +6,7 @@ import java.util.*;
 
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.readHQLocation;
+import static USQualifiers.LauncherSync.checkEnemy;
 import static USQualifiers.LauncherSync.reportEnemy;
 import static USQualifiers.RobotPlayer.directions;
 import static USQualifiers.RobotSync.readIsland;
@@ -360,7 +361,7 @@ public class Carrier {
                 //If a fighting enemy is detected, report it back to HQ
                 Launcher.target = enemy.getLocation();
                 state = CarrierState.RETURNING;
-                reportingEnemy = true;
+                reportingEnemy = checkEnemy(rc, Launcher.target);
                 return;
             }
         }

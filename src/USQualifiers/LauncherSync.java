@@ -12,7 +12,7 @@ import static USQualifiers.Util.*;
 
 public class LauncherSync {
 
-    static int minReportDist = 3;
+    static int minReportDist = 6;
     static int enemyLocMin = 13, enemyLocMax = 23, suspectedHQMin = 9, suspectedHQMax = 12;
 
     static boolean foundHQ = false;
@@ -103,6 +103,18 @@ public class LauncherSync {
                 rc.writeSharedArray(4 + i, 10000 * oppHQStatus + hq);
             }
         }
+    }
+
+    //Returns true if there's already a reported enemy in a location.
+    public static boolean checkEnemy(RobotController rc, MapLocation enemyLoc) throws GameActionException {
+        for (int i = enemyLocMin; i < enemyLocMax; i++) {
+            int read = rc.readSharedArray(i);
+            int dist = distance(enemyLoc, intToLoc(read));
+            if (read != 0 && dist < minReportDist) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void reportEnemy(RobotController rc, MapLocation enemyLoc, boolean clear) throws GameActionException {
@@ -219,6 +231,17 @@ public class LauncherSync {
         if(read / div % 10 == 0) {
             //Build an int with the updated value, preserving the other data if !exists.
             int write = read % div + read / (div * 100) + 2 * div;
+
+            //If we know 2 forms of symmetry are incorrect, mark the third as correct.
+            int div1 = (int) (Math.pow(10, (suspectCount + 1) % 3)), div2 = (int) (Math.pow(10, (suspectCount + 2) % 3));
+            int sus1 = read / div1 % 10, sus2 = read / div2 % 10;
+            if(sus1 == 2 || sus2 == 2) {
+                suspectCount = (suspectCount + (sus1 == 2 ? 2 : 1)) % 3;
+                writeSuspected(rc, true);
+                return;
+            }
+
+            //Finally, write the built int to the index.
             rc.writeSharedArray(suspectCount / 3 + suspectedHQMin, write);
         }
     }
@@ -230,7 +253,7 @@ public class LauncherSync {
         for(int i = enemyLocMin; i < enemyLocMax; i++) {
             int read = rc.readSharedArray(i);
             double dist = dist(pos, intToLoc(read));
-            if(read != 0 && dist < minDist) {
+            if(read != 0 && dist < minDist && dist > 3) {
                 minDist = dist;
                 index = i;
             }
@@ -239,6 +262,8 @@ public class LauncherSync {
         if(index == 0 && !foundHQ) target = suspectedOppHQ[suspectCount];
         else if(index != 0) target = intToLoc(rc.readSharedArray(index));
         else target = allOpposingHQ[rng.nextInt(allOpposingHQ.length)];
+
+        System.out.println(allOpposingHQ[0]);
 
         targetReported = (index != 0);
     }

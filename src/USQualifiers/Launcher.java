@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static USQualifiers.LauncherSync.*;
+import static USQualifiers.RobotPlayer.rng;
 import static USQualifiers.Util.*;
 
 public class Launcher {
@@ -43,6 +44,8 @@ public class Launcher {
 
     static final int MIN_PACK_SIZE = 5, RETREAT = 3;
 
+    static boolean attacked = false;
+
     //Wells
     static boolean reportingWell = false, reportingEnemy = false, reportingHQ = false, reportingSuspect = false;
     static MapLocation targetWellLocation = null;
@@ -72,6 +75,8 @@ public class Launcher {
         }
 
         rc.setIndicatorString(lstate.toString());
+
+        attacked = false;
 
         switch(lstate) {
             case GATHERING: gathering(rc); break;
@@ -224,6 +229,7 @@ public class Launcher {
         else if(allies.length > MIN_PACK_SIZE) {
             lstate = LauncherState.PACK;
             chooseTarget(rc);
+            System.out.println("Target: " + target);
         }
 
         attack(rc);
@@ -354,21 +360,20 @@ public class Launcher {
             else if (distance(pos, target) > 0) moveTowards(rc, target);
         }
 
-        //If too far ahead, don't move.
-        if(distance(pos, target) > distance(avrPos, target) + 3);
-        //If far from pack, move towards them.
-        else if(distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
-        else moveTowards(rc, target);
+        moveTowards(rc, target);
 
-        if(distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
-        if(distance(pos, target) < 3 && allies.length - enemies.length > suppressiveForce) {
-            MapLocation[] close = closestTargetHQ(rc);
-            if(close != null && close[0] == target) {
-                oppHQStatus = 1;
-                lstate = LauncherState.REPORTING;
-                reportingHQ = true;
+        if(rc.canSenseLocation(target)) {
+            RobotInfo[] suppressors = rc.senseNearbyRobots(target, 9, rc.getTeam());
+
+            if (distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
+            if (distance(pos, target) < 4 && suppressors.length - enemies.length > suppressiveForce) {
+                MapLocation[] close = closestTargetHQ(rc);
+                if (close != null && close[0] == target) {
+                    oppHQStatus = 1;
+                    lstate = LauncherState.REPORTING;
+                    reportingHQ = true;
+                } else if (close != null) target = close[0];
             }
-            else if(close != null) target = close[0];
         }
 
         attack(rc);
@@ -382,7 +387,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if (rc.isMovementReady() && dist(pos, target) > 4.5) moveTowards(rc, target);
+        else if (rc.isMovementReady() && !withinSquaredRadius(pos, target, 16)) moveTowards(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -407,18 +412,6 @@ public class Launcher {
 
         attack(rc);
 
-        if(enemies.length == 0 && distance(pos, target) < 3) {
-            lstate = LauncherState.REPORTING;
-            if(targetReported) reportingEnemy = true;
-            else reportingSuspect = true;
-            return;
-        }
-
-        if(allies.length < RETREAT) {
-            lstate = LauncherState.GATHERING;
-            return;
-        }
-
         int avrX = pos.x, avrY = pos.y;
 
         //TODO: Implement moving towards injured allies (aka health decreased since last turn).
@@ -429,9 +422,20 @@ public class Launcher {
 
         MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
 
+        if(enemies.length == 0 && distance(pos, target) < 4 && distance(pos, target) > distance(avrPos, target) - 1) {
+            lstate = LauncherState.REPORTING;
+            if(targetReported) reportingEnemy = true;
+            else reportingSuspect = true;
+            return;
+        } else if(enemies.length == 0 && distance(pos, target) < 4) chooseTarget(rc);
+
+        if(allies.length < RETREAT) {
+            lstate = LauncherState.GATHERING;
+            return;
+        }
+
         //If far from pack, move towards them.
-        if (distance(pos, avrPos) > 3) moveTowards(rc, avrPos);
-        else moveTowards(rc, target);
+        moveTowards(rc, target);
 
         if(distance(pos, target) < 3 && withinOppHQRange) lstate = LauncherState.SUPPRESSING;
 
@@ -520,6 +524,7 @@ public class Launcher {
 //    }
 
     private static void attack(RobotController rc) throws GameActionException {
+        if(attacked) return;
         int targetPrio;
         if (rc.isActionReady() && enemies.length > 0) {
             targetPrio = launcherPriority.indexOf(enemies[0].getType());
@@ -539,9 +544,19 @@ public class Launcher {
             }
             if (rc.canSenseRobotAtLocation(targetLoc) && !rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.HEADQUARTERS) && rc.canAttack(targetLoc)) {
                 rc.attack(targetLoc);
+                attacked = true;
                 if (rc.isMovementReady() && rc.canSenseRobotAtLocation(targetLoc) && rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.LAUNCHER)) {
                     moveAway(rc, targetLoc);
                 }
+            }
+        }
+
+        //Randomly attack a cloud if we don't expect to move this turn.
+        if(!rc.isMovementReady() && rc.isActionReady()) {
+            MapLocation[] clouds = rc.senseNearbyCloudLocations();
+            if(clouds.length != 0) {
+                int randCloud = rng.nextInt(clouds.length);
+                if (rc.canAttack(clouds[randCloud])) rc.attack(clouds[randCloud]);
             }
         }
     }

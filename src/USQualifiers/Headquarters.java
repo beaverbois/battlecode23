@@ -26,6 +26,7 @@ public class Headquarters {
     static final double MIN_ROBOTS_BEFORE_ISLANDS = 60; // # of robots before we save up for islands
     static final double MIN_ROBOTS_FOR_ANCHOR = 40; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
+    static final int START_SAVING_MANA = 1800; //turn at which we go for mana tiebreaker
     static int MAP_WIDTH;
     static int MAP_HEIGHT;
     static int numAnchors = 0;
@@ -82,7 +83,7 @@ public class Headquarters {
 
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        if (enemies.length > 0) {
+        if (turnCount < START_SAVING_MANA && enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
 
@@ -163,7 +164,6 @@ public class Headquarters {
                     if(turn > 10) {
                         numMnReturns++;
                         mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERNACE;
-                        System.out.println("Avg: " + mnAvgFarmTime + ", " + mnAvgFarmTime / numMnReturns);
                     }
 
                     mnCarriersLastSeen.set(mnIndex, turnCount);
@@ -178,7 +178,6 @@ public class Headquarters {
                     if(turn > 10) {
                         numAdReturns++;
                         adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERNACE;
-                        System.out.println("Avg: " + adAvgFarmTime + ", " + adAvgFarmTime / numAdReturns);
                     }
 
                     adCarriersLastSeen.set(adIndex, turnCount);
@@ -187,8 +186,6 @@ public class Headquarters {
 
             double avgAdFarm = adAvgFarmTime / numAdReturns;
             double avgMnFarm = mnAvgFarmTime / numMnReturns;
-
-            System.out.println("Farm: " + avgMnFarm + ", " + avgAdFarm);
 
             //TODO: This really should be a map
             ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
@@ -275,7 +272,7 @@ public class Headquarters {
 
     // Build launchers closest to middle of the map
     static void buildLauncher(RobotController rc) throws GameActionException {
-        if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
+        if (turnCount < START_SAVING_MANA && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
             MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
             MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 
