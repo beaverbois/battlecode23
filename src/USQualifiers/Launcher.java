@@ -68,6 +68,11 @@ public class Launcher {
     static ArrayList<MapLocation> lastPos = new ArrayList<>();
     static int lastPosSize = 5;
 
+    static boolean pathBlocked = false;
+    static Direction blockedTraverseDirection = null;
+    static Direction blockedTargetDirection = null;
+    static int numMoves = 0;
+
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
             setup(rc);
@@ -77,6 +82,8 @@ public class Launcher {
         rc.setIndicatorString(lstate.toString());
 
         attacked = false;
+
+        numMoves = 0;
 
         switch(lstate) {
             case GATHERING: gathering(rc); break;
@@ -155,69 +162,69 @@ public class Launcher {
 
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
-            if(!stuck) {
-                boolean testStuck = true;
-                if(lastPos.size() >= lastPosSize) {
-                    double avrX = 0, avrY = 0;
-                    for(MapLocation loc : lastPos) {
-                        avrX += loc.x;
-                        avrY += loc.y;
-                    }
-                    avrX /= lastPos.size();
-                    avrY /= lastPos.size();
-
-                    if(Math.abs(avrX - pos.x) >= 2 || Math.abs(avrY - pos.y) >= 2) testStuck = false;
-                }
-                Direction[] close = closeDirections(rc, pos, gatherPoint);
-                if(!testStuck) {
-                    testStuck = true;
-                    for (int i = 0; i < 2; i++) {
-                        if (rc.canMove(close[i])) {
-                            testStuck = false;
-                            break;
-                        }
-                    }
-                }
-                stuck = testStuck;
-                if(stuck) {
-                    for (int i = 3; i < close.length; i++) {
-                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
-                            pastWall = close[i];
-                            break;
-                        }
-                    }
-                    if (pastWall == null) {
-                        //Literally no possible moves, just chill.
-                        stuck = false;
-                        attack(rc);
-                        packStatus = allies;
-                        return;
-                    }
-                }
-            }
+//            if(!stuck) {
+//                boolean testStuck = true;
+//                if(lastPos.size() >= lastPosSize) {
+//                    double avrX = 0, avrY = 0;
+//                    for(MapLocation loc : lastPos) {
+//                        avrX += loc.x;
+//                        avrY += loc.y;
+//                    }
+//                    avrX /= lastPos.size();
+//                    avrY /= lastPos.size();
+//
+//                    if(Math.abs(avrX - pos.x) >= 2 || Math.abs(avrY - pos.y) >= 2) testStuck = false;
+//                }
+//                Direction[] close = closeDirections(rc, pos, gatherPoint);
+//                if(!testStuck) {
+//                    testStuck = true;
+//                    for (int i = 0; i < 2; i++) {
+//                        if (rc.canMove(close[i])) {
+//                            testStuck = false;
+//                            break;
+//                        }
+//                    }
+//                }
+//                stuck = testStuck;
+//                if(stuck) {
+//                    for (int i = 3; i < close.length; i++) {
+//                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
+//                            pastWall = close[i];
+//                            break;
+//                        }
+//                    }
+//                    if (pastWall == null) {
+//                        //Literally no possible moves, just chill.
+//                        stuck = false;
+//                        attack(rc);
+//                        packStatus = allies;
+//                        return;
+//                    }
+//                }
+//            }
 
             //Choose a direction and stick to it.
-            if(distance(pos, gatherPoint) > 1 && stuck) {
-                rc.setIndicatorString("Stuck, " + gatherPoint + ", " + pastWall);
-                if(rc.canMove(pos.directionTo(gatherPoint))) {
-                    stuck = false;
-                    pastWall = null;
-                    moveTowards(rc, gatherPoint);
-                } else if(pastWall == null);
-                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
-                    Direction[] close = closeDirections(rc, pos, gatherPoint);
-                    for(int i = 0; i < close.length; i++) {
-                        if(close[i].opposite() == pastWall) continue;
-                        if(rc.canMove(close[i])) {
-                            pastWall = close[i];
-                            rc.move(pastWall);
-                        }
-                    }
-                    //Shouldn't ever get past the last case.
-                } else moveTowards(rc, pos.add(pastWall));
-            }
+//            if(distance(pos, gatherPoint) > 1 && stuck) {
+//                rc.setIndicatorString("Stuck, " + gatherPoint + ", " + pastWall);
+//                if(rc.canMove(pos.directionTo(gatherPoint))) {
+//                    stuck = false;
+//                    pastWall = null;
+//                    moveTowards(rc, gatherPoint);
+//                } else if(pastWall == null);
+//                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
+//                    Direction[] close = closeDirections(rc, pos, gatherPoint);
+//                    for(int i = 0; i < close.length; i++) {
+//                        if(close[i].opposite() == pastWall) continue;
+//                        if(rc.canMove(close[i])) {
+//                            pastWall = close[i];
+//                            rc.move(pastWall);
+//                        }
+//                    }
+//                    //Shouldn't ever get past the last case.
+//                } else moveTowards(rc, pos.add(pastWall));
+//            }
 
-            else if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+           if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
         }
 
         MapLocation[] t = closestTargetHQ(rc);
@@ -294,71 +301,71 @@ public class Launcher {
 
         MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
 
-        if (rc.isMovementReady() && distance(pos, target) < distance(avrPos, target) + 3) {
-            if(!stuck) {
-                boolean testStuck = true;
-                if(lastPos.size() >= lastPosSize) {
-                    double sumX = 0, sumY = 0;
-                    for(MapLocation loc : lastPos) {
-                        sumX += loc.x;
-                        sumY += loc.y;
-                    }
-                    sumX /= lastPos.size();
-                    sumY /= lastPos.size();
-
-                    if(Math.abs(sumX - pos.x) >= 2 || Math.abs(sumY - pos.y) >= 2) testStuck = false;
-                }
-                Direction[] close = closeDirections(rc, pos, target);
-                if(!testStuck) {
-                    testStuck = true;
-                    for (int i = 0; i < 2; i++) {
-                        if (rc.canMove(close[i])) {
-                            testStuck = false;
-                            break;
-                        }
-                    }
-                }
-                stuck = testStuck;
-                if(stuck) {
-                    for (int i = 3; i < close.length; i++) {
-                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
-                            pastWall = close[i];
-                            break;
-                        }
-                    }
-                    if (pastWall == null) {
-                        //Literally no possible moves, just chill.
-                        stuck = false;
-                        attack(rc);
-                        packStatus = allies;
-                        return;
-                    }
-                }
-            }
-
-            //Choose a direction and stick to it.
-            if(distance(pos, target) > 1 && stuck) {
-                rc.setIndicatorString("Stuck, " + target + ", " + pastWall);
-                if(rc.canMove(pos.directionTo(target))) {
-                    stuck = false;
-                    pastWall = null;
-                    moveTowards(rc, target);
-                } else if(pastWall == null);
-                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
-                    Direction[] close = closeDirections(rc, pos, target);
-                    for(int i = 0; i < close.length; i++) {
-                        if(close[i].opposite() == pastWall) continue;
-                        if(rc.canMove(close[i])) {
-                            pastWall = close[i];
-                            rc.move(pastWall);
-                        }
-                    }
-                    //Shouldn't ever get past the last case.
-                } else moveTowards(rc, pos.add(pastWall));
-            }
-
-            else if (distance(pos, target) > 0) moveTowards(rc, target);
-        }
+//        if (rc.isMovementReady() && distance(pos, target) < distance(avrPos, target) + 3) {
+//            if(!stuck) {
+//                boolean testStuck = true;
+//                if(lastPos.size() >= lastPosSize) {
+//                    double sumX = 0, sumY = 0;
+//                    for(MapLocation loc : lastPos) {
+//                        sumX += loc.x;
+//                        sumY += loc.y;
+//                    }
+//                    sumX /= lastPos.size();
+//                    sumY /= lastPos.size();
+//
+//                    if(Math.abs(sumX - pos.x) >= 2 || Math.abs(sumY - pos.y) >= 2) testStuck = false;
+//                }
+//                Direction[] close = closeDirections(rc, pos, target);
+//                if(!testStuck) {
+//                    testStuck = true;
+//                    for (int i = 0; i < 2; i++) {
+//                        if (rc.canMove(close[i])) {
+//                            testStuck = false;
+//                            break;
+//                        }
+//                    }
+//                }
+//                stuck = testStuck;
+//                if(stuck) {
+//                    for (int i = 3; i < close.length; i++) {
+//                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
+//                            pastWall = close[i];
+//                            break;
+//                        }
+//                    }
+//                    if (pastWall == null) {
+//                        //Literally no possible moves, just chill.
+//                        stuck = false;
+//                        attack(rc);
+//                        packStatus = allies;
+//                        return;
+//                    }
+//                }
+//            }
+//
+//            //Choose a direction and stick to it.
+//            if(distance(pos, target) > 1 && stuck) {
+//                rc.setIndicatorString("Stuck, " + target + ", " + pastWall);
+//                if(rc.canMove(pos.directionTo(target))) {
+//                    stuck = false;
+//                    pastWall = null;
+//                    moveTowards(rc, target);
+//                } else if(pastWall == null);
+//                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
+//                    Direction[] close = closeDirections(rc, pos, target);
+//                    for(int i = 0; i < close.length; i++) {
+//                        if(close[i].opposite() == pastWall) continue;
+//                        if(rc.canMove(close[i])) {
+//                            pastWall = close[i];
+//                            rc.move(pastWall);
+//                        }
+//                    }
+//                    //Shouldn't ever get past the last case.
+//                } else moveTowards(rc, pos.add(pastWall));
+//            }
+//
+//            else if (distance(pos, target) > 0) moveTowards(rc, target);
+//        }
 
         moveTowards(rc, target);
 
@@ -434,7 +441,6 @@ public class Launcher {
             return;
         }
 
-        //If far from pack, move towards them.
         moveTowards(rc, target);
 
         if(distance(pos, target) < 3 && withinOppHQRange) lstate = LauncherState.SUPPRESSING;
@@ -559,5 +565,113 @@ public class Launcher {
                 if (rc.canAttack(clouds[randCloud])) rc.attack(clouds[randCloud]);
             }
         }
+    }
+
+    private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
+        boolean moved = false;
+
+        // check if we cannot move
+        if (!rc.isMovementReady()) {
+            return;
+        }
+
+        pos = rc.getLocation();
+
+        numMoves = 0;
+
+        if (checkIfBlocked(rc, location)) {
+            return;
+        }
+
+        for (Direction dir : closestDirections(rc, location, pos)) {
+            MapLocation closestSquare = location.add(dir);
+            Direction closestSquareDir = pos.directionTo(closestSquare);
+
+            // ensure we do not move towards a wall/impassible square
+            if (rc.canSenseLocation(closestSquare) && !rc.sensePassability(closestSquare)) {
+                continue;
+            }
+
+            if (rc.canMove(closestSquareDir)) {
+                rc.move(closestSquareDir);
+                moved = true;
+                rc.setIndicatorString(lstate.toString() + " TO " + closestSquare + " DESTINATION " + location);
+                numMoves++;
+                break;
+            }
+        }
+
+        if (checkIfBlocked(rc, location)) {
+            return;
+        }
+
+        // robot has not moved, so move to a random square around us closest to well
+        if (numMoves == 0) {
+            for (Direction dir : closestDirections(rc, pos, location)) {
+                if (rc.canMove(dir)) {
+                    rc.move(dir);
+                    moved = true;
+                    rc.setIndicatorString(lstate.toString() + " TO " + pos.add(dir) + " DESTINATION " + location);
+                    break;
+                }
+            }
+        }
+
+        // move a second time if we can
+        if (rc.isMovementReady() && moved) {
+            moveTowards(rc, location);
+        }
+    }
+
+    private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
+        pos = rc.getLocation();
+        Direction targetDir = (pathBlocked) ? blockedTargetDirection: pos.directionTo(target);
+        MapLocation front = pos.add(targetDir);
+
+        boolean senseable = rc.canSenseLocation(front);
+
+        //Consider currents that point towards you and adjacent tiles to be impassable.
+        Direction current = senseable ? rc.senseMapInfo(front).getCurrentDirection() : null;
+
+        boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(pos, front.add(current)) > 1);
+
+        if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
+            rc.setIndicatorString("Blocked!");
+            Direction[] wallFollow = {
+                    targetDir.rotateRight().rotateRight(),
+                    targetDir.rotateLeft().rotateLeft()};
+
+            // Move in the same direction as we previously were when blocked
+            if (pathBlocked) {
+                if (rc.canMove(blockedTraverseDirection)) {
+                    rc.move(blockedTraverseDirection);
+                    numMoves++;
+                    return true;
+                } else {
+                    blockedTraverseDirection = blockedTraverseDirection.opposite();
+                    if (rc.canMove(blockedTraverseDirection)) {
+                        rc.move(blockedTraverseDirection);
+                        numMoves++;
+                        return true;
+                    }
+                }
+            } else {
+                // Call moveTowards again to see if we are near well/still stuck
+                for (Direction wallDir : wallFollow) {
+                    if (rc.canMove(wallDir)) {
+                        pathBlocked = true;
+                        blockedTargetDirection = pos.directionTo(target);
+                        blockedTraverseDirection = wallDir;
+
+                        rc.move(wallDir);
+                        numMoves++;
+                        return true;
+                    }
+                }
+            }
+        } else {
+            pathBlocked = false;
+        }
+        return false;
     }
 }

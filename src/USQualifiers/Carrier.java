@@ -10,8 +10,7 @@ import static USQualifiers.LauncherSync.checkEnemy;
 import static USQualifiers.LauncherSync.reportEnemy;
 import static USQualifiers.RobotPlayer.directions;
 import static USQualifiers.RobotSync.readIsland;
-import static USQualifiers.Util.closestDirections;
-import static USQualifiers.Util.moveAway;
+import static USQualifiers.Util.*;
 
 public class Carrier {
     enum CarrierState {
@@ -426,7 +425,14 @@ public class Carrier {
         Direction targetDir = (pathBlocked) ? blockedTargetDirection: rcLocation.directionTo(target);
         MapLocation front = rcLocation.add(targetDir);
 
-        if (rc.canSenseLocation(front) && !rc.canSenseRobotAtLocation(front) && !rc.sensePassability(front)) {
+        boolean senseable = rc.canSenseLocation(front);
+
+        //Consider currents that point towards you and adjacent tiles to be impassable.
+        Direction current = senseable ? rc.senseMapInfo(front).getCurrentDirection() : null;
+
+        boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(rcLocation, front.add(current)) > 1);
+
+        if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
             Direction[] wallFollow = {
                     targetDir.rotateRight().rotateRight(),
                     targetDir.rotateLeft().rotateLeft()};
