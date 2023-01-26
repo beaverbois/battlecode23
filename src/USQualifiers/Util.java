@@ -72,11 +72,12 @@ public class Util {
     public static Direction[] closestDirections(RobotController rc, MapLocation from, MapLocation to) {
         ArrayList<Direction> openDirections = new ArrayList<>();
         Direction closest = from.directionTo(to);
-        //TODO: Implementation of this don't need to check rc.canMove()
         if (rc.canMove(closest)) {
             openDirections.add(closest);
+            return openDirections.toArray(new Direction[0]);
         }
 
+        //TODO: Account for diagonals
         Direction nextDir = closest.rotateRight();
         Direction delta = from.add(nextDir).directionTo(from.add(closest));
         for (int i = 0; i < 3; i++) {

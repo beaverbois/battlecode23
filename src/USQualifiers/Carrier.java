@@ -29,7 +29,7 @@ public class Carrier {
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
     static MapLocation rcLocation = null;
-    static final int maxCollectionCycles = 10; // Max is 6 for 1 move/turn after collecting
+    static final int maxCollectionCycles = 40;
     static int numCycles = 0;
     static List<Direction> shuffledDir;
     public static ResourceType targetType = null;
