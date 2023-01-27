@@ -44,7 +44,7 @@ public class Headquarters {
     static int numMnReturns = 0; //Total number of carriers tracked as returning from farming.
     static final int MAX_AD_CARRIERS = 10; // per well
     static final int MAX_MN_CARRIERS = 12; // per well
-    static final double EXPIRED_CARRIER_TOLERNACE = 1.8; // multiplied by avg farm time to determine if carrier is expired
+    static final double EXPIRED_CARRIER_TOLERNACE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
     static boolean carrierCapacityReached = false;
 
     static void run(RobotController rc) throws GameActionException {

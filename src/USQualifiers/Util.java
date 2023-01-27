@@ -5,7 +5,6 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import static USQualifiers.RobotPlayer.directions;
@@ -68,99 +67,113 @@ public class Util {
         return close;
     }
 
-//     returns list of directions sorted by distance from a MapLocation to another for optimized path finding
-    public static Direction[] closestDirections(RobotController rc, MapLocation from, MapLocation to) {
-        ArrayList<Direction> openDirections = new ArrayList<>();
-        Direction closest = from.directionTo(to);
-        if (rc.canMove(closest)) {
-            openDirections.add(closest);
-            return openDirections.toArray(new Direction[0]);
+    //     returns the closest available location to a robot around an origin location
+    public static MapLocation closestAvailableLocationTowardsRobot(RobotController rc, MapLocation origin) throws GameActionException {
+        // if we can't sense the origin or if we can and it's already free
+        if (!rc.canSenseLocation(origin) || isLocationFree(rc, origin)) {
+            return origin;
         }
 
-        //TODO: Account for diagonals
-        Direction nextDir = closest.rotateRight();
-        Direction delta = from.add(nextDir).directionTo(from.add(closest));
+        // get the location closest to us around the origin
+        Direction closestDir = origin.directionTo(rc.getLocation());
+        MapLocation closestSquare = origin.add(closestDir);
+
+        // return closest square to us if we are too far to sense the origin or if closest square is already free
+        if (isLocationFree(rc, closestSquare)) {
+            return closestSquare;
+        }
+
+        Direction rightDir = closestDir.rotateRight();
+        Direction leftDir = closestDir.rotateLeft();
+
         for (int i = 0; i < 3; i++) {
-            if (rc.canMove(nextDir)) {
-                openDirections.add(nextDir);
+            if (isLocationFree(rc, origin.add(rightDir))) {
+                return origin.add(rightDir);
             }
 
-            Direction oppositeDir = from.directionTo(from.add(nextDir).add(delta).add(delta));
-
-            if (rc.canMove(oppositeDir)) {
-                openDirections.add(oppositeDir);
+            if (isLocationFree(rc, origin.add(leftDir))) {
+                return origin.add(leftDir);
             }
 
-            nextDir = nextDir.rotateRight();
+            rightDir = rightDir.rotateRight();
+            leftDir = leftDir.rotateLeft();
         }
 
-         if (rc.canMove(nextDir)) {
-             openDirections.add(nextDir);
-         }
-         return openDirections.toArray(new Direction[0]);
+        if (isLocationFree(rc, origin.add(rightDir))) {
+            return origin.add(rightDir);
+        }
+
+//        System.out.println("Could not find an available square around " + origin.toString() + " !");
+        return null;
     }
 
-    public static Direction[] closeDirections(RobotController rc, MapLocation from, MapLocation to) {
-        double[] close = new double[directions.length];
-        for (int i = 0; i < directions.length; i++) {
-            double rand = rng.nextDouble();
-            double distance = dist((from.add(directions[i])), to) + rand;
-            close[i] = distance + (i * 100);
-        }
-
-        //Sort the array
-        for (int i = 1; i < directions.length; i++) {
-            for (int j = i; j > 0; j--) {
-                if (close[j] % 100 < close[j - 1] % 100) {
-                    double temp = close[j - 1];
-                    close[j - 1] = close[j];
-                    close[j] = temp;
-                } else break;
-            }
-        }
-
-        //Add to directions array
-        Direction[] dir = new Direction[directions.length];
-
-        for (int i = 0; i < directions.length; i++) {
-            dir[i] = directions[(int) (close[i] / 100)];
-        }
-
-        return dir;
+    // returns true if location can be sensed, location is free of robots, location is passable, and location doesn't contain a current
+    public static boolean isLocationFree(RobotController rc, MapLocation location) throws GameActionException {
+        return rc.canSenseLocation(location) && !rc.isLocationOccupied(location) && rc.sensePassability(location) && rc.senseMapInfo(location).getCurrentDirection() == Direction.CENTER;
     }
 
-
-    // returns list of nearby directions sorted by distance from a MapLocation for optimized path finding
-    public static Direction[] farthestDirections(MapLocation from, MapLocation to) {
-        double[] close = new double[directions.length];
-        for (int i = 0; i < directions.length; i++) {
-            double rand = rng.nextDouble();
-            double distance = dist((from.add(directions[i])), to) + rand;
-            close[i] = distance + i * 100;
+    // returns the closest available direction around a robot towards a target location
+    public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) {
+        Direction closestDir = rc.getLocation().directionTo(target);
+        if (rc.canMove(closestDir)) {
+            return closestDir;
         }
 
-        //Sort the array
-        for (int i = 1; i < directions.length; i++) {
-            for (int j = i; j > 0; j--) {
-                if (close[j] % 100 > close[j - 1] % 100) {
-                    double temp = close[j - 1];
-                    close[j - 1] = close[j];
-                    close[j] = temp;
-                } else break;
+        Direction rightDir = closestDir.rotateRight();
+        Direction leftDir = closestDir.rotateLeft();
+
+        for (int i = 0; i < 3; i++) {
+            if (rc.canMove(rightDir)) {
+                return rightDir;
             }
+
+            if (rc.canMove(leftDir)) {
+                return leftDir;
+            }
+
+            rightDir = rightDir.rotateRight();
+            leftDir = leftDir.rotateLeft();
         }
 
-        //Add to directions array
-        Direction[] dir = new Direction[directions.length];
-
-        for (int i = 0; i < directions.length; i++) {
-            dir[i] = directions[(int) close[i] / 100];
+        if (rc.canMove(rightDir)) {
+            return rightDir;
         }
 
-        return dir;
+//        System.out.println("Could not find an available direction!");
+        return null;
     }
 
-    // TODO: Fix collisions in TreeMap
+    // returns the farthest available direction around a robot from a target location
+    public static Direction farthestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) {
+        Direction farthestDir = target.directionTo(rc.getLocation());
+        if (rc.canMove(farthestDir)) {
+            return farthestDir;
+        }
+
+        Direction rightDir = farthestDir.rotateRight();
+        Direction leftDir = farthestDir.rotateLeft();
+
+        for (int i = 0; i < 3; i++) {
+            if (rc.canMove(rightDir)) {
+                return rightDir;
+            }
+
+            if (rc.canMove(leftDir)) {
+                return leftDir;
+            }
+
+            rightDir = rightDir.rotateRight();
+            leftDir = leftDir.rotateLeft();
+        }
+
+        if (rc.canMove(rightDir)) {
+            return rightDir;
+        }
+
+//        System.out.println("Could not find an available direction!");
+        return null;
+    }
+
     // returns a list of sorted MapLocations distances to a fixed MapLocation within an action radius of a robot
     public static MapLocation[] closestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
         MapLocation[] locs = rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared);
@@ -171,17 +184,11 @@ public class Util {
 
         Arrays.sort(locs);
 
-        for(int i = 0; i < close.length; i++) {
+        for (int i = 0; i < close.length; i++) {
             locs[i] = intToLoc(close[i] % 10000);
         }
 
         return locs;
-//        Map<Double, MapLocation> map = new TreeMap<>();
-//        for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(from, rc.getType().actionRadiusSquared)) {
-//            map.put(dist(loc, to), loc);
-//        }
-//
-//        return map.values().toArray(new MapLocation[0]);
     }
 
     public static MapLocation[] farthestLocationsInActionRadius(RobotController rc, MapLocation from, MapLocation to) throws GameActionException {
@@ -201,40 +208,29 @@ public class Util {
     }
 
 
-    public static void moveTowards(RobotController rc, MapLocation target) throws GameActionException {
-        if (rc.isMovementReady()) {
-            MapLocation pos = rc.getLocation();
-            Direction[] closest = closestDirections(rc, pos, target);
+    // returns true if we successfully moved/are already adjacent to target
+    public static boolean moveTowards(RobotController rc, MapLocation target) throws GameActionException {
+        if (rc.getLocation().isAdjacentTo(target)) return true;
 
-            for (int i = 0; i < closest.length; i++) {
-                Direction dir = closest[i];
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
-                    //Accounts multiple movements
-                    if (!rc.isMovementReady()) break;
-                    closest = closestDirections(rc, rc.getLocation(), target);
-                    i = 0;
-                }
-            }
+        Direction closestDir = closestAvailableDirectionAroundRobot(rc, target);
+        if (closestDir != null) {
+            rc.move(closestDir);
+            if (rc.isMovementReady()) moveTowards(rc, target);
+
+            return true;
         }
+        return false;
     }
 
-    public static void moveAway(RobotController rc, MapLocation target) throws GameActionException {
-        //May want to switch this to randomize between the three "away" directions.
-        MapLocation pos = rc.getLocation();
+    // returns true if we succesfully moved
+    public static boolean moveAway(RobotController rc, MapLocation target) throws GameActionException {
+        Direction farthestDir = farthestAvailableDirectionAroundRobot(rc, target);
+        if (farthestDir != null) {
+            rc.move(farthestDir);
+            if (rc.isMovementReady()) moveAway(rc, target);
 
-        Direction[] closest = farthestDirections(pos, target);
-        if (rc.isMovementReady()) {
-            for (int i = 0; i < closest.length; i++) {
-                Direction dir = closest[i];
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
-                    //Accounts for multiple movements
-                    if (!rc.isMovementReady()) break;
-                    closest = farthestDirections(rc.getLocation(), target);
-                    i = 0;
-                }
-            }
+            return true;
         }
+        return false;
     }
 }

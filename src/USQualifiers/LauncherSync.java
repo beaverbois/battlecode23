@@ -142,22 +142,6 @@ public class LauncherSync {
         }
     }
 
-    // TODO: Eventually migrate to new well system
-//    public static void reportWell(RobotController rc, MapLocation targetWellLocation, ResourceType targetWellType) throws GameActionException {
-//        //ONLY CALL IF CAN WRITE
-//        ArrayList<MapLocation> targetWellLocations = new ArrayList<>();
-//
-//        for (int i = WELL_INDEX_MIN; i <= WELL_INDEX_MAX; i++) {
-//            if (getWellType(rc, i) == targetWellType) targetWellLocations.add(readWellLocation(rc, i));
-//        }
-//
-//        if (targetWellLocations.contains(targetWellLocation)) {
-//            return;
-//        }
-//
-//        writeWell(rc, targetWellType, targetWellLocation);
-//    }
-
     public static void setSuspected(RobotController rc) throws GameActionException {
         suspectedOppHQ = new MapLocation[allHQ.length * 3];
 

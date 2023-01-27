@@ -71,7 +71,6 @@ public class Launcher {
     static boolean pathBlocked = false;
     static Direction blockedTraverseDirection = null;
     static Direction blockedTargetDirection = null;
-    static int numMoves = 0;
 
     static void run(RobotController rc) throws GameActionException {
         if (!stateLock) {
@@ -82,8 +81,6 @@ public class Launcher {
         rc.setIndicatorString(lstate.toString());
 
         attacked = false;
-
-        numMoves = 0;
 
         switch(lstate) {
             case GATHERING: gathering(rc); break;
@@ -224,7 +221,7 @@ public class Launcher {
 //                } else moveTowards(rc, pos.add(pastWall));
 //            }
 
-           if (distance(pos, gatherPoint) > 0) moveTowards(rc, gatherPoint);
+           if (distance(pos, gatherPoint) > 0) moveTowardsLocation(rc, gatherPoint);
         }
 
         MapLocation[] t = closestTargetHQ(rc);
@@ -276,7 +273,7 @@ public class Launcher {
         } else if (rc.isMovementReady()) {
             //Move towards closest headquarters.
             headquarters = closest(pos, allHQ);
-            moveTowards(rc, headquarters);
+            moveTowardsLocation(rc, headquarters);
         }
 
         attack(rc);
@@ -367,7 +364,7 @@ public class Launcher {
 //            else if (distance(pos, target) > 0) moveTowards(rc, target);
 //        }
 
-        moveTowards(rc, target);
+        moveTowardsLocation(rc, target);
 
         if(rc.canSenseLocation(target)) {
             RobotInfo[] suppressors = rc.senseNearbyRobots(target, 9, rc.getTeam());
@@ -394,7 +391,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if (rc.isMovementReady() && !withinSquaredRadius(pos, target, 16)) moveTowards(rc, target);
+        else if (rc.isMovementReady() && !withinSquaredRadius(pos, target, 16)) moveTowardsLocation(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -441,7 +438,7 @@ public class Launcher {
             return;
         }
 
-        moveTowards(rc, target);
+        moveTowardsLocation(rc, target);
 
         if(distance(pos, target) < 3 && withinOppHQRange) lstate = LauncherState.SUPPRESSING;
 
@@ -554,7 +551,7 @@ public class Launcher {
                 if (rc.isMovementReady() && rc.canSenseRobotAtLocation(targetLoc)) {
                     RobotInfo robot = rc.senseRobotAtLocation(targetLoc);
                     if(robot.type == RobotType.LAUNCHER) moveAway(rc, targetLoc);
-                    else if(robot.type == RobotType.CARRIER && lstate != LauncherState.REPORTING) moveTowards(rc, targetLoc);
+                    else if(robot.type == RobotType.CARRIER && lstate != LauncherState.REPORTING) moveTowardsLocation(rc, targetLoc);
                 }
             }
         }
@@ -569,59 +566,36 @@ public class Launcher {
         }
     }
 
-    private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
-        boolean moved = false;
-
+    private static void moveTowardsLocation(RobotController rc, MapLocation location) throws GameActionException {
         // check if we cannot move
         if (!rc.isMovementReady()) {
             return;
         }
 
-        pos = rc.getLocation();
-
-        numMoves = 0;
-
         if (checkIfBlocked(rc, location)) {
             return;
         }
 
-        for (Direction dir : closestDirections(rc, location, pos)) {
-            MapLocation closestSquare = location.add(dir);
-            Direction closestSquareDir = pos.directionTo(closestSquare);
+        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location);
+        Direction targetDir;
+        if (targetLocation != null) {
+            targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
+        } else {
+            targetDir = closestAvailableDirectionAroundRobot(rc, location);
+        }
 
-            // ensure we do not move towards a wall/impassible square
-            if (rc.canSenseLocation(closestSquare) && !rc.sensePassability(closestSquare)) {
-                continue;
-            }
-
-            if (rc.canMove(closestSquareDir)) {
-                rc.move(closestSquareDir);
-                moved = true;
-                rc.setIndicatorString(lstate.toString() + " TO " + closestSquare + " DESTINATION " + location);
-                numMoves++;
-                break;
-            }
+        if (targetDir != null) {
+            rc.move(targetDir);
+            rc.setIndicatorString("MOVING " + targetDir + " TO " + targetLocation);
         }
 
         if (checkIfBlocked(rc, location)) {
             return;
-        }
-
-        // robot has not moved, so move to a random square around us closest to well
-        if (numMoves == 0) {
-            for (Direction dir : closestDirections(rc, pos, location)) {
-                if (rc.canMove(dir)) {
-                    rc.move(dir);
-                    moved = true;
-                    rc.setIndicatorString(lstate.toString() + " TO " + pos.add(dir) + " DESTINATION " + location);
-                    break;
-                }
-            }
         }
 
         // move a second time if we can
-        if (rc.isMovementReady() && moved) {
-            moveTowards(rc, location);
+        if (rc.isMovementReady()) {
+            moveTowardsLocation(rc, location);
         }
     }
 
@@ -647,13 +621,11 @@ public class Launcher {
             if (pathBlocked) {
                 if (rc.canMove(blockedTraverseDirection)) {
                     rc.move(blockedTraverseDirection);
-                    numMoves++;
                     return true;
                 } else {
                     blockedTraverseDirection = blockedTraverseDirection.opposite();
                     if (rc.canMove(blockedTraverseDirection)) {
                         rc.move(blockedTraverseDirection);
-                        numMoves++;
                         return true;
                     }
                 }
@@ -666,7 +638,6 @@ public class Launcher {
                         blockedTraverseDirection = wallDir;
 
                         rc.move(wallDir);
-                        numMoves++;
                         return true;
                     }
                 }
