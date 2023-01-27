@@ -287,7 +287,7 @@ public class Launcher {
 
         attack(rc);
 
-        if(allies.length < RETREAT && !withinOppHQRange) {
+        if(allies.length < RETREAT && !withinOppHQRange && !rc.senseCloud(pos)) {
             lstate = LauncherState.GATHERING;
             return;
         }
@@ -436,7 +436,7 @@ public class Launcher {
             return;
         } else if(enemies.length == 0 && distance(pos, target) < 4) chooseTarget(rc);
 
-        if(allies.length < RETREAT) {
+        if(allies.length < RETREAT && !rc.senseCloud(pos)) {
             lstate = LauncherState.GATHERING;
             return;
         }
@@ -551,8 +551,10 @@ public class Launcher {
             if (rc.canSenseRobotAtLocation(targetLoc) && !rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.HEADQUARTERS) && rc.canAttack(targetLoc)) {
                 rc.attack(targetLoc);
                 attacked = true;
-                if (rc.isMovementReady() && rc.canSenseRobotAtLocation(targetLoc) && rc.senseRobotAtLocation(targetLoc).type.equals(RobotType.LAUNCHER)) {
-                    moveAway(rc, targetLoc);
+                if (rc.isMovementReady() && rc.canSenseRobotAtLocation(targetLoc)) {
+                    RobotInfo robot = rc.senseRobotAtLocation(targetLoc);
+                    if(robot.type == RobotType.LAUNCHER) moveAway(rc, targetLoc);
+                    else if(robot.type == RobotType.CARRIER && lstate != LauncherState.REPORTING) moveTowards(rc, targetLoc);
                 }
             }
         }

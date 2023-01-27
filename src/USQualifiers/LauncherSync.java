@@ -263,8 +263,6 @@ public class LauncherSync {
         else if(index != 0) target = intToLoc(rc.readSharedArray(index));
         else target = allOpposingHQ[rng.nextInt(allOpposingHQ.length)];
 
-        System.out.println(allOpposingHQ[0]);
-
         targetReported = (index != 0);
     }
 }

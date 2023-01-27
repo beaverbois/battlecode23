@@ -77,8 +77,11 @@ public class CarrierSync {
             throw new IndexOutOfBoundsException("Hq num out of bounds");
         }
 
-        String data = String.valueOf(rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX));
-        int val = Integer.parseInt(String.valueOf(data.charAt(hqNum)));
+        //Also throwing errors
+        //String data = String.valueOf(rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX));
+        //int val = Integer.parseInt(String.valueOf(data.charAt(hqNum)));
+        int read = rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX);
+        int val = read / (int) Math.pow(10, hqNum) % 10;
         return ResourceType.values()[val];
     }
 
@@ -94,10 +97,17 @@ public class CarrierSync {
 
         // modify the digit located at index hqNum of carrier assignment index in the shared array using strings
         int read = rc.readSharedArray(CARRIER_ASSIGNMENT_INDEX);
-        StringBuilder data = (read == 0) ? new StringBuilder("00000") : new StringBuilder(String.valueOf(read));
-        data.setCharAt(hqNum, String.valueOf(type.resourceID).charAt(0));
 
-        rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, Integer.parseInt(String.valueOf(data)));
+        //This was throwing errors, so I'm just converting it to an integer. No actual change.
+        //StringBuilder data = (read == 0) ? new StringBuilder("00000") : new StringBuilder(String.valueOf(read));
+        //data.setCharAt(hqNum, String.valueOf(type.resourceID).charAt(0));
+        //System.out.println("HQ: " + data);
+
+        int mod = (int) Math.pow(10, hqNum);
+        int dat = read / (10 * mod) * (10 * mod) + type.resourceID * mod + read % mod;
+
+        //rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, Integer.parseInt(String.valueOf(data)));
+        rc.writeSharedArray(CARRIER_ASSIGNMENT_INDEX, dat);
     }
 
     public static int[] readCarrierSpawnIDs(RobotController rc) throws GameActionException {
