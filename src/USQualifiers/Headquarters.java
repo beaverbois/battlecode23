@@ -3,6 +3,7 @@ package USQualifiers;
 import battlecode.common.*;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
@@ -44,6 +45,7 @@ public class Headquarters {
     static boolean carrierCapacityReached = false;
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 0;
+    static boolean balling = false;
 
     static RobotInfo[] nearbyCarriers;
 
@@ -92,23 +94,40 @@ public class Headquarters {
 
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-        if (turnCount < START_SAVING_MANA && enemies.length > 0) {
+        if(enemies.length == 0) balling = false;
+        if ((turnCount < START_SAVING_MANA && enemies.length > 0) || balling) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
+            int neededMana = (enemies.length + 1) * 60;
+
+            if(rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100) balling = false;
 
             // Spawn a robot in the closest spot to the enemy
-            if (rc.isActionReady()) {
+            if ((rc.getResourceAmount(ResourceType.MANA) > neededMana || balling) && rc.isActionReady()) {
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, enemy.location);
+                balling = true;
 
                 for (MapLocation loc : spawnLocations) {
                     if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
                         rc.buildRobot(RobotType.LAUNCHER, loc);
-                        break;
+                    }
+                }
+            }
+
+            if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) > 100 && balling) {
+                int rand = rng.nextInt(8);
+                for(int i = 0; i < 8 && rc.getActionCooldownTurns() < 6; i++) {
+                    MapLocation loc = rc.getLocation().add(directions[rand++%8]);
+                    if(rc.canBuildRobot(RobotType.CARRIER, loc)) {
+                        rc.buildRobot(RobotType.CARRIER, loc);
+                        if(rc.isActionReady() && rc.canTransferResource(loc, ResourceType.ADAMANTIUM, 40))
+                            rc.transferResource(loc, ResourceType.ADAMANTIUM, 40);
                     }
                 }
             }
 
             reportEnemy(rc, enemy.location, false);
+            return;
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.

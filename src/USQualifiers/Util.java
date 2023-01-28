@@ -119,7 +119,6 @@ public class Util {
     // returns the closest available direction around a robot towards a target location
     public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) throws GameActionException {
         Direction closestDir = rc.getLocation().directionTo(target);
-//        System.out.println("Direction: " + closestDir);
         if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
             return closestDir;
         }

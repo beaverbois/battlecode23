@@ -6,6 +6,8 @@ import java.util.*;
 
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
+import static USQualifiers.Launcher.*;
+import static USQualifiers.Launcher.allHQ;
 import static USQualifiers.LauncherSync.checkEnemy;
 import static USQualifiers.LauncherSync.reportEnemy;
 import static USQualifiers.RobotPlayer.directions;
@@ -18,7 +20,8 @@ public class Carrier {
         MOVING,
         FARMING,
         RETURNING,
-        ISLAND
+        ISLAND,
+        FIGHTING
     }
 
     static boolean reportingWell = false;
@@ -48,24 +51,51 @@ public class Carrier {
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
-            // this will run when the bot is created
-            state = CarrierState.SCOUTING;
-            hqID = getHQNum(rc);
-            hqLocation = readHQLocation(rc, hqID);
-            targetType = readCarrierAssignment(rc, hqID);
-            opponentTeam = rc.getTeam().opponent();
-            scoutDirection = hqLocation.directionTo(rc.getLocation());
-            shuffledDir = new ArrayList<>(Arrays.asList(directions));
+            //If we fighting, we fighting
+            if(rc.getResourceAmount(ResourceType.ADAMANTIUM) != 0) {
+                state = CarrierState.FIGHTING;
+                int numHQ = readNumHQs(rc);
 
-            //Do islands if instructed to.
-            if (readIsland(rc, hqID) == 1) {
-                islandCarrier = true;
-                state = CarrierState.ISLAND;
+                allHQ = new MapLocation[numHQ];
+                allOpposingHQ = new MapLocation[numHQ];
+
+                for (int i = 0; i < allHQ.length; i++) {
+                    allHQ[i] = readHQLocation(rc, i);
+                    allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
+                }
+
+                hqLocation = closest(rc.getLocation(), allHQ);
+                for (int i = 0; i < allHQ.length; i++) {
+                    if(hqLocation == allHQ[i]) {
+                        hqID = i;
+                        System.out.println("HQ ID Set");
+                    }
+                }
+
+                targetType = ResourceType.MANA;
+                opponentTeam = rc.getTeam().opponent();
+                shuffledDir = new ArrayList<>(Arrays.asList(directions));
+                scoutDirection = hqLocation.directionTo(rc.getLocation());
+            } else {
+                // this will run when the bot is created
+                state = CarrierState.SCOUTING;
+                hqID = getHQNum(rc);
+                hqLocation = readHQLocation(rc, hqID);
+                targetType = readCarrierAssignment(rc, hqID);
+                opponentTeam = rc.getTeam().opponent();
+                scoutDirection = hqLocation.directionTo(rc.getLocation());
+
+                shuffledDir = new ArrayList<>(Arrays.asList(directions));
+
+                //Do islands if instructed to.
+                if (readIsland(rc, hqID) == 1) {
+                    islandCarrier = true;
+                    state = CarrierState.ISLAND;
+                }
             }
-//            if (getI)
         }
 
-        if(!islandCarrier) senseEnemies(rc);
+        if(!islandCarrier && state != CarrierState.FIGHTING) senseEnemies(rc);
 
         rc.setIndicatorString(state.toString());
 
@@ -102,10 +132,12 @@ public class Carrier {
             case RETURNING:
                 returningToHQ(rc);
                 break;
-            case ISLAND: {
+            case ISLAND:
                 islands(rc);
                 break;
-            }
+            case FIGHTING:
+                fighting(rc);
+                break;
         }
     }
 
@@ -303,9 +335,6 @@ public class Carrier {
             }
             MapLocation[] islandLocs = rc.senseNearbyIslandLocations(island);
             islands.put(island, locToInt(islandLocs[0]) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
-            if(locToInt(islandLocs[0]) == 0) {
-                System.out.println("Bad");
-            }
         }
 
         readIslands(rc);
@@ -338,11 +367,8 @@ public class Carrier {
             }
         }
 
-//        System.out.println("Target: " + target);
         if(target == null) {
             //We don't have any islands recorded, just go explore I guess.
-//            System.out.println("Searching for new islands");
-//            System.out.println("Opposite: " + new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
             moveTowards(rc, new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
 
             return;
@@ -357,7 +383,6 @@ public class Carrier {
         }
 
         MapLocation closeIsland = closest(pos, islandLocs);
-//        System.out.println(closeIsland);
         if(moveTowards(rc, closeIsland) && rc.canMove(pos.directionTo(closeIsland))) rc.move(pos.directionTo(closeIsland));
 
         pos = rc.getLocation();
@@ -408,6 +433,55 @@ public class Carrier {
 //            rc.setIndicatorString("Moving to center");
 //            moveTowards(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
 //        }
+    }
+
+    private static void fighting(RobotController rc) throws GameActionException {
+        if(rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
+            moveTowards(rc, hqLocation);
+            if(rc.canTransferResource(hqLocation, ResourceType.ADAMANTIUM, -1))
+                rc.transferResource(hqLocation, ResourceType.ADAMANTIUM, -1);
+            else if(rc.getLocation().isAdjacentTo(hqLocation)) state = CarrierState.SCOUTING;
+            return;
+        }
+
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
+
+        if(enemies.length == 0) {
+            if (!rc.canSenseLocation(hqLocation)) {
+                state = CarrierState.SCOUTING;
+                return;
+            }
+            if (rc.canMove(scoutDirection)) {
+                rc.move(scoutDirection);
+                if (rc.canMove(scoutDirection)) {
+                    rc.move(scoutDirection);
+                }
+            } else {
+                // if we can't go that way, randomly pick another direction until one is found
+                Collections.shuffle(shuffledDir);
+                for (Direction dir : shuffledDir) {
+                    if (rc.canMove(dir)) {
+                        scoutDirection = dir;
+                        rc.move(scoutDirection);
+                        break;
+                    }
+                }
+            }
+
+            return;
+        }
+
+        MapLocation[] locs = new MapLocation[enemies.length];
+        for (int i = 0; i < enemies.length; i++) {
+            RobotInfo enemy = enemies[i];
+            locs[i] = enemy.getLocation();
+            if(rc.canAttack(locs[i])) {
+                rc.attack(locs[i]);
+                return;
+            }
+        }
+
+        moveTowards(rc, closest(rc.getLocation(), locs));
     }
 
     private static void senseEnemies(RobotController rc) throws GameActionException {

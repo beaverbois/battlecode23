@@ -188,7 +188,6 @@ public class LauncherSync {
             System.out.println("Trying to write when already found.");
             return;
         }
-        System.out.println("Writing " + suspectCount + ", " + exists);
 
         //If exists, then we know for certain the location of EVERY headquarters.
         int div = (int) (Math.pow(10, suspectCount % 3));

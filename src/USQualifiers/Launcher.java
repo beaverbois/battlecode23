@@ -499,12 +499,10 @@ public class Launcher {
         }
 
         if (checkIfBlocked(rc, location)) {
-//            System.out.println("Blocked");
             return;
         }
 
         MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location);
-//        System.out.println("Target Loc: " + targetLocation + ", " + location);
         Direction targetDir;
         if (targetLocation != null) {
             targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
@@ -514,17 +512,13 @@ public class Launcher {
 
         if (targetDir != null) {
             rc.move(targetDir);
-//            System.out.println("MOVING " + targetDir + " TO " + targetLocation);
         }
     }
 
     private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
         pos = rc.getLocation();
         Direction targetDir = (pathBlocked) ? blockedTargetDirection : pos.directionTo(target);
-//        System.out.println("Target: " + pos.directionTo(target) + ", " + blockedTargetDirection);
         MapLocation front = pos.add(targetDir);
-
-//        System.out.println("Front is " + front + ", " + pathBlocked);
 
         boolean senseable = rc.canSenseLocation(front);
 
@@ -534,7 +528,6 @@ public class Launcher {
         boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(pos, front.add(current)) > 1);
 
         if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
-//            System.out.println("Blocked");
             //rc.setIndicatorString("Blocked!");
             Direction[] wallFollow = {
                     targetDir.rotateRight().rotateRight(),
