@@ -39,6 +39,7 @@ public class Carrier {
     static Direction blockedTargetDirection = null;
     static MapLocation corner = new MapLocation(-1, -1);
     static Team opponentTeam = null;
+    static MapLocation enemyTarget = null;
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
             // this will run when the bot is created
@@ -198,7 +199,7 @@ public class Carrier {
 
     private static void returningToHQ(RobotController rc) throws GameActionException {
         if (reportingEnemy && rc.canWriteSharedArray(0, 0)) {
-            reportEnemy(rc, Launcher.target, false);
+            reportEnemy(rc, enemyTarget, false);
         }
 
         if (reportingWell) {
@@ -226,11 +227,12 @@ public class Carrier {
         }
 
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
-        if (checkIfBlocked(rc, hqLocation)) {
-            return;
-        }
 
-        moveTowards(rc, hqLocation);
+        if (!moveTowards(rc, hqLocation)) {
+            if (checkIfBlocked(rc, hqLocation)) {
+                return;
+            }
+        }
         checkHQAdjacencyAndTransfer(rc);
     }
 
@@ -281,12 +283,21 @@ public class Carrier {
         // If a headquarters is detected, report it back to HQ
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
         for (RobotInfo enemy : enemies) {
-            if (enemy.getType() == RobotType.LAUNCHER || enemy.getType() == RobotType.DESTABILIZER) {
-                //If a fighting enemy is detected, report it back to HQ
-                Launcher.target = enemy.getLocation();
+            RobotType enemyType = enemy.getType();
+            if (enemyType == RobotType.LAUNCHER || enemyType == RobotType.DESTABILIZER) {
+                //If a fighting enemy is detected, report it back to HQ and try to attack it
+                enemyTarget = enemy.getLocation();
+                if (rc.canAttack(enemyTarget)) {
+                    rc.attack(enemyTarget);
+                }
                 state = CarrierState.RETURNING;
-                reportingEnemy = checkEnemy(rc, Launcher.target);
-                return;
+                reportingEnemy = !checkEnemy(rc, enemyTarget);
+                if (reportingEnemy) return;
+            } else if (enemyType == RobotType.CARRIER) {
+                // attack enemy carriers >:[
+                if (rc.canAttack(enemy.getLocation())) {
+                    rc.attack(enemy.getLocation());
+                }
             }
         }
     }
