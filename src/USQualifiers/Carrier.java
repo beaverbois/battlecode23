@@ -51,6 +51,7 @@ public class Carrier {
             hqLocation = readHQLocation(rc, hqID);
             targetType = readCarrierAssignment(rc, hqID);
             opponentTeam = rc.getTeam().opponent();
+            scoutDirection = hqLocation.directionTo(rc.getLocation());
 
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
 
@@ -71,7 +72,6 @@ public class Carrier {
                 // if we have not discovered all wells, scout in a direction away from hq
                 if (!stateLock) {
                     if (readNumWellsFound(rc, hqID) < 2) {
-                        scoutDirection = hqLocation.directionTo(rc.getLocation());
                         stateLock = true;
                         scout(rc);
                     } else {

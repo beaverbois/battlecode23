@@ -112,10 +112,9 @@ public class Util {
 
     // returns true if there is no current (or current points in direction) in the direction specified around rc
     public static boolean senseCurrent(RobotController rc, Direction direction) throws GameActionException {
-        MapLocation location = rc.getLocation().add(direction);
-        Direction currentDir = rc.senseMapInfo(location).getCurrentDirection();
+        Direction currentDir = rc.senseMapInfo(rc.getLocation().add(direction)).getCurrentDirection();
 
-        return currentDir == Direction.CENTER || currentDir == direction;
+        return currentDir == Direction.CENTER || currentDir.dx == direction.dx || currentDir.dy == direction.dy;
     }
 
     // returns the closest available direction around a robot towards a target location
