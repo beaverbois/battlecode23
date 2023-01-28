@@ -41,7 +41,7 @@ public class Headquarters {
     static int numMnReturns = 0; //Total number of carriers tracked as returning from farming.
     static final int MAX_AD_CARRIERS = 10; // per well
     static final int MAX_MN_CARRIERS = 12; // per well
-    static final double EXPIRED_CARRIER_TOLERNACE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
+    static final double EXPIRED_CARRIER_TOLERANCE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
     static boolean carrierCapacityReached = false;
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 0;
@@ -168,7 +168,7 @@ public class Headquarters {
                     int turn = turnCount - mnCarriersLastSeen.get(mnIndex);
                     if(turn > 10) {
                         numMnReturns++;
-                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERNACE;
+                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERANCE;
                     }
 
                     mnCarriersLastSeen.set(mnIndex, turnCount);
@@ -182,7 +182,7 @@ public class Headquarters {
                     int turn = turnCount - adCarriersLastSeen.get(adIndex);
                     if(turn > 10) {
                         numAdReturns++;
-                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERNACE;
+                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERANCE;
                     }
 
                     adCarriersLastSeen.set(adIndex, turnCount);

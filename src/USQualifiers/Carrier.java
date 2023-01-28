@@ -27,7 +27,7 @@ public class Carrier {
     static int hqID = 0;
     static MapLocation hqLocation = null;
     static MapLocation targetWellLocation = null;
-    static final int maxCollectionCycles = 10;
+    static final int maxCollectionCycles = 15;
     static int numCycles = 0;
     static List<Direction> shuffledDir;
     public static ResourceType targetType = null;
@@ -37,9 +37,9 @@ public class Carrier {
     static boolean islandCarrier = false;
     static Direction blockedTraverseDirection = null;
     static Direction blockedTargetDirection = null;
-    static MapLocation corner = new MapLocation(-1, -1);
     static Team opponentTeam = null;
     static MapLocation enemyTarget = null;
+    static ArrayList<MapLocation> wellsFarmed = new ArrayList<>();
 
     static HashMap<Integer, Integer> islands = new HashMap<>();
 
@@ -98,7 +98,6 @@ public class Carrier {
                 break;
 
             case RETURNING:
-                //TODO: double moves on return
                 returningToHQ(rc);
                 break;
             case ISLAND: {
@@ -147,7 +146,7 @@ public class Carrier {
             }
         }
 
-        //Record spotted islands.
+        // Record spotted islands.
         int[] islandID = rc.senseNearbyIslands();
         for(int island : islandID) {
             if(islands.get(island) != null) {
@@ -160,8 +159,13 @@ public class Carrier {
     }
 
     private static void moveTowardsTargetWell(RobotController rc) throws GameActionException {
+        // check we are not on a current
+        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
+            return;
+        }
+
         // check if we are already adjacent to a well or if we cannot move
-        if (canFarm(rc) || !rc.isMovementReady()) {
+        if  (canFarm(rc) || !rc.isMovementReady()) {
             return;
         }
 
@@ -178,9 +182,14 @@ public class Carrier {
             rc.move(targetDir);
             rc.setIndicatorString("MOVING " + targetDir + " TO " + targetLocation);
         } else {
+            //TODO: blocked is not being used correctly — should be wall traversal
             if (checkIfBlocked(rc, targetWellLocation)) {
                 return;
             }
+        }
+        // check we are not on a current
+        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
+            return;
         }
 
         // check if we are adjacent to a well and change state accordingly
@@ -190,12 +199,29 @@ public class Carrier {
 
         // move a second time if we can
         if (rc.isMovementReady()) {
-            moveTowards(rc, targetWellLocation);
+            // move towards the closest square available around target well
+            targetLocation = null;
+            targetDir = null;
+            targetLocation = closestAvailableLocationTowardsRobot(rc, targetWellLocation);
+            if (targetLocation != null) {
+                targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
+            } else {
+                targetDir = closestAvailableDirectionAroundRobot(rc, targetWellLocation);
+            }
+
+            if (targetDir != null) {
+                rc.move(targetDir);
+                rc.setIndicatorString("MOVING " + targetDir + " TO " + targetLocation);
+            } else {
+                if (checkIfBlocked(rc, targetWellLocation)) {
+                    return;
+                }
+            }
         }
     }
 
     private static void farm(RobotController rc) throws GameActionException {
-        // if we can collect resources, do so, if we can no longer move back to well
+        // if we can collect resources, do so, if not move back towards well
         if (!checkAndCollectResources(rc)) {
             state = CarrierState.MOVING;
             moveTowardsTargetWell(rc);
@@ -205,6 +231,7 @@ public class Carrier {
         // once we reach maxCollectionCycles, return and move towards hq
         if (numCycles >= maxCollectionCycles) {
             state = CarrierState.RETURNING;
+            wellsFarmed.add(targetWellLocation);
             numCycles = 0;
 
             moveTowards(rc, hqLocation);
@@ -240,7 +267,6 @@ public class Carrier {
         if(islandCarrier) {
             //Just chill
             if (rc.getLocation().isAdjacentTo(hqLocation)) {
-
                 return;
             }
         }
@@ -251,12 +277,14 @@ public class Carrier {
         }
 
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
+        if (wellsFarmed.size() > 0) checkForAuxWellsAndMove(rc);
 
         if (!moveTowards(rc, hqLocation)) {
             if (checkIfBlocked(rc, hqLocation)) {
                 return;
             }
         }
+
         checkHQAdjacencyAndTransfer(rc);
     }
 
@@ -449,13 +477,19 @@ public class Carrier {
 
     private static boolean checkHQAdjacencyAndTransfer(RobotController rc) throws GameActionException{
         if (rc.getLocation().isAdjacentTo(hqLocation)) {
-            if (rc.canTransferResource(hqLocation, targetType, 1)) {
-                rc.transferResource(hqLocation, targetType, rc.getResourceAmount(targetType));
+            wellsFarmed.clear();
+
+            if (rc.canTransferResource(hqLocation, ResourceType.ADAMANTIUM, 1)) {
+                rc.transferResource(hqLocation, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
             }
 
-            if (!reportingWell) {
+            if (rc.canTransferResource(hqLocation, ResourceType.MANA, 1)) {
+                rc.transferResource(hqLocation, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
+            }
+
+            if (!reportingWell && rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0 && rc.getResourceAmount(ResourceType.MANA) == 0) {
                 state = CarrierState.MOVING;
-                if(targetWellLocation == null) targetWellLocation = readWellLocation(rc, targetType, hqID);
+                targetWellLocation = readWellLocation(rc, targetType, hqID);
                 moveTowardsTargetWell(rc);
             }
 
@@ -483,6 +517,20 @@ public class Carrier {
             return true;
         }
         return false;
+    }
+
+    private static void checkForAuxWellsAndMove(RobotController rc) throws GameActionException {
+        WellInfo[] wells = rc.senseNearbyWells();
+
+        for (WellInfo well : wells) {
+            MapLocation wellLocation = well.getMapLocation();
+            if (wellLocation != targetWellLocation && !wellsFarmed.contains(wellLocation)) {
+                targetWellLocation = wellLocation;
+                state = CarrierState.MOVING;
+                moveTowardsTargetWell(rc);
+                return;
+            }
+        }
     }
 
     // Determines which HQ spawned us by finding our ID amongst a list of IDs spawned
