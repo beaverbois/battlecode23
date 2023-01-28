@@ -56,7 +56,7 @@ public class Headquarters {
             MAP_HEIGHT = rc.getMapHeight();
             hqLocation = rc.getLocation();
 
-            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.2) * 1.5 + 50);
+            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.075) + 35);
 
             hqID = readNumHQs(rc);
             writeHQLocation(rc, hqLocation, hqID);

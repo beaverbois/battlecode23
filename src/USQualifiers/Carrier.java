@@ -1,6 +1,7 @@
 package USQualifiers;
 
 import battlecode.common.*;
+import scala.Int;
 
 import java.util.*;
 
@@ -8,10 +9,8 @@ import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
 import static USQualifiers.Launcher.*;
 import static USQualifiers.Launcher.allHQ;
-import static USQualifiers.LauncherSync.checkEnemy;
-import static USQualifiers.LauncherSync.reportEnemy;
-import static USQualifiers.RobotPlayer.directions;
-import static USQualifiers.RobotPlayer.turnCount;
+import static USQualifiers.LauncherSync.*;
+import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.*;
 
 public class Carrier {
@@ -318,7 +317,7 @@ public class Carrier {
             else {
                 if(!pos.isAdjacentTo(hqLocation)) moveTowards(rc, hqLocation);
                 if(rc.canWriteSharedArray(0, 0)) writeIslands(rc);
-                if(turnCount - lastCarried > 50) rc.disintegrate();
+                if(turnCount - lastCarried > 50) perish(rc);
                 return;
             }
         }
@@ -337,8 +336,21 @@ public class Carrier {
         }
 
         if(target == null) {
-            //We don't have any islands recorded, just go explore I guess.
-            moveTowards(rc, new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
+            //We don't have any islands recorded, explore to find some.
+            if(foundHQ) {
+//                int read = rc.readSharedArray(suspectedHQMin);
+//                for (Map.Entry<Integer, Integer> entry : islands.entrySet()) {
+//                    if(entry.getValue() / 10000 == 0) {
+//                        MapLocation loc = intToLoc(entry.getValue() % 10000);
+//                        int x = (read / 10 % 10 == 1) ? loc.x : rc.getMapWidth() - 1 - loc.x;
+//                        int y = (read / 100 % 10 == 1) ? loc.y : rc.getMapHeight() - 1 - loc.y;
+//                        MapLocation oppLoc = new MapLocation(x, y);
+//                        if(!islands.containsValue(locToInt(oppLoc))) islands.put()
+//                    }
+//                }
+
+                moveTowards(rc, new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
+            }
 
             return;
         }

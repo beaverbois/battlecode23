@@ -226,11 +226,13 @@ public class Launcher {
 
         MapLocation[] t = closestTargetHQ(rc);
 
-        if(t != null && (allies.length > MIN_PACK_SIZE || withinOppHQRange)) {
+        int cloudMod = rc.senseIsland(pos) != -1 ? 3 : 0;
+
+        if(t != null && (allies.length + cloudMod > MIN_PACK_SIZE || withinOppHQRange)) {
             lstate = LauncherState.SWARMING;
             target = t[0];
         }
-        else if(allies.length > MIN_PACK_SIZE) {
+        else if(allies.length + cloudMod > MIN_PACK_SIZE) {
             lstate = LauncherState.PACK;
             chooseTarget(rc);
         }

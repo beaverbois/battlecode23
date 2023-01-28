@@ -56,7 +56,8 @@ public strictfp class RobotPlayer {
             "I sometimes wish I'd never been born at all",
             "I like jazz",
             "By all known laws of aviation...",
-            "Never forget"
+            "Never forget",
+            "Sweet dreams"
     };
 
     /**
@@ -131,10 +132,7 @@ public strictfp class RobotPlayer {
                     }
                     if (jammedLocation == rc.getLocation()) {
                         jammedTurns++;
-                        if (jammedTurns > 1) {
-                            System.out.println(deathMessages[rng.nextInt(deathMessages.length)]);
-                            rc.disintegrate();
-                        }
+                        if (jammedTurns > 1) perish(rc);
                     } else {
                         jammedTurns = 0;
                         jammedLocation = null;
@@ -169,5 +167,10 @@ public strictfp class RobotPlayer {
             // End of loop: go back to the top. Clock.yield() has ended, so it's time for another turn!
         }
         // Your code should never reach here (unless it's intentional)! Self-destruction imminent...
+    }
+
+    public static void perish(RobotController rc) throws GameActionException {
+        System.out.println(deathMessages[rng.nextInt(deathMessages.length)]);
+        rc.disintegrate();
     }
 }
