@@ -20,8 +20,7 @@ public class Headquarters {
     static final double MANA_TARGET_RATE = 0.72; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
-    static final double MIN_ROBOTS_BEFORE_ISLANDS = 60; // # of robots before we save up for islands
-    static final double MIN_ROBOTS_FOR_ANCHOR = 80; // min robots to build anchor
+    static int MIN_ROBOTS_FOR_ANCHOR = 0; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
     static final int START_SAVING_MANA = 1800; //turn at which we go for mana tiebreaker
     static int MAP_WIDTH;
@@ -54,6 +53,8 @@ public class Headquarters {
             MAP_WIDTH = rc.getMapWidth();
             MAP_HEIGHT = rc.getMapHeight();
             hqLocation = rc.getLocation();
+
+            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.2) * 1.5 + 70);
 
             hqID = readNumHQs(rc);
             writeHQLocation(rc, hqLocation, hqID);
