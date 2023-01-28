@@ -109,11 +109,15 @@ public class Util {
         return rc.canSenseLocation(location) && !rc.isLocationOccupied(location) && rc.sensePassability(location) && rc.senseMapInfo(location).getCurrentDirection() == Direction.CENTER;
     }
 
-    // returns true if there is no current (or current points in direction) in the direction specified around rc
+    // returns true if the current position does not have a current pushing against the passed-in direction.
     public static boolean senseCurrent(RobotController rc, Direction direction) throws GameActionException {
         Direction currentDir = rc.senseMapInfo(rc.getLocation().add(direction)).getCurrentDirection();
 
-        return currentDir == Direction.CENTER || currentDir.dx == direction.dx || currentDir.dy == direction.dy;
+        boolean canPass = currentDir.equals(direction.opposite());
+        if(currentDir.equals(direction.opposite().rotateRight()) || currentDir.equals(direction.opposite().rotateLeft()))
+            canPass = true;
+
+        return currentDir == Direction.CENTER || !canPass;
     }
 
     // returns the closest available direction around a robot towards a target location

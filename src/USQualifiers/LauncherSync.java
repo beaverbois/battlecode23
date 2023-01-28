@@ -242,10 +242,12 @@ public class LauncherSync {
             }
         }
 
-        if(index == 0 && !foundHQ) target = suspectedOppHQ[suspectCount];
-        else if(index != 0) target = intToLoc(rc.readSharedArray(index));
-        else target = allOpposingHQ[rng.nextInt(allOpposingHQ.length)];
+        MapLocation indexTarget = intToLoc(rc.readSharedArray(index));
+        MapLocation[] closeHQs = foundHQ ? closestTargetHQ(rc) : null;
+        MapLocation closeHQ = closest(pos, suspectedOppHQ);
+        if(foundHQ && closeHQs != null) closeHQ = closeHQs[0];
+        target = closest(pos, indexTarget, closeHQ);
 
-        targetReported = (index != 0);
+        targetReported = (target == indexTarget);
     }
 }

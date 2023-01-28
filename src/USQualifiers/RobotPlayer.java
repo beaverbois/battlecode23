@@ -49,7 +49,14 @@ public strictfp class RobotPlayer {
             "There's no place like home",
             "War. War changes people",
             "I have a dream...",
-            "DEATH IS A PREFERABLE ALTERNATIVE TO COMMUNISM"
+            "DEATH IS A PREFERABLE ALTERNATIVE TO COMMUNISM",
+            "Mommy, I'm cold",
+            "Help me...",
+            "Mama, ooooohhh, I don't wanna die",
+            "I sometimes wish I'd never been born at all",
+            "I like jazz",
+            "By all known laws of aviation...",
+            "Never forget"
     };
 
     /**
