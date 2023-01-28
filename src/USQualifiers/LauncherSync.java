@@ -29,7 +29,6 @@ public class LauncherSync {
         }
 
         headquarters = closest(rc.getLocation(), allHQ);
-        corner = headquarters;
         setSuspected(rc); //Needed to report enemy HQ
     }
 

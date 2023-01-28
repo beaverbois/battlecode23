@@ -59,7 +59,7 @@ public class Launcher {
     static MapLocation[] allHQ;
     static MapLocation[] allOpposingHQ;
     static MapLocation headquarters = new MapLocation(0, 0);
-    static MapLocation corner = new MapLocation(-1, -1);
+    static MapLocation corner = null;
     static MapLocation newKnownHQ;
 
     static Direction pastWall;

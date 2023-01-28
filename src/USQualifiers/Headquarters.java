@@ -56,7 +56,8 @@ public class Headquarters {
             MAP_HEIGHT = rc.getMapHeight();
             hqLocation = rc.getLocation();
 
-            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.075) + 35);
+            MIN_ROBOTS_FOR_ANCHOR = (int) (0.9 * (Math.log(Math.pow(MAP_WIDTH * MAP_HEIGHT, .75) - 30) / Math.log(1.05) - 48));
+            System.out.println("Anchro: " + MIN_ROBOTS_FOR_ANCHOR);
 
             hqID = readNumHQs(rc);
             writeHQLocation(rc, hqLocation, hqID);
@@ -95,7 +96,7 @@ public class Headquarters {
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if(enemies.length == 0) balling = false;
-        if ((turnCount < START_SAVING_MANA && enemies.length > 0) || balling) {
+        if (turnCount < START_SAVING_MANA && enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
