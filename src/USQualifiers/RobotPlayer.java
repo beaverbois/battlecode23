@@ -2,6 +2,7 @@ package USQualifiers;
 
 import battlecode.common.*;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import static USQualifiers.Util.closestAvailableDirectionAroundRobot;
@@ -31,6 +32,25 @@ public strictfp class RobotPlayer {
     static int jammedTurns = 0;
     static MapLocation jammedLocation = null;
     static int bytecodeLimit = 0;
+
+    static String[] deathMessages = {
+            "Wakanda Forever!",
+            "You are worthless.",
+            "The cake was a lie",
+            "Winter is coming",
+            "The end has come",
+            "Luke I am your father",
+            "To infinity and beyond!",
+            "Goodbye cruel world",
+            "Hello world...",
+            "Well, nobody's perfect...",
+            "E.T. phone home",
+            "Father I am coming",
+            "There's no place like home",
+            "War. War changes people",
+            "I have a dream...",
+            "DEATH IS A PREFERABLE ALTERNATIVE TO COMMUNISM"
+    };
 
     /**
      * Array containing all the possible movement directions.
@@ -105,7 +125,7 @@ public strictfp class RobotPlayer {
                     if (jammedLocation == rc.getLocation()) {
                         jammedTurns++;
                         if (jammedTurns > 1) {
-                            System.out.println("WAKANDA FOREVER!");
+                            System.out.println(deathMessages[rng.nextInt(deathMessages.length)]);
                             rc.disintegrate();
                         }
                     } else {

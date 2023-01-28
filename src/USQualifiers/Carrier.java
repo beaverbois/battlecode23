@@ -467,11 +467,6 @@ public class Carrier {
                 state = CarrierState.RETURNING;
                 reportingEnemy = !checkEnemy(rc, enemyTarget);
                 if (reportingEnemy) return;
-            } else if (enemyType == RobotType.CARRIER) {
-                // attack enemy carriers >:[
-                if (rc.canAttack(enemy.getLocation())) {
-                    rc.attack(enemy.getLocation());
-                }
             }
         }
     }
