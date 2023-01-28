@@ -7,10 +7,7 @@ import java.util.ArrayList;
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
 import static USQualifiers.LauncherSync.reportEnemy;
-import static USQualifiers.RobotPlayer.rng;
-import static USQualifiers.RobotPlayer.turnCount;
-import static USQualifiers.RobotSync.readIsland;
-import static USQualifiers.RobotSync.writeIsland;
+import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.closestLocationsInActionRadius;
 import static USQualifiers.Util.farthestLocationsInActionRadius;
 
@@ -24,7 +21,7 @@ public class Headquarters {
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static final double MIN_ROBOTS_BEFORE_ISLANDS = 60; // # of robots before we save up for islands
-    static final double MIN_ROBOTS_FOR_ANCHOR = 40; // min robots to build anchor
+    static final double MIN_ROBOTS_FOR_ANCHOR = 100; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
     static final int START_SAVING_MANA = 1800; //turn at which we go for mana tiebreaker
     static int MAP_WIDTH;
@@ -46,6 +43,8 @@ public class Headquarters {
     static final int MAX_MN_CARRIERS = 12; // per well
     static final double EXPIRED_CARRIER_TOLERNACE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
     static boolean carrierCapacityReached = false;
+    static ArrayList<Integer> islandCarriers = new ArrayList<>();
+    static int turnSpawned = 0;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -67,14 +66,21 @@ public class Headquarters {
             stateLock = true;
         }
 
-        //Make island carriers late-game.
-        if (rc.getRobotCount() > MIN_ROBOTS_BEFORE_ISLANDS) writeIsland(rc, 1);
-            //In case we start losing, swap back.
-        else if (readIsland(rc) == 1) writeIsland(rc, 0);
+        //Make island carriers if we have an anchor and no island carrier.
+        boolean islandCarrier = false;
+        for(Integer i : islandCarriers) {
+            if (rc.canSenseRobot(i)) {
+                islandCarrier = true;
+                break;
+            }
+        }
+
+        if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
+        else if(readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
-        if (rc.canBuildAnchor(Anchor.STANDARD) && rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && numAnchors < MAX_ANCHORS) {
+        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.canBuildAnchor(Anchor.STANDARD) && numAnchors < MAX_ANCHORS && turnCount > 100) {
             rc.buildAnchor(Anchor.STANDARD);
             numAnchors++;
         }
@@ -99,14 +105,13 @@ public class Headquarters {
                 }
             }
 
-            //TODO: Move to LauncherSync
             reportEnemy(rc, enemy.location, false);
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
         if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
             //Make sure we build anchors
-            rc.setIndicatorString("Saving up for an anchor");
+            rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
             return;
         }
 
@@ -216,6 +221,17 @@ public class Headquarters {
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
+        if (readIsland(rc, hqID) == 1 && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
+            //Build an island carrier adjacent to HQ.
+            int rand = rng.nextInt(directions.length);
+            for(int i = 0; i < 8; i++) {
+                MapLocation spawn = rc.getLocation().add(directions[rand++%8]);
+                if(rc.canBuildRobot(RobotType.CARRIER, spawn)) {
+                    buildCarrier(rc, spawn);
+                    return;
+                }
+            }
+        }
         if (!carrierCapacityReached && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             // Set the resource target of carrier spawns
             if (adCarrierIDs.size() < MAX_AD_CARRIERS && rng.nextDouble() > MANA_TARGET_RATE) {
@@ -290,7 +306,7 @@ public class Headquarters {
         int rcID = rc.senseRobotAtLocation(loc).getID();
         previousCarrierID = rcID;
 
-        if (readIsland(rc) == 0) {
+        if (readIsland(rc, hqID) == 0) {
             if (carrierAssignment == ResourceType.MANA) {
                 mnCarrierIDs.add(rcID);
                 mnCarriersLastSeen.add(turnCount);
@@ -299,10 +315,14 @@ public class Headquarters {
                 adCarriersLastSeen.add(turnCount);
             }
         }
+        else {
+            turnSpawned = turnCount;
+            islandCarriers.add(rcID);
+        }
     }
 
     static boolean carrierCapacityReached(RobotController rc) throws GameActionException {
-        if (readIsland(rc) == 1) return false;
+        if (readIsland(rc, hqID) == 1) return false;
         return adCarrierIDs.size() >= MAX_AD_CARRIERS && mnCarrierIDs.size() >= MAX_MN_CARRIERS;
     }
 }

@@ -2,13 +2,22 @@ package USQualifiers;
 
 import battlecode.common.*;
 
-import static USQualifiers.Util.intToLoc;
-import static USQualifiers.Util.locToInt;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static USQualifiers.Carrier.islands;
+import static USQualifiers.Launcher.*;
+import static USQualifiers.RobotPlayer.rng;
+import static USQualifiers.Util.*;
 
 public class CarrierSync {
     private static final int WELL_MIN_INDEX = 56;
     private static final int SPAWN_ID_MIN_INDEX = 48;
     private static final int CARRIER_ASSIGNMENT_INDEX = 55;
+    private static final int MIN_ISLANDS_INDEX = 23;
+    private static final int MAX_ISLANDS_INDEX = 47;
+
 
     public static void writeWell(RobotController rc, ResourceType type, MapLocation loc, int hqNum) throws IndexOutOfBoundsException, GameActionException {
         if (hqNum < 0 || hqNum > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
@@ -131,5 +140,52 @@ public class CarrierSync {
 
         int index = SPAWN_ID_MIN_INDEX + hqNum;
         rc.writeSharedArray(index, ID);
+    }
+
+    public static void writeIslands(RobotController rc) throws GameActionException {
+        if(islands == null) {
+            System.out.println("No islands");
+            return;
+        }
+        if(!rc.canWriteSharedArray(0, 0)) {
+            System.out.println("Can't write");
+            return;
+        }
+
+        for (Map.Entry<Integer, Integer> entry : islands.entrySet()) {
+            Integer id = entry.getKey();
+            Integer loc = entry.getValue();
+            for (int j = MIN_ISLANDS_INDEX; j < MAX_ISLANDS_INDEX; j += 3) {
+                int read = rc.readSharedArray(j);
+                int id1 = read / 100, id2 = read % 100;
+                if (id == id1 || id == id2) break;
+                if (id1 == 0) {
+                    //Write in digits 1 and 2. Writes in id1 before id2.
+                    rc.writeSharedArray(j, id * 100);
+                    rc.writeSharedArray(j+1, loc);
+                    break;
+                }
+                if (id2 == 0) {
+                    //Write in digits 3 and 4.
+                    rc.writeSharedArray(j, id + id1 * 100);
+                    rc.writeSharedArray(j+2, loc);
+                    break;
+                }
+            }
+        }
+    }
+
+    //May use too much bytecode, will need to check.
+    public static void readIslands(RobotController rc) throws GameActionException {
+        for (int i = MIN_ISLANDS_INDEX; i < MAX_ISLANDS_INDEX; i += 3) {
+            int read = rc.readSharedArray(i);
+            if(read == 0) continue;
+            int id1 = read / 100, id2 = read % 100;
+            int island1 = rc.readSharedArray(i+1), island2 = rc.readSharedArray(i+2);
+            if(id1 != 0 && !islands.containsKey(id1) && island1 / 10000 != 1) islands.put(id1, island1);
+            else if(id1 != 0 && islands.containsKey(id1) && island1 / 10000 == 1) islands.replace(id1, island1);
+            if(id2 != 0 && !islands.containsKey(id2) && island2 / 10000 != 1) islands.put(id2, island2);
+            else if(id2 != 0 && islands.containsKey(id2) && island2 / 10000 == 1) islands.replace(id2, island2);
+        }
     }
 }

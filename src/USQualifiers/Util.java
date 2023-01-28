@@ -53,11 +53,11 @@ public class Util {
             System.out.println("Calling closest with no targets.");
             return pos;
         }
-        int minDistance = distance(pos, targets[0]);
+        double minDistance = dist(pos, targets[0]);
         MapLocation close = targets[0];
         for (MapLocation target : targets) {
-            if (distance(pos, target) < minDistance) {
-                minDistance = distance(pos, target);
+            if (dist(pos, target) < minDistance) {
+                minDistance = dist(pos, target);
                 close = target;
             }
         }

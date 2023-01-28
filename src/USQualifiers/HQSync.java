@@ -10,6 +10,8 @@ import static USQualifiers.Util.locToInt;
 
 public class HQSync {
 
+    private static final int ISLAND_ASSIGN = 47;
+
     public static void writeHQLocation(RobotController rc, MapLocation location, int hqID) throws GameActionException {
         if (hqID < 0 || hqID > GameConstants.MAX_STARTING_HEADQUARTERS - 1) {
             throw new IndexOutOfBoundsException("Hq num out of bounds");
@@ -38,5 +40,23 @@ public class HQSync {
         }
 
         return total;
+    }
+
+    public static void assignIsland(RobotController rc, int hqNum, int assignment) throws GameActionException {
+        if(!rc.canWriteSharedArray(0, 0)) {
+            System.out.println("Can't write");
+            return;
+        }
+
+        int read = rc.readSharedArray(ISLAND_ASSIGN);
+        int mod = (int) Math.pow(10, hqNum);
+        int write = (read / (mod * 10)) * (mod * 10) + read % mod + assignment * mod;
+        rc.writeSharedArray(ISLAND_ASSIGN, write);
+    }
+
+    public static int readIsland(RobotController rc, int hqNum) throws GameActionException {
+        int read = rc.readSharedArray(ISLAND_ASSIGN);
+        int div = (int) Math.pow(10, hqNum);
+        return read / div % 10;
     }
 }

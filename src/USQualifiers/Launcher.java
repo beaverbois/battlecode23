@@ -233,7 +233,6 @@ public class Launcher {
         else if(allies.length > MIN_PACK_SIZE) {
             lstate = LauncherState.PACK;
             chooseTarget(rc);
-            System.out.println("Target: " + target);
         }
 
         attack(rc);
