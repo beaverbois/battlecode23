@@ -55,7 +55,6 @@ public class Carrier {
             targetType = readCarrierAssignment(rc, hqID);
             opponentTeam = rc.getTeam().opponent();
             scoutDirection = hqLocation.directionTo(rc.getLocation());
-
             shuffledDir = new ArrayList<>(Arrays.asList(directions));
 
             //Do islands if instructed to.
@@ -304,7 +303,9 @@ public class Carrier {
             }
             MapLocation[] islandLocs = rc.senseNearbyIslandLocations(island);
             islands.put(island, locToInt(islandLocs[0]) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
-            if(locToInt(islandLocs[0]) == 0) System.out.println("Bad");
+            if(locToInt(islandLocs[0]) == 0) {
+                System.out.println("Bad");
+            }
         }
 
         readIslands(rc);
@@ -337,11 +338,11 @@ public class Carrier {
             }
         }
 
-        System.out.println("Target: " + target);
+//        System.out.println("Target: " + target);
         if(target == null) {
             //We don't have any islands recorded, just go explore I guess.
-            System.out.println("Searching for new islands");
-            System.out.println("Opposite: " + new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
+//            System.out.println("Searching for new islands");
+//            System.out.println("Opposite: " + new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
             moveTowards(rc, new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
 
             return;
@@ -356,7 +357,7 @@ public class Carrier {
         }
 
         MapLocation closeIsland = closest(pos, islandLocs);
-        System.out.println(closeIsland);
+//        System.out.println(closeIsland);
         if(moveTowards(rc, closeIsland) && rc.canMove(pos.directionTo(closeIsland))) rc.move(pos.directionTo(closeIsland));
 
         pos = rc.getLocation();
@@ -364,7 +365,7 @@ public class Carrier {
         if(rc.senseIsland(pos) == id && rc.canPlaceAnchor()) {
             //Place the anchor
             rc.placeAnchor();
-            System.out.println("Placed anchor!");
+//            System.out.println("Placed anchor!");
             islands.replace(id, locToInt(target) + 10000);
             lastCarried = turnCount;
         }

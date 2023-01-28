@@ -1,12 +1,11 @@
 package USQualifiers;
 
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
+import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static USQualifiers.RobotPlayer.directions;
 
 /**
  * Public utility class
@@ -120,7 +119,7 @@ public class Util {
     // returns the closest available direction around a robot towards a target location
     public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) throws GameActionException {
         Direction closestDir = rc.getLocation().directionTo(target);
-        System.out.println("Direction: " + closestDir);
+//        System.out.println("Direction: " + closestDir);
         if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
             return closestDir;
         }
@@ -273,5 +272,15 @@ public class Util {
             return true;
         }
         return false;
+    }
+
+    public static boolean isJammed(RobotController rc) throws GameActionException {
+        if (!rc.isMovementReady()) return false;
+        for (Direction dir : directions) {
+            if (rc.canMove(dir)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -1,11 +1,11 @@
 package USQualifiers;
 
-import battlecode.common.Clock;
-import battlecode.common.Direction;
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
+import battlecode.common.*;
 
 import java.util.Random;
+
+import static USQualifiers.Util.closestAvailableDirectionAroundRobot;
+import static USQualifiers.Util.isJammed;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.
@@ -28,6 +28,9 @@ public strictfp class RobotPlayer {
      * we get the same sequence of numbers every time this code is run. This is very useful for debugging!
      */
     static final Random rng = new Random();
+    static int jammedTurns = 0;
+    static MapLocation jammedLocation = null;
+    static int bytecodeLimit = 0;
 
     /**
      * Array containing all the possible movement directions.
@@ -59,6 +62,7 @@ public strictfp class RobotPlayer {
 
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Spawned");
+        bytecodeLimit = (int) (rc.getType().bytecodeLimit * 0.98);
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
@@ -94,7 +98,26 @@ public strictfp class RobotPlayer {
                         break;
                 }
 
-                if (Clock.getBytecodeNum() >= rc.getType().bytecodeLimit * 0.98) {
+                if (rc.getType() != RobotType.HEADQUARTERS && isJammed(rc)) {
+                    if (jammedTurns == 0) {
+                        jammedLocation = rc.getLocation();
+                    }
+                    if (jammedLocation == rc.getLocation()) {
+                        jammedTurns++;
+                        if (jammedTurns > 1) {
+                            System.out.println("WAKANDA FOREVER!");
+                            rc.disintegrate();
+                        }
+                    } else {
+                        jammedTurns = 0;
+                        jammedLocation = null;
+                    }
+                } else {
+                    jammedTurns = 0;
+                    jammedLocation = null;
+                }
+
+                if (Clock.getBytecodeNum() >= bytecodeLimit) {
                     System.out.println("[WARN] Bytecode Limit Exceeded!!");
                 }
 
