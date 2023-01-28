@@ -56,7 +56,7 @@ public class Headquarters {
             MAP_HEIGHT = rc.getMapHeight();
             hqLocation = rc.getLocation();
 
-            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.2) * 1.5 + 70);
+            MIN_ROBOTS_FOR_ANCHOR = (int) (Math.log(Math.sqrt(MAP_WIDTH * MAP_HEIGHT) - 19) / Math.log(1.2) * 1.5 + 50);
 
             hqID = readNumHQs(rc);
             writeHQLocation(rc, hqLocation, hqID);
@@ -103,25 +103,13 @@ public class Headquarters {
             if(rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100) balling = false;
 
             // Spawn a robot in the closest spot to the enemy
-            if ((rc.getResourceAmount(ResourceType.MANA) > neededMana || balling) && rc.isActionReady()) {
+            if ((rc.getResourceAmount(ResourceType.MANA) > neededMana || (rc.getResourceAmount(ResourceType.MANA) > 60 && balling) && rc.isActionReady())) {
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, enemy.location);
                 balling = true;
 
                 for (MapLocation loc : spawnLocations) {
                     if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
                         rc.buildRobot(RobotType.LAUNCHER, loc);
-                    }
-                }
-            }
-
-            if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) > 100 && balling) {
-                int rand = rng.nextInt(8);
-                for(int i = 0; i < 8 && rc.getActionCooldownTurns() < 6; i++) {
-                    MapLocation loc = rc.getLocation().add(directions[rand++%8]);
-                    if(rc.canBuildRobot(RobotType.CARRIER, loc)) {
-                        rc.buildRobot(RobotType.CARRIER, loc);
-                        if(rc.isActionReady() && rc.canTransferResource(loc, ResourceType.ADAMANTIUM, 40))
-                            rc.transferResource(loc, ResourceType.ADAMANTIUM, 40);
                     }
                 }
             }

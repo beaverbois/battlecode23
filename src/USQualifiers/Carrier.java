@@ -20,8 +20,7 @@ public class Carrier {
         MOVING,
         FARMING,
         RETURNING,
-        ISLAND,
-        FIGHTING
+        ISLAND
     }
 
     static boolean reportingWell = false;
@@ -51,32 +50,6 @@ public class Carrier {
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
-            //If we fighting, we fighting
-            if(rc.getResourceAmount(ResourceType.ADAMANTIUM) != 0) {
-                state = CarrierState.FIGHTING;
-                int numHQ = readNumHQs(rc);
-
-                allHQ = new MapLocation[numHQ];
-                allOpposingHQ = new MapLocation[numHQ];
-
-                for (int i = 0; i < allHQ.length; i++) {
-                    allHQ[i] = readHQLocation(rc, i);
-                    allOpposingHQ[i] = intToLoc(rc.readSharedArray(i + 4) % 10000);
-                }
-
-                hqLocation = closest(rc.getLocation(), allHQ);
-                for (int i = 0; i < allHQ.length; i++) {
-                    if(hqLocation == allHQ[i]) {
-                        hqID = i;
-                        System.out.println("HQ ID Set");
-                    }
-                }
-
-                targetType = ResourceType.MANA;
-                opponentTeam = rc.getTeam().opponent();
-                shuffledDir = new ArrayList<>(Arrays.asList(directions));
-                scoutDirection = hqLocation.directionTo(rc.getLocation());
-            } else {
                 // this will run when the bot is created
                 state = CarrierState.SCOUTING;
                 hqID = getHQNum(rc);
@@ -92,10 +65,9 @@ public class Carrier {
                     islandCarrier = true;
                     state = CarrierState.ISLAND;
                 }
-            }
         }
 
-        if(!islandCarrier && state != CarrierState.FIGHTING) senseEnemies(rc);
+        if(!islandCarrier) senseEnemies(rc);
 
         rc.setIndicatorString(state.toString());
 
@@ -134,9 +106,6 @@ public class Carrier {
                 break;
             case ISLAND:
                 islands(rc);
-                break;
-            case FIGHTING:
-                fighting(rc);
                 break;
         }
     }
