@@ -21,7 +21,7 @@ public class Headquarters {
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static final double MIN_ROBOTS_BEFORE_ISLANDS = 60; // # of robots before we save up for islands
-    static final double MIN_ROBOTS_FOR_ANCHOR = 100; // min robots to build anchor
+    static final double MIN_ROBOTS_FOR_ANCHOR = 80; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
     static final int START_SAVING_MANA = 1800; //turn at which we go for mana tiebreaker
     static int MAP_WIDTH;
@@ -45,6 +45,8 @@ public class Headquarters {
     static boolean carrierCapacityReached = false;
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 0;
+
+    static RobotInfo[] nearbyCarriers;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -115,6 +117,8 @@ public class Headquarters {
             return;
         }
 
+        nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
+
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
@@ -149,7 +153,6 @@ public class Headquarters {
         rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
         if (robotBuildType != RobotType.CARRIER) {
             // Spawn limits for carriers
-            RobotInfo[] nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
             int mnCarrierCount = 0, adCarrierCount = 0;
             for (RobotInfo carrier : nearbyCarriers) {
                 if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
@@ -323,6 +326,6 @@ public class Headquarters {
 
     static boolean carrierCapacityReached(RobotController rc) throws GameActionException {
         if (readIsland(rc, hqID) == 1) return false;
-        return adCarrierIDs.size() >= MAX_AD_CARRIERS && mnCarrierIDs.size() >= MAX_MN_CARRIERS;
+        return adCarrierIDs.size() >= MAX_AD_CARRIERS && mnCarrierIDs.size() >= MAX_MN_CARRIERS && nearbyCarriers.length > 15;
     }
 }

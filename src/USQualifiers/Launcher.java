@@ -221,7 +221,7 @@ public class Launcher {
 //                } else moveTowards(rc, pos.add(pastWall));
 //            }
 
-           if (distance(pos, gatherPoint) > 0) moveTowardsLocation(rc, gatherPoint);
+           if (distance(pos, gatherPoint) > 1) moveTowardsLocation(rc, gatherPoint);
         }
 
         MapLocation[] t = closestTargetHQ(rc);
@@ -288,85 +288,12 @@ public class Launcher {
             return;
         }
 
-        int avrX = pos.x, avrY = pos.y, suppressiveForce = 6;
-
-        for(RobotInfo ally : allies) {
-            avrX += ally.getLocation().x;
-            avrY += ally.getLocation().y;
-        }
-
-        MapLocation avrPos = new MapLocation(avrX / (allies.length + 1), avrY / (allies.length + 1));
-
-//        if (rc.isMovementReady() && distance(pos, target) < distance(avrPos, target) + 3) {
-//            if(!stuck) {
-//                boolean testStuck = true;
-//                if(lastPos.size() >= lastPosSize) {
-//                    double sumX = 0, sumY = 0;
-//                    for(MapLocation loc : lastPos) {
-//                        sumX += loc.x;
-//                        sumY += loc.y;
-//                    }
-//                    sumX /= lastPos.size();
-//                    sumY /= lastPos.size();
-//
-//                    if(Math.abs(sumX - pos.x) >= 2 || Math.abs(sumY - pos.y) >= 2) testStuck = false;
-//                }
-//                Direction[] close = closeDirections(rc, pos, target);
-//                if(!testStuck) {
-//                    testStuck = true;
-//                    for (int i = 0; i < 2; i++) {
-//                        if (rc.canMove(close[i])) {
-//                            testStuck = false;
-//                            break;
-//                        }
-//                    }
-//                }
-//                stuck = testStuck;
-//                if(stuck) {
-//                    for (int i = 3; i < close.length; i++) {
-//                        if (close[i] != Direction.CENTER && rc.onTheMap(pos.add(close[i])) && rc.sensePassability(pos.add(close[i]))) {
-//                            pastWall = close[i];
-//                            break;
-//                        }
-//                    }
-//                    if (pastWall == null) {
-//                        //Literally no possible moves, just chill.
-//                        stuck = false;
-//                        attack(rc);
-//                        packStatus = allies;
-//                        return;
-//                    }
-//                }
-//            }
-//
-//            //Choose a direction and stick to it.
-//            if(distance(pos, target) > 1 && stuck) {
-//                rc.setIndicatorString("Stuck, " + target + ", " + pastWall);
-//                if(rc.canMove(pos.directionTo(target))) {
-//                    stuck = false;
-//                    pastWall = null;
-//                    moveTowards(rc, target);
-//                } else if(pastWall == null);
-//                else if(rc.onTheMap(pos.add(pastWall)) && !rc.sensePassability(pos.add(pastWall))) {
-//                    Direction[] close = closeDirections(rc, pos, target);
-//                    for(int i = 0; i < close.length; i++) {
-//                        if(close[i].opposite() == pastWall) continue;
-//                        if(rc.canMove(close[i])) {
-//                            pastWall = close[i];
-//                            rc.move(pastWall);
-//                        }
-//                    }
-//                    //Shouldn't ever get past the last case.
-//                } else moveTowards(rc, pos.add(pastWall));
-//            }
-//
-//            else if (distance(pos, target) > 0) moveTowards(rc, target);
-//        }
+        int suppressiveForce = 4;
 
         moveTowardsLocation(rc, target);
 
         if(rc.canSenseLocation(target)) {
-            RobotInfo[] suppressors = rc.senseNearbyRobots(target, 9, rc.getTeam());
+            RobotInfo[] suppressors = rc.senseNearbyRobots(target, 16, rc.getTeam());
 
             if (distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
             if (distance(pos, target) < 4 && suppressors.length - enemies.length > suppressiveForce) {
@@ -572,10 +499,12 @@ public class Launcher {
         }
 
         if (checkIfBlocked(rc, location)) {
+            System.out.println("Blocked");
             return;
         }
 
         MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location);
+        System.out.println("Target Loc: " + targetLocation + ", " + location);
         Direction targetDir;
         if (targetLocation != null) {
             targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
@@ -585,23 +514,17 @@ public class Launcher {
 
         if (targetDir != null) {
             rc.move(targetDir);
-            rc.setIndicatorString("MOVING " + targetDir + " TO " + targetLocation);
-        }
-
-        if (checkIfBlocked(rc, location)) {
-            return;
-        }
-
-        // move a second time if we can
-        if (rc.isMovementReady()) {
-            moveTowards(rc, location);
+            System.out.println("MOVING " + targetDir + " TO " + targetLocation);
         }
     }
 
     private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
         pos = rc.getLocation();
-        Direction targetDir = (pathBlocked) ? blockedTargetDirection: pos.directionTo(target);
+        Direction targetDir = (pathBlocked) ? blockedTargetDirection : pos.directionTo(target);
+        System.out.println("Target: " + pos.directionTo(target) + ", " + blockedTargetDirection);
         MapLocation front = pos.add(targetDir);
+
+        System.out.println("Front is " + front + ", " + pathBlocked);
 
         boolean senseable = rc.canSenseLocation(front);
 
@@ -611,7 +534,8 @@ public class Launcher {
         boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(pos, front.add(current)) > 1);
 
         if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
-            rc.setIndicatorString("Blocked!");
+            System.out.println("Blocked");
+            //rc.setIndicatorString("Blocked!");
             Direction[] wallFollow = {
                     targetDir.rotateRight().rotateRight(),
                     targetDir.rotateLeft().rotateLeft()};

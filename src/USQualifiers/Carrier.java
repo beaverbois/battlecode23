@@ -9,6 +9,7 @@ import static USQualifiers.HQSync.*;
 import static USQualifiers.LauncherSync.checkEnemy;
 import static USQualifiers.LauncherSync.reportEnemy;
 import static USQualifiers.RobotPlayer.directions;
+import static USQualifiers.RobotPlayer.turnCount;
 import static USQualifiers.Util.*;
 
 public class Carrier {
@@ -42,6 +43,8 @@ public class Carrier {
     static ArrayList<MapLocation> wellsFarmed = new ArrayList<>();
 
     static HashMap<Integer, Integer> islands = new HashMap<>();
+
+    static int lastCarried = turnCount;
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
@@ -316,6 +319,7 @@ public class Carrier {
             else {
                 if(!pos.isAdjacentTo(hqLocation)) moveTowards(rc, hqLocation);
                 if(rc.canWriteSharedArray(0, 0)) writeIslands(rc);
+                if(turnCount - lastCarried > 50) rc.disintegrate();
                 return;
             }
         }
@@ -362,6 +366,7 @@ public class Carrier {
             rc.placeAnchor();
             System.out.println("Placed anchor!");
             islands.replace(id, locToInt(target) + 10000);
+            lastCarried = turnCount;
         }
 //
 //        //Camp on an island to destroy anchors or protect yours.
