@@ -5,6 +5,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -173,6 +174,41 @@ public class Util {
 
         if (rc.canMove(rightDir)) {
             return rightDir;
+        }
+
+//        System.out.println("Could not find an available direction!");
+        return null;
+    }
+
+    // returns a list of directions closest around robot to a location, specifying the number of expected output directions
+    public static Direction[] closestDirectionsAroundRobot(RobotController rc, MapLocation target, int numDirections) throws GameActionException {
+        Direction closestDir = rc.getLocation().directionTo(target);
+        ArrayList<Direction> closestDirections = new ArrayList<>();
+
+        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
+            closestDirections.add(closestDir);
+        }
+
+        Direction rightDir = closestDir.rotateRight();
+        Direction leftDir = closestDir.rotateLeft();
+
+        for (int i = closestDirections.size(); i < numDirections / 2; i++) {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+                closestDirections.add(rightDir);
+            }
+
+            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir)) {
+                closestDirections.add(leftDir);
+            }
+
+            rightDir = rightDir.rotateRight();
+            leftDir = leftDir.rotateLeft();
+        }
+
+        if (numDirections == 8)  {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+                closestDirections.add(rightDir);
+            }
         }
 
 //        System.out.println("Could not find an available direction!");

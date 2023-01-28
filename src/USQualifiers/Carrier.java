@@ -243,6 +243,7 @@ public class Carrier {
         if (reportingEnemy && rc.canWriteSharedArray(0, 0)) {
             reportEnemy(rc, enemyTarget, false);
             reportingEnemy = false;
+            return;
         }
 
         if (reportingWell) {
@@ -488,9 +489,15 @@ public class Carrier {
             }
 
             if (!reportingWell && rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0 && rc.getResourceAmount(ResourceType.MANA) == 0) {
-                state = CarrierState.MOVING;
-                targetWellLocation = readWellLocation(rc, targetType, hqID);
-                moveTowardsTargetWell(rc);
+                if (targetWellLocation == null) {
+                    state = CarrierState.SCOUTING;
+                    scout(rc);
+                } else {
+                    state = CarrierState.MOVING;
+
+                    targetWellLocation = readWellLocation(rc, targetType, hqID);
+                    moveTowardsTargetWell(rc);
+                }
             }
 
             return true;
