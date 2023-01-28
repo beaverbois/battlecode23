@@ -36,7 +36,7 @@ public strictfp class RobotPlayer {
     static String[] deathMessages = {
             "Wakanda Forever!",
             "You are worthless.",
-            "The cake was a lie",
+            "The cake is a lie",
             "Winter is coming",
             "The end has come",
             "Luke I am your father",
