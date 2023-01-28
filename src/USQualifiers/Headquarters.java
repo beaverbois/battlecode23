@@ -86,7 +86,7 @@ public class Headquarters {
 
         // TODO: Need more robust island/anchor tracking
         // Build anchors once we have enough robots
-        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.canBuildAnchor(Anchor.STANDARD) && numAnchors < MAX_ANCHORS && turnCount > 100) {
+        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.canBuildAnchor(Anchor.STANDARD) && turnCount > 100) {
             rc.buildAnchor(Anchor.STANDARD);
             numAnchors++;
         }
@@ -120,7 +120,7 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.getNumAnchors(Anchor.STANDARD) == 0 && numAnchors < MAX_ANCHORS) {
+        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.getNumAnchors(Anchor.STANDARD) == 0) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
             return;

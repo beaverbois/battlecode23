@@ -63,6 +63,7 @@ public class Carrier {
                 if (readIsland(rc, hqID) == 1) {
                     islandCarrier = true;
                     state = CarrierState.ISLAND;
+                    System.out.println("Islands are here");
                 }
         }
 
@@ -267,13 +268,6 @@ public class Carrier {
             }
         }
 
-        if(islandCarrier) {
-            //Just chill
-            if (rc.getLocation().isAdjacentTo(hqLocation)) {
-                return;
-            }
-        }
-
         // if we are already at hq, transfer and set state to moving
         if (checkHQAdjacencyAndTransfer(rc)) {
             return;
@@ -294,18 +288,18 @@ public class Carrier {
     private static void islands(RobotController rc) throws GameActionException {
         rc.setIndicatorString("ISLANDS");
 
+        readIslands(rc);
+
         //Record spotted islands.
         int[] islandID = rc.senseNearbyIslands();
         for(int island : islandID) {
-            if(islands.get(island) != null) {
-                islands.replace(island, islands.get(island) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
+            if(islands.containsKey(island)) {
+                islands.replace(island, islands.get(island) % 10000 + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
                 continue;
             }
             MapLocation[] islandLocs = rc.senseNearbyIslandLocations(island);
             islands.put(island, locToInt(islandLocs[0]) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
         }
-
-        readIslands(rc);
 
         MapLocation pos = rc.getLocation();
 
@@ -336,22 +330,27 @@ public class Carrier {
         }
 
         if(target == null) {
-            //We don't have any islands recorded, explore to find some.
-            if(foundHQ) {
-//                int read = rc.readSharedArray(suspectedHQMin);
-//                for (Map.Entry<Integer, Integer> entry : islands.entrySet()) {
-//                    if(entry.getValue() / 10000 == 0) {
-//                        MapLocation loc = intToLoc(entry.getValue() % 10000);
-//                        int x = (read / 10 % 10 == 1) ? loc.x : rc.getMapWidth() - 1 - loc.x;
-//                        int y = (read / 100 % 10 == 1) ? loc.y : rc.getMapHeight() - 1 - loc.y;
-//                        MapLocation oppLoc = new MapLocation(x, y);
-//                        if(!islands.containsValue(locToInt(oppLoc))) islands.put()
-//                    }
-//                }
+            if(corner == null) {
+                int cornerX = rng.nextInt(2) == 1 ? rc.getMapWidth() - 4 : 4;
+                int cornerY = rng.nextInt(2) == 1 ? rc.getMapHeight() - 4 : 4;
 
-                moveTowards(rc, new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y));
+                corner = new MapLocation(cornerX, cornerY);
             }
 
+            if(rc.canSenseLocation(corner)) {
+                //No islands here, choose another corner.
+                System.out.println("Corner Pre: " + corner);
+                int cornerX = corner.x;
+                int cornerY = corner.y;
+
+                if(cornerX > rc.getMapWidth() / 2 ^ cornerY > rc.getMapWidth() / 2) cornerX = rc.getMapWidth() - cornerX;
+                else cornerY = rc.getMapHeight() - cornerY;
+
+                corner = new MapLocation(cornerX, cornerY);
+                System.out.println("Corner Post: " + corner);
+            }
+
+            moveTowards(rc, corner);
             return;
         }
 
@@ -371,49 +370,9 @@ public class Carrier {
         if(rc.senseIsland(pos) == id && rc.canPlaceAnchor()) {
             //Place the anchor
             rc.placeAnchor();
-//            System.out.println("Placed anchor!");
             islands.replace(id, locToInt(target) + 10000);
             lastCarried = turnCount;
         }
-//
-//        //Camp on an island to destroy anchors or protect yours.
-//        if (rc.getAnchor() == null && rc.senseIsland(rc.getLocation()) != -1) {
-//            //System.out.println("Camping");
-//            rc.disintegrate();
-//            return;
-//        }
-//
-//        //Default code provided, just picks up anchors moves towards islands we know about.
-//        int[] islands = rc.senseNearbyIslands();
-//        Set<MapLocation> islandLocs = new HashSet<>();
-//        for (int id : islands) {
-//            MapLocation[] thisIslandLocs = rc.senseNearbyIslandLocations(id);
-//            islandLocs.addAll(Arrays.asList(thisIslandLocs));
-//        }
-//        if (rc.canSenseLocation(hqLocation) && rc.canTakeAnchor(hqLocation, Anchor.STANDARD) && rc.getAnchor() == null) {
-//            if (rc.canTakeAnchor(hqLocation, Anchor.STANDARD)) rc.takeAnchor(hqLocation, Anchor.STANDARD);
-//            rc.setIndicatorString("Acquiring anchor");
-//        }
-//        if (islandLocs.size() > 0) {
-//            rc.setIndicatorString("Moving to island");
-//            int index = 0;
-//            MapLocation islandLocation = islandLocs.iterator().next();
-//            if (rc.getAnchor() == null) {
-//                rc.setIndicatorString("Moving my anchor towards " + islandLocation);
-//                moveTowards(rc, islandLocation);
-//            } else {
-//                while(++index < islands.length &&  rc.senseAnchor(islands[index]) != null) islandLocation = islandLocs.iterator().next();
-//                if (!islandLocs.iterator().hasNext()) moveAway(rc, corner);
-//                moveTowards(rc, islandLocation);
-//                if (rc.canPlaceAnchor()) {
-//                    rc.placeAnchor();
-//                }
-//            }
-//
-//        } else if (rc.isMovementReady()) {
-//            rc.setIndicatorString("Moving to center");
-//            moveTowards(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
-//        }
     }
 
     private static void fighting(RobotController rc) throws GameActionException {
