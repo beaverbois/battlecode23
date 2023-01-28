@@ -595,7 +595,7 @@ public class Launcher {
 
         // move a second time if we can
         if (rc.isMovementReady()) {
-            moveTowardsLocation(rc, location);
+            moveTowards(rc, location);
         }
     }
 

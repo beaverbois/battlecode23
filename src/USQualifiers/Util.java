@@ -7,9 +7,6 @@ import battlecode.common.RobotController;
 
 import java.util.Arrays;
 
-import static USQualifiers.RobotPlayer.directions;
-import static USQualifiers.RobotPlayer.rng;
-
 /**
  * Public utility class
  */
@@ -112,10 +109,18 @@ public class Util {
         return rc.canSenseLocation(location) && !rc.isLocationOccupied(location) && rc.sensePassability(location) && rc.senseMapInfo(location).getCurrentDirection() == Direction.CENTER;
     }
 
+    // returns true if there is no current (or current points in direction) in the direction specified around rc
+    public static boolean senseCurrent(RobotController rc, Direction direction) throws GameActionException {
+        MapLocation location = rc.getLocation().add(direction);
+        Direction currentDir = rc.senseMapInfo(location).getCurrentDirection();
+
+        return currentDir == Direction.CENTER || currentDir == direction;
+    }
+
     // returns the closest available direction around a robot towards a target location
-    public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) {
+    public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) throws GameActionException {
         Direction closestDir = rc.getLocation().directionTo(target);
-        if (rc.canMove(closestDir)) {
+        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
             return closestDir;
         }
 
@@ -123,11 +128,11 @@ public class Util {
         Direction leftDir = closestDir.rotateLeft();
 
         for (int i = 0; i < 3; i++) {
-            if (rc.canMove(rightDir)) {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
                 return rightDir;
             }
 
-            if (rc.canMove(leftDir)) {
+            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir)) {
                 return leftDir;
             }
 
@@ -135,7 +140,7 @@ public class Util {
             leftDir = leftDir.rotateLeft();
         }
 
-        if (rc.canMove(rightDir)) {
+        if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
             return rightDir;
         }
 
