@@ -214,7 +214,7 @@ public class LauncherSync {
         //Modifiers to test our specific index.
         if(read / div % 10 == 0) {
             //Build an int with the updated value, preserving the other data if !exists.
-            int write = read % div + read / (div * 100) + 2 * div;
+            int write = read % div + read / (div * 100) * (div * 100) + 2 * div;
 
             //If we know 2 forms of symmetry are incorrect, mark the third as correct.
             int div1 = (int) (Math.pow(10, (suspectCount + 1) % 3)), div2 = (int) (Math.pow(10, (suspectCount + 2) % 3));
