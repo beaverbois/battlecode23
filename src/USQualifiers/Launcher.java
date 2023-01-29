@@ -2,9 +2,7 @@ package USQualifiers;
 
 import battlecode.common.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static USQualifiers.LauncherSync.*;
 import static USQualifiers.RobotPlayer.*;
@@ -48,6 +46,9 @@ public class Launcher {
     static final int MIN_PACK_SIZE = 5, RETREAT = 3;
 
     static boolean attacked = false;
+
+    static HashMap<MapLocation, Integer> bfsMap = new HashMap<>();
+    static HashMap<MapLocation, MapLocation[]> adjList;
 
     //Wells
     static boolean reportingWell = false, reportingEnemy = false, reportingHQ = false, reportingSuspect = false;
@@ -452,6 +453,23 @@ public class Launcher {
     private static void bugNavTowards(RobotController rc, MapLocation location) throws GameActionException {
         pos = rc.getLocation();
         if(!rc.isMovementReady()) return;
+        Direction p = genPath(rc, location);
+        if(p != null) {
+            pathBlocked = false;
+            Direction[] dirTowards = {
+                    p,
+                    p.rotateRight(),
+                    p.rotateLeft()
+            };
+
+            for(Direction dir : dirTowards) {
+                if(rc.canMove(dir)) {
+                    rc.move(dir);
+                    return;
+                }
+            }
+            return;
+        }
         if(!pathBlocked) {
             offWall = false;
             wallDir = null;
@@ -565,9 +583,11 @@ public class Launcher {
                 }
 
                 //Otherwise, just continue along the new wall if possible.
-                if(!rc.sensePassability(pos.add(wallDir.opposite()))) {
+                if(!rc.onTheMap(pos.add(wallDir.opposite())) || !rc.sensePassability(pos.add(wallDir.opposite()))) {
                     wallDir = moveDir;
-                    bugNavTowards(rc, location);
+                    if(rc.canMove(moveDir.opposite())) {
+                        rc.move(moveDir);
+                    }
                     return;
                 }
 
@@ -581,6 +601,49 @@ public class Launcher {
             System.out.println("Somehow got here, just gonna go boom.");
             perish(rc);
         }
+    }
+
+    private static Direction genPath(RobotController rc, MapLocation target) throws GameActionException {
+        MapLocation pos = rc.getLocation();
+        Direction towards = rc.getLocation().directionTo(target);
+        if(rc.getLocation().isAdjacentTo(target)) return towards;
+        if(rc.canSenseLocation(target)) {
+            if(!rc.sensePassability(target)) return null;
+            ArrayList<Direction> p = new ArrayList<>();
+            int numSteps = 10;
+            p = pathTo(rc, pos, target, p, numSteps);
+            if(p != null) return p.get(0);
+        }
+        return null;
+    }
+
+    private static ArrayList<Direction> pathTo(RobotController rc, MapLocation loc, MapLocation target, ArrayList<Direction> steps, int maxSteps) throws GameActionException {
+        System.out.println("Bytecode: " + Clock.getBytecodeNum());
+        if(loc.equals(target)) return steps;
+        if(steps.size() > maxSteps) return null;
+        Direction dir = loc.directionTo(target);
+        Direction[] dirTowards = {
+                dir,
+                dir.rotateRight(),
+                dir.rotateLeft(),
+                dir.rotateRight().rotateRight(),
+                dir.rotateLeft().rotateLeft(),
+        };
+        for(Direction d : dirTowards) {
+            if((steps.size() == 0 || steps.get(steps.size() - 1).opposite() != d) && canPassThrough(rc, loc, loc.add(d))) {
+                steps.add(d);
+                ArrayList<Direction> p = pathTo(rc, loc.add(d), target, steps, maxSteps);
+                if(p != null) return p;
+            }
+        }
+        return null;
+    }
+
+    private static boolean canPassThrough(RobotController rc, MapLocation loc, MapLocation target) throws GameActionException {
+        if(!rc.onTheMap(target) || !rc.canSenseLocation(target)) return false;
+        if(loc.isAdjacentTo(target) && rc.sensePassability(target)
+                && rc.senseMapInfo(target).getCurrentDirection() != target.directionTo(loc)) return true;
+        return false;
     }
 
     private static void moveTowardsLocation(RobotController rc, MapLocation location) throws GameActionException {
