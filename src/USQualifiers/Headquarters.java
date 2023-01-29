@@ -73,7 +73,7 @@ public class Headquarters {
 
         //Make island carriers if we have an anchor and no island carrier.
         boolean islandCarrier = false;
-        for(Integer i : islandCarriers) {
+        for (Integer i : islandCarriers) {
             if (rc.canSenseRobot(i)) {
                 System.out.println("Found friend " + i);
                 islandCarrier = true;
@@ -84,19 +84,20 @@ public class Headquarters {
         System.out.println("Island Carrier: " + islandCarrier + ", " + readIsland(rc, hqID));
 
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
-        else if(readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
+        else if (readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
 
         writeCarrierSpawnID(rc, previousCarrierID, hqID);
 
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
-        if(enemies.length == 0) balling = false;
+        if (enemies.length == 0) balling = false;
         if (turnCount < ANCHOR_MAX_TURN_COUNT && enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
 
-            if(rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100) balling = false;
+            if (rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100)
+                balling = false;
 
             // Spawn a robot in the closest spot to the enemy
             if ((rc.getResourceAmount(ResourceType.MANA) > neededMana || (rc.getResourceAmount(ResourceType.MANA) > 60 && balling) && rc.isActionReady())) {
@@ -115,7 +116,7 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0  && enemies.length == 0) {
+        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
             System.out.println("Saving");
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
@@ -135,33 +136,33 @@ public class Headquarters {
 //            carrierCapacityReached = carrierCapacityReached(rc);
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
                 System.out.println("We tryna build a carrier. ");
-                if (!carrierCapacityReached && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
                 if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
-                    robotBuildType = RobotType.CARRIER;
+                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
+                        robotBuildType = RobotType.CARRIER;
+                    } else {
+                        robotBuildType = RobotType.LAUNCHER;
+                    }
                 } else {
-                    robotBuildType = RobotType.LAUNCHER;
+                    System.out.println("We boutta build a launcher. ");
+                    if (rc.getResourceAmount(ResourceType.MANA) >= 60) {
+                        robotBuildType = RobotType.LAUNCHER;
+                    } else {
+                        robotBuildType = RobotType.CARRIER;
+                    }
                 }
-            } else {
-                System.out.println("We boutta build a launcher. ");
-                if (rc.getResourceAmount(ResourceType.MANA) >= 60) {
-                    robotBuildType = RobotType.LAUNCHER;
-                } else {
-                    robotBuildType = RobotType.CARRIER;
-                }
-            }
 
                 switch (robotBuildType) {
                     case CARRIER:
                         buildCarrier(rc);
                         break;
 
-                case LAUNCHER:
-                    buildLauncher(rc);
-                    break;
+                    case LAUNCHER:
+                        buildLauncher(rc);
+                        break;
+                }
+            } else {
+                rc.setIndicatorString("Max robots reached");
             }
-        } else {
-            rc.setIndicatorString("Max robots reached");
-        }
 
 //        rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
 //        if (robotBuildType != RobotType.CARRIER) {
@@ -234,6 +235,7 @@ public class Headquarters {
 //                adCarrierIDs.remove(id);
 //            }
 //        }
+        }
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
