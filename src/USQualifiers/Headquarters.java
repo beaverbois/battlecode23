@@ -21,7 +21,8 @@ public class Headquarters {
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static int MIN_ROBOTS_FOR_ANCHOR = 0; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
-    static final int ANCHOR_MAX_TURN_COUNT = 1200; //turn at which we build anchors if we don't have enough bots
+    static final int ANCHOR_MIN_TURN_COUNT = 1200; //turn at which we build anchors if we don't have enough bots
+    static final int SAVING_MANA_TURN_COUNT = 1850;
     static int MAP_WIDTH;
     static int MAP_HEIGHT;
     static int numAnchors = 0;
@@ -85,7 +86,7 @@ public class Headquarters {
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
         if (enemies.length == 0) balling = false;
-        if (turnCount < ANCHOR_MAX_TURN_COUNT && enemies.length > 3) {
+        if (turnCount < ANCHOR_MIN_TURN_COUNT && enemies.length > 3) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
@@ -116,7 +117,7 @@ public class Headquarters {
         buildLaunch = false;
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if ((numRobotsThisRound - numRobotsLastRound) > -4 && (numRobotsThisRound > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
+        if (turnCount < SAVING_MANA_TURN_COUNT && (numRobotsThisRound > MIN_ROBOTS_FOR_ANCHOR || (turnCount >= ANCHOR_MIN_TURN_COUNT && (numRobotsThisRound - numRobotsLastRound) > -4)) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
             System.out.println("Saving");
             buildLaunch = true;
@@ -190,7 +191,7 @@ public class Headquarters {
 
     // Build launchers closest to middle of the map
     static void buildLauncher(RobotController rc) throws GameActionException {
-        if (turnCount < ANCHOR_MAX_TURN_COUNT && rc.isActionReady() && rc.getResourceAmount(ResourceType.MANA) >= 60) {
+        if (((turnCount < ANCHOR_MIN_TURN_COUNT) || ((numRobotsThisRound - numRobotsLastRound > -4) && turnCount < SAVING_MANA_TURN_COUNT)) && rc.isActionReady() && rc.getResourceAmount(ResourceType.MANA) >= 60) {
             MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
             MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 
