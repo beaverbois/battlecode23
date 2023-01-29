@@ -35,6 +35,8 @@ public class Headquarters {
     static boolean buildLaunch = false;
     static boolean buildCar = false;
     static int previousCarrierID = 0;
+    static int numRobotsLastRound = 0;
+    static int numRobotsThisRound = 0;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -58,6 +60,9 @@ public class Headquarters {
 
             stateLock = true;
         }
+
+        numRobotsLastRound = numRobotsThisRound;
+        numRobotsThisRound = rc.getRobotCount();
 
         //Make island carriers if we have an anchor and no island carrier.
         boolean islandCarrier = false;
@@ -111,7 +116,7 @@ public class Headquarters {
         buildLaunch = false;
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
+        if ((numRobotsThisRound - numRobotsLastRound) > -4 && (numRobotsThisRound > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
             System.out.println("Saving");
             buildLaunch = true;
