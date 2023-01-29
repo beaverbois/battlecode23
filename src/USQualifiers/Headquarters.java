@@ -8,8 +8,7 @@ import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
 import static USQualifiers.LauncherSync.reportEnemy;
 import static USQualifiers.RobotPlayer.*;
-import static USQualifiers.Util.closestLocationsInActionRadius;
-import static USQualifiers.Util.farthestLocationsInActionRadius;
+import static USQualifiers.Util.*;
 
 public class Headquarters {
 
@@ -26,7 +25,6 @@ public class Headquarters {
     static int MAP_WIDTH;
     static int MAP_HEIGHT;
     static int numAnchors = 0;
-    static RobotType robotBuildType = null;
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 2000;
     static boolean balling = false;
@@ -36,7 +34,6 @@ public class Headquarters {
     //Booleans for building robots while saving for an anchor.
     static boolean buildLaunch = false;
     static boolean buildCar = false;
-    static RobotInfo[] nearbyCarriers;
     static int previousCarrierID = 0;
 
     static void run(RobotController rc) throws GameActionException {
@@ -72,7 +69,8 @@ public class Headquarters {
             }
         }
 
-        System.out.println("Island Carrier: " + islandCarrier + ", " + readIsland(rc, hqID));
+//        System.out.println("Island Carrier: " + islandCarrier + ", " + readIsland(rc, hqID));
+        rc.setIndicatorString("Mn: " + numMnCarriers + " Ad: " + numAdCarriers);
 
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
         else if (readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
@@ -157,40 +155,38 @@ public class Headquarters {
                 numMnCarriers++;
             }
 
-            // If not all wells have been found, spawn scout carrier in random location
+            // If not all wells have been found, spawn scout carrier facing middle of map
             if (readNumWellsFound(rc, hqID) < 2) {
-                // Create a list of random spawn locations sorted farthest from hq
-                MapLocation[] spawnLocations = farthestLocationsInActionRadius(rc, hqLocation, hqLocation);
-                //Huge bytecode cost. Also farthestLocationsInActionRadius returns everything, so this
-                //is equivalent to a pure random list. Replacing with randomized outer layer, as it's likely
-                //this is ONLY called when there is plenty of space.
-                //List<MapLocation> randomSpawnLocations = Arrays.asList(spawnLocations);
-                //Collections.shuffle(randomSpawnLocations);
-                int numFar = 12, posX = rc.getLocation().x, posY = rc.getLocation().y;
-                if(posX == 0 || posX == rc.getMapWidth() - 1) numFar = numFar / 2 + 1;
-                if(posY == 0 || posY == rc.getMapHeight() - 1) numFar = numFar / 2 + 1;
-                MapLocation[] farthestLayer = new MapLocation[numFar];
+                MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
+                MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
+                Direction straight = hqLocation.directionTo(middle);
+                Direction left = straight.rotateLeft();
+                Direction right = straight.rotateRight();
 
-                System.arraycopy(spawnLocations, 0, farthestLayer, 0, farthestLayer.length);
-
-                for (MapLocation loc : farthestLayer) {
-                    if (!rc.isLocationOccupied(loc)) {
-                        if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
+                for (MapLocation loc : spawnLocations) {
+                    Direction dir = hqLocation.directionTo(loc);
+                    if ((dir == straight || dir == left || dir == right) && rc.canBuildRobot(RobotType.CARRIER, loc) && isLocationFree(rc, loc)) {
                         buildCarrier(rc, loc);
-                        break;
+                        return;
                     }
                 }
 
+                // if we weren't able to build carriers in middle direction, build in any direction
+                for (MapLocation loc : spawnLocations) {
+                    if (rc.canBuildRobot(RobotType.CARRIER, loc) && isLocationFree(rc, loc)) {
+                        buildCarrier(rc, loc);
+                        return;
+                    }
+                }
             } else {
                 // Spawn as close to the well as possible
                 MapLocation wellLocation = readWellLocation(rc, carrierAssignment, hqID);
                 MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, wellLocation);
 
                 for (MapLocation loc : spawnLocations) {
-                    if (!rc.isLocationOccupied(loc)) {
-                        if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
+                    if (rc.canBuildRobot(RobotType.CARRIER, loc) && isLocationFree(rc, loc)) {
                         buildCarrier(rc, loc);
-                        break;
+                        return;
                     }
                 }
             }

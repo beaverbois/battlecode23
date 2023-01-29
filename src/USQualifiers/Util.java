@@ -4,6 +4,8 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import static USQualifiers.RobotPlayer.directions;
 
@@ -106,7 +108,7 @@ public class Util {
 
     // returns true if location can be sensed, location is free of robots, location is passable, and location doesn't contain a current
     public static boolean isLocationFree(RobotController rc, MapLocation location) throws GameActionException {
-        return rc.canSenseLocation(location) && !rc.isLocationOccupied(location) && rc.sensePassability(location) && rc.senseMapInfo(location).getCurrentDirection() == Direction.CENTER;
+        return rc.canSenseLocation(location) && !rc.isLocationOccupied(location) && rc.sensePassability(location) && rc.senseMapInfo(location).getCurrentDirection() == Direction.CENTER && rc.onTheMap(location);
     }
 
     // returns true if the current position does not have a current pushing against the passed-in direction.

@@ -8,7 +8,6 @@ import java.util.*;
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
 import static USQualifiers.Launcher.*;
-import static USQualifiers.Launcher.allHQ;
 import static USQualifiers.LauncherSync.*;
 import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.*;
@@ -87,8 +86,6 @@ public class Carrier {
                     scout(rc);
                 }
 
-                //Check for enemies and enemy HQ
-//                senseEnemies(rc);
                 break;
 
             case MOVING:
@@ -110,20 +107,35 @@ public class Carrier {
 
     private static void scout(RobotController rc) throws GameActionException {
         rc.setIndicatorString(state.toString() + " " + targetType);
+        if (!rc.isMovementReady() || isJammed(rc)) {
+            return;
+        }
         // once we have picked an initial direction, go in that direction till we can no longer
-        if (rc.canMove(scoutDirection)) {
-            rc.move(scoutDirection);
+        MapLocation loc = rc.getLocation().add(scoutDirection);
+        if (rc.onTheMap(loc) && rc.sensePassability(loc)) {
             if (rc.canMove(scoutDirection)) {
                 rc.move(scoutDirection);
+                scout(rc);
             }
         } else {
             // if we can't go that way, randomly pick another direction until one is found
+
             Collections.shuffle(shuffledDir);
+            boolean changed = false;
             for (Direction dir : shuffledDir) {
-                if (rc.canMove(dir)) {
+                if (dir != scoutDirection.opposite() && rc.canMove(dir)) {
+                    changed = true;
                     scoutDirection = dir;
                     rc.move(scoutDirection);
-                    break;
+                    scout(rc);
+                }
+            }
+
+            if (!changed) {
+                if (rc.canMove(scoutDirection.opposite())) {
+                    scoutDirection = scoutDirection.opposite();
+                    rc.move(scoutDirection);
+                    scout(rc);
                 }
             }
         }
