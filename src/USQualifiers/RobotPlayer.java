@@ -64,7 +64,7 @@ public strictfp class RobotPlayer {
             "'Tis but a flesh wound.",
             "So dark...",
             "Honey, where's my super suit?",
-            "Are you going to SawCon?"
+            "'Till we meet again!"
     };
 
     /**

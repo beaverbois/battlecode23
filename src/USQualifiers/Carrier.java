@@ -85,7 +85,6 @@ public class Carrier {
                 } else {
                     scout(rc);
                 }
-
                 break;
 
             case MOVING:
@@ -235,11 +234,13 @@ public class Carrier {
 
     private static void farm(RobotController rc) throws GameActionException {
         // if we can collect resources, do so, if not move back towards well
-        if (!checkAndCollectResources(rc)) {
-            state = CarrierState.MOVING;
-            moveTowardsTargetWell(rc);
-            return;
-        }
+//        if (!checkAndCollectResources(rc)) {
+//            state = CarrierState.SCOUTING;
+//            moveTowardsTargetWell(rc);
+//            return;
+//        }
+
+        checkAndCollectResources(rc);
 
         // once we reach maxCollectionCycles, return and move towards hq
         if (numCycles >= maxCollectionCycles) {
