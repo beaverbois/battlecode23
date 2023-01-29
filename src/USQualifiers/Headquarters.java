@@ -37,6 +37,7 @@ public class Headquarters {
     static boolean buildLaunch = false;
     static boolean buildCar = false;
     static RobotInfo[] nearbyCarriers;
+    static int previousCarrierID = 0;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -75,6 +76,8 @@ public class Headquarters {
 
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
         else if (readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
+
+        writeCarrierSpawnID(rc, previousCarrierID, hqID);
 
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
@@ -214,6 +217,7 @@ public class Headquarters {
     static void buildCarrier(RobotController rc, MapLocation loc) throws GameActionException {
         rc.buildRobot(RobotType.CARRIER, loc);
         int rcID = rc.senseRobotAtLocation(loc).getID();
+        previousCarrierID = rcID;
 
         if (readIsland(rc, hqID) != 0) {
             turnSpawned = turnCount;
