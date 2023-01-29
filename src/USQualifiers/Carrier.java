@@ -470,6 +470,8 @@ public class Carrier {
                     targetDir.rotateRight().rotateRight(),
                     targetDir.rotateLeft().rotateLeft()};
 
+            if(rng.nextInt(2) == 0) wallFollow = new Direction[]{wallFollow[1], wallFollow[0]};
+
             // Move in the same direction as we previously were when blocked
             if (pathBlocked) {
                 if (rc.canMove(blockedTraverseDirection)) {
