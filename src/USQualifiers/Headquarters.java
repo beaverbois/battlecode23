@@ -16,7 +16,7 @@ public class Headquarters {
     static MapLocation hqLocation = null;
     static int hqID = 0;
     public static ResourceType carrierAssignment = null;
-    static final double MANA_TARGET_RATE = 0.72; // between 0 - 1
+    static final double MANA_TARGET_RATE = 0.80; // between 0 - 1
     static final double LAUNCHER_SPAWN_RATE = 0.75; // between 0 - 1
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static int MIN_ROBOTS_FOR_ANCHOR = 0; // min robots to build anchor
