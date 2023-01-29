@@ -4,10 +4,9 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 
 import static USQualifiers.RobotPlayer.directions;
+import static USQualifiers.RobotPlayer.perish;
 
 /**
  * Public utility class
@@ -21,6 +20,8 @@ public class Util {
     public static final int LOC_MULTIPLIER = 100; // originally GameConstants.MAP_MAX_WIDTH
 
     private static final double MIN_MULTIPLIER = 4.0;
+    private static MapLocation lastLocation = new MapLocation(-1, -1);
+    private static int stuckTurns = 0;
 
     public static MapLocation intToLoc(int raw) {
         return new MapLocation((raw - 1) / LOC_MULTIPLIER, (raw - 1) % LOC_MULTIPLIER);
@@ -67,9 +68,9 @@ public class Util {
     }
 
     //     returns the closest available location to a robot around an origin location
-    public static MapLocation closestAvailableLocationTowardsRobot(RobotController rc, MapLocation origin) throws GameActionException {
+    public static MapLocation closestAvailableLocationTowardsRobot(RobotController rc, MapLocation origin, boolean includeCenter) throws GameActionException {
         // if we can't sense the origin or if we can and it's already free
-        if (!rc.canSenseLocation(origin) || isLocationFree(rc, origin)) {
+        if (!rc.canSenseLocation(origin) || (includeCenter && isLocationFree(rc, origin))) {
             return origin;
         }
 
@@ -112,14 +113,20 @@ public class Util {
     }
 
     // returns true if the current position does not have a current pushing against the passed-in direction.
-    public static boolean senseCurrent(RobotController rc, Direction direction) throws GameActionException {
-        // This allows carriers with 2 movements ignore currents
-        if (rc.getType() == RobotType.CARRIER && rc.getMovementCooldownTurns() == 0) {
+    public static boolean senseCurrent(RobotController rc, Direction direction, Direction target) throws GameActionException {
+        // This allows carriers with 2 movements to skip currents blocking target
+        if (rc.getType() == RobotType.CARRIER && direction == target && rc.getMovementCooldownTurns() == 0) {
             return true;
         }
 
-        Direction currentDir = rc.senseMapInfo(rc.getLocation().add(direction)).getCurrentDirection();
+        MapLocation closestSquare = rc.getLocation().add(direction);
 
+        // Don't move on wells
+        if (rc.senseWell(closestSquare) != null) {
+            return false;
+        }
+
+        Direction currentDir = rc.senseMapInfo(closestSquare).getCurrentDirection();
 
         boolean canPass = currentDir.equals(direction.opposite());
         if (currentDir.equals(direction.opposite().rotateRight()) || currentDir.equals(direction.opposite().rotateLeft())) {
@@ -132,7 +139,7 @@ public class Util {
     // returns the closest available direction around a robot towards a target location
     public static Direction closestAvailableDirectionAroundRobot(RobotController rc, MapLocation target) throws GameActionException {
         Direction closestDir = rc.getLocation().directionTo(target);
-        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
+        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir, closestDir)) {
             return closestDir;
         }
 
@@ -140,11 +147,11 @@ public class Util {
         Direction leftDir = closestDir.rotateLeft();
 
         for (int i = 0; i < 3; i++) {
-            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir, closestDir)) {
                 return rightDir;
             }
 
-            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir)) {
+            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir, closestDir)) {
                 return leftDir;
             }
 
@@ -152,7 +159,7 @@ public class Util {
             leftDir = leftDir.rotateLeft();
         }
 
-        if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+        if (rc.canMove(rightDir) && senseCurrent(rc, rightDir, closestDir)) {
             return rightDir;
         }
 
@@ -196,7 +203,7 @@ public class Util {
         Direction closestDir = rc.getLocation().directionTo(target);
         ArrayList<Direction> closestDirections = new ArrayList<>();
 
-        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir)) {
+        if (rc.canMove(closestDir) && senseCurrent(rc, closestDir, closestDir)) {
             closestDirections.add(closestDir);
         }
 
@@ -204,11 +211,11 @@ public class Util {
         Direction leftDir = closestDir.rotateLeft();
 
         for (int i = closestDirections.size(); i < numDirections / 2; i++) {
-            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir, closestDir)) {
                 closestDirections.add(rightDir);
             }
 
-            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir)) {
+            if (rc.canMove(leftDir) && senseCurrent(rc, leftDir, closestDir)) {
                 closestDirections.add(leftDir);
             }
 
@@ -216,8 +223,8 @@ public class Util {
             leftDir = leftDir.rotateLeft();
         }
 
-        if (numDirections == 8)  {
-            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir)) {
+        if (numDirections == 8) {
+            if (rc.canMove(rightDir) && senseCurrent(rc, rightDir, closestDir)) {
                 closestDirections.add(rightDir);
             }
         }
@@ -296,7 +303,17 @@ public class Util {
         return true;
     }
 
-    public static void BFS(RobotController rc, MapLocation destination) throws GameActionException {
-
+    public static boolean isStuck(RobotController rc) {
+        MapLocation rcLocation = rc.getLocation();
+        if (rcLocation != lastLocation) {
+            lastLocation = rcLocation;
+            stuckTurns = 0;
+        } else {
+            stuckTurns++;
+            if (stuckTurns > 4) {
+                return true;
+            }
+        }
+        return false;
     }
 }

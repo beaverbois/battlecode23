@@ -63,7 +63,7 @@ public class Headquarters {
         boolean islandCarrier = false;
         for (Integer i : islandCarriers) {
             if (rc.canSenseRobot(i)) {
-                System.out.println("Found friend " + i);
+//                System.out.println("Found friend " + i);
                 islandCarrier = true;
                 break;
             }
@@ -130,7 +130,7 @@ public class Headquarters {
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
-        System.out.println("Trying to build a carrier!");
+//        System.out.println("Trying to build a carrier!");
 
         if (readIsland(rc, hqID) == 1 && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             //Build an island carrier adjacent to HQ.
@@ -144,16 +144,6 @@ public class Headquarters {
             }
         }
         if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
-            // Set the resource target of carrier spawns
-            if (rng.nextDouble() > MANA_TARGET_RATE) {
-                writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
-                carrierAssignment = ResourceType.ADAMANTIUM;
-                numAdCarriers++;
-            } else {
-                writeCarrierAssignment(rc, ResourceType.MANA, hqID);
-                carrierAssignment = ResourceType.MANA;
-                numMnCarriers++;
-            }
 
             // If not all wells have been found, spawn scout carrier facing middle of map
             if (readNumWellsFound(rc, hqID) < 2) {
@@ -216,6 +206,17 @@ public class Headquarters {
         if (readIsland(rc, hqID) != 0) {
             turnSpawned = turnCount;
             islandCarriers.add(rcID);
+        }
+
+        // Set the resource target of carrier spawns
+        if (rng.nextDouble() > MANA_TARGET_RATE) {
+            writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
+            carrierAssignment = ResourceType.ADAMANTIUM;
+            numAdCarriers++;
+        } else {
+            writeCarrierAssignment(rc, ResourceType.MANA, hqID);
+            carrierAssignment = ResourceType.MANA;
+            numMnCarriers++;
         }
     }
 }

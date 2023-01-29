@@ -172,9 +172,9 @@ public class Carrier {
 
     private static void moveTowardsTargetWell(RobotController rc) throws GameActionException {
         // check we are not on a current
-        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
-            return;
-        }
+//        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
+//            return;
+//        }
 
         // check if we are already adjacent to a well or if we cannot move
         if  (canFarm(rc) || !rc.isMovementReady()) {
@@ -182,7 +182,7 @@ public class Carrier {
         }
 
         // move towards the closest square available around target well
-        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, targetWellLocation);
+        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, targetWellLocation, false);
         Direction targetDir;
         if (targetLocation != null) {
             targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
@@ -200,9 +200,9 @@ public class Carrier {
             }
         }
         // check we are not on a current
-        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
-            return;
-        }
+//        if (rc.senseMapInfo(rc.getLocation()).getCurrentDirection() != Direction.CENTER) {
+//            return;
+//        }
 
         // check if we are adjacent to a well and change state accordingly
         if (canFarm(rc)) {
@@ -214,7 +214,7 @@ public class Carrier {
             // move towards the closest square available around target well
             targetLocation = null;
             targetDir = null;
-            targetLocation = closestAvailableLocationTowardsRobot(rc, targetWellLocation);
+            targetLocation = closestAvailableLocationTowardsRobot(rc, targetWellLocation, false);
             if (targetLocation != null) {
                 targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
             } else {
@@ -240,10 +240,8 @@ public class Carrier {
 //            return;
 //        }
 
-        checkAndCollectResources(rc);
-
         // once we reach maxCollectionCycles, return and move towards hq
-        if (numCycles >= maxCollectionCycles) {
+        if (!checkAndCollectResources(rc) || numCycles >= maxCollectionCycles) {
             state = CarrierState.RETURNING;
             wellsFarmed.add(targetWellLocation);
             numCycles = 0;
@@ -544,6 +542,7 @@ public class Carrier {
     }
 
     private static boolean checkAndCollectResources(RobotController rc) throws GameActionException {
+        rc.setIndicatorString(String.valueOf(rc.canCollectResource(targetWellLocation, -1)) + state.toString());
         if (rc.canCollectResource(targetWellLocation, -1)) {
             rc.collectResource(targetWellLocation, -1);
             numCycles++;

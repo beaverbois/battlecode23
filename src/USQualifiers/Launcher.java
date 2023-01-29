@@ -661,7 +661,7 @@ public class Launcher {
             return;
         }
 
-        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location);
+        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location, true);
         Direction targetDir;
         if (targetLocation != null) {
             targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
