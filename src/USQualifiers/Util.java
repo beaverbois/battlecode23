@@ -286,4 +286,8 @@ public class Util {
         }
         return true;
     }
+
+    public static void BFS(RobotController rc, MapLocation destination) throws GameActionException {
+
+    }
 }

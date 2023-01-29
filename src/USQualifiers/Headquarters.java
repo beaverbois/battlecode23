@@ -41,11 +41,11 @@ public class Headquarters {
     static final int MAX_AD_CARRIERS = 10; // per well
     static final int MAX_MN_CARRIERS = 12; // per well
     static final double EXPIRED_CARRIER_TOLERANCE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
-    static boolean carrierCapacityReached = false;
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 0;
     static boolean balling = false;
-
+    static int numAdCarriers = 0;
+    static int numMnCarriers = 0;
     static RobotInfo[] nearbyCarriers;
 
     static void run(RobotController rc) throws GameActionException {
@@ -123,13 +123,14 @@ public class Headquarters {
         }
 
         nearbyCarriers = rc.senseNearbyRobots(-1, robotTeam);
+        rc.setIndicatorString("Ad: " + numAdCarriers + " Mn: " + numMnCarriers);
 
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
-            carrierCapacityReached = carrierCapacityReached(rc);
+//            carrierCapacityReached = carrierCapacityReached(rc);
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
-                if (carrierCapacityReached && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
+                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
                     robotBuildType = RobotType.CARRIER;
                 } else {
                     robotBuildType = RobotType.LAUNCHER;
@@ -143,7 +144,7 @@ public class Headquarters {
 
                 switch (robotBuildType) {
                     case CARRIER:
-                        if (!carrierCapacityReached) buildCarrier(rc);
+                        buildCarrier(rc);
                         break;
 
                     case LAUNCHER:
@@ -155,77 +156,77 @@ public class Headquarters {
             rc.setIndicatorString("Max robots reached");
         }
 
-        rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
-        if (robotBuildType != RobotType.CARRIER) {
-            // Spawn limits for carriers
-            int mnCarrierCount = 0, adCarrierCount = 0;
-            for (RobotInfo carrier : nearbyCarriers) {
-                if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
-                    continue;
-                }
-
-                int mnIndex = mnCarrierIDs.indexOf(carrier.ID);
-                int adIndex = adCarrierIDs.indexOf(carrier.ID);
-
-                if (mnIndex != -1) {
-                    if (rc.getResourceAmount(ResourceType.MANA) == 0) {
-                        continue;
-                    }
-
-                    // set only once
-                    int turn = turnCount - mnCarriersLastSeen.get(mnIndex);
-                    if(turn > 10) {
-                        numMnReturns++;
-                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERANCE;
-                    }
-
-                    mnCarriersLastSeen.set(mnIndex, turnCount);
-
-                } else if (adIndex != -1) {
-                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
-                        continue;
-                    }
-
-                    // set only once
-                    int turn = turnCount - adCarriersLastSeen.get(adIndex);
-                    if(turn > 10) {
-                        numAdReturns++;
-                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERANCE;
-                    }
-
-                    adCarriersLastSeen.set(adIndex, turnCount);
-                }
-            }
-
-            double avgAdFarm = adAvgFarmTime / numAdReturns;
-            double avgMnFarm = mnAvgFarmTime / numMnReturns;
-
-            //TODO: This really should be a map
-            ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
-            for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
-                int val = turnCount - mnCarriersLastSeen.get(i);
-                if ((mnAvgFarmTime != 0 && val > avgMnFarm) || val > 40) {
-                    expiredCarrierIDs.add(mnCarrierIDs.get(i));
-                }
-            }
-            for(Integer id : expiredCarrierIDs) {
-                mnCarriersLastSeen.remove(mnCarrierIDs.indexOf(id));
-                mnCarrierIDs.remove(id);
-            }
-
-            //TODO: This really should be a map
-            expiredCarrierIDs = new ArrayList<>();
-            for (int i = 0; i < adCarriersLastSeen.size(); i++) {
-                int val = turnCount - adCarriersLastSeen.get(i);
-                if ((adAvgFarmTime != 0 && val > avgAdFarm) || val > 40) {
-                    expiredCarrierIDs.add(adCarrierIDs.get(i));
-                }
-            }
-            for(Integer id : expiredCarrierIDs) {
-                adCarriersLastSeen.remove(adCarrierIDs.indexOf(id));
-                adCarrierIDs.remove(id);
-            }
-        }
+//        rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
+//        if (robotBuildType != RobotType.CARRIER) {
+//            // Spawn limits for carriers
+//            int mnCarrierCount = 0, adCarrierCount = 0;
+//            for (RobotInfo carrier : nearbyCarriers) {
+//                if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
+//                    continue;
+//                }
+//
+//                int mnIndex = mnCarrierIDs.indexOf(carrier.ID);
+//                int adIndex = adCarrierIDs.indexOf(carrier.ID);
+//
+//                if (mnIndex != -1) {
+//                    if (rc.getResourceAmount(ResourceType.MANA) == 0) {
+//                        continue;
+//                    }
+//
+//                    // set only once
+//                    int turn = turnCount - mnCarriersLastSeen.get(mnIndex);
+//                    if(turn > 10) {
+//                        numMnReturns++;
+//                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERANCE;
+//                    }
+//
+//                    mnCarriersLastSeen.set(mnIndex, turnCount);
+//
+//                } else if (adIndex != -1) {
+//                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
+//                        continue;
+//                    }
+//
+//                    // set only once
+//                    int turn = turnCount - adCarriersLastSeen.get(adIndex);
+//                    if(turn > 10) {
+//                        numAdReturns++;
+//                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERANCE;
+//                    }
+//
+//                    adCarriersLastSeen.set(adIndex, turnCount);
+//                }
+//            }
+//
+//            double avgAdFarm = adAvgFarmTime / numAdReturns;
+//            double avgMnFarm = mnAvgFarmTime / numMnReturns;
+//
+//            //TODO: This really should be a map
+//            ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
+//            for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
+//                int val = turnCount - mnCarriersLastSeen.get(i);
+//                if ((mnAvgFarmTime != 0 && val > avgMnFarm) || val > 40) {
+//                    expiredCarrierIDs.add(mnCarrierIDs.get(i));
+//                }
+//            }
+//            for(Integer id : expiredCarrierIDs) {
+//                mnCarriersLastSeen.remove(mnCarrierIDs.indexOf(id));
+//                mnCarrierIDs.remove(id);
+//            }
+//
+//            //TODO: This really should be a map
+//            expiredCarrierIDs = new ArrayList<>();
+//            for (int i = 0; i < adCarriersLastSeen.size(); i++) {
+//                int val = turnCount - adCarriersLastSeen.get(i);
+//                if ((adAvgFarmTime != 0 && val > avgAdFarm) || val > 40) {
+//                    expiredCarrierIDs.add(adCarrierIDs.get(i));
+//                }
+//            }
+//            for(Integer id : expiredCarrierIDs) {
+//                adCarriersLastSeen.remove(adCarrierIDs.indexOf(id));
+//                adCarrierIDs.remove(id);
+//            }
+//        }
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
@@ -240,16 +241,16 @@ public class Headquarters {
                 }
             }
         }
-        if (!carrierCapacityReached && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
+        if (rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             // Set the resource target of carrier spawns
-            if (adCarrierIDs.size() < MAX_AD_CARRIERS && rng.nextDouble() > MANA_TARGET_RATE) {
+            if (rng.nextDouble() > MANA_TARGET_RATE) {
                 writeCarrierAssignment(rc, ResourceType.ADAMANTIUM, hqID);
                 carrierAssignment = ResourceType.ADAMANTIUM;
-            } else if (mnCarrierIDs.size() < MAX_MN_CARRIERS){
+                numAdCarriers++;
+            } else {
                 writeCarrierAssignment(rc, ResourceType.MANA, hqID);
                 carrierAssignment = ResourceType.MANA;
-            } else {
-                return;
+                numMnCarriers++;
             }
 
             // If not all wells have been found, spawn scout carrier in random location
@@ -314,23 +315,9 @@ public class Headquarters {
         int rcID = rc.senseRobotAtLocation(loc).getID();
         previousCarrierID = rcID;
 
-        if (readIsland(rc, hqID) == 0) {
-            if (carrierAssignment == ResourceType.MANA) {
-                mnCarrierIDs.add(rcID);
-                mnCarriersLastSeen.add(turnCount);
-            } else {
-                adCarrierIDs.add(rcID);
-                adCarriersLastSeen.add(turnCount);
-            }
-        }
-        else {
+        if (readIsland(rc, hqID) != 0) {
             turnSpawned = turnCount;
             islandCarriers.add(rcID);
         }
-    }
-
-    static boolean carrierCapacityReached(RobotController rc) throws GameActionException {
-        if (readIsland(rc, hqID) == 1) return false;
-        return adCarrierIDs.size() >= MAX_AD_CARRIERS && mnCarrierIDs.size() >= MAX_MN_CARRIERS && nearbyCarriers.length > 15;
     }
 }
