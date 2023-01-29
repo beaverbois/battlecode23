@@ -33,6 +33,11 @@ public class Headquarters {
     static int numAdCarriers = 0;
     static int numMnCarriers = 0;
 
+    //Booleans for building robots while saving for an anchor.
+    static boolean buildLaunch = false;
+    static boolean buildCar = false;
+    static RobotInfo[] nearbyCarriers;
+
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
         if (!stateLock) {
@@ -99,57 +104,33 @@ public class Headquarters {
             return;
         }
 
+        boolean makeLauncher = true;
+        boolean makeCarrier = true;
+
+        buildLaunch = false;
+
         //If we need to build anchors and don't have the resources, only build with excess.
         if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
             System.out.println("Saving");
+            buildLaunch = true;
+
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
             if (rc.canBuildAnchor(Anchor.STANDARD)) {
                 rc.buildAnchor(Anchor.STANDARD);
                 numAnchors++;
             }
-            return;
+            if(rc.getResourceAmount(ResourceType.MANA) < 140) makeLauncher = false;
+            if(rc.getResourceAmount(ResourceType.ADAMANTIUM) < 130) makeCarrier = false;
         }
 
-        rc.setIndicatorString("Ad: " + numAdCarriers + " Mn: " + numMnCarriers);
-
-        //This causes us to never have enough resources to make an anchor, need to apply some limiters.
-        // Main robot building if other conditions aren't satisfied
-        if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
-            if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
-                System.out.println("We tryna build a carrier. ");
-                if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
-                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
-                        robotBuildType = RobotType.CARRIER;
-                    } else {
-                        robotBuildType = RobotType.LAUNCHER;
-                    }
-                } else {
-                    System.out.println("We boutta build a launcher. ");
-                    if (rc.getResourceAmount(ResourceType.MANA) >= 60) {
-                        robotBuildType = RobotType.LAUNCHER;
-                    } else {
-                        robotBuildType = RobotType.CARRIER;
-                    }
-                }
-
-                switch (robotBuildType) {
-                    case CARRIER:
-                        buildCarrier(rc);
-                        break;
-
-                    case LAUNCHER:
-                        buildLauncher(rc);
-                        break;
-                }
-            } else {
-                rc.setIndicatorString("Max robots reached");
-            }
-        }
+        if(makeLauncher && rc.getResourceAmount(ResourceType.MANA) > 60) buildLauncher(rc);
+        if(makeCarrier && rc.getResourceAmount(ResourceType.ADAMANTIUM) > 50) buildCarrier(rc);
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
         System.out.println("Trying to build a carrier!");
+
         if (readIsland(rc, hqID) == 1 && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             //Build an island carrier adjacent to HQ.
             int rand = rng.nextInt(directions.length);
@@ -223,7 +204,7 @@ public class Headquarters {
 
             for (MapLocation loc : spawnLocations) {
                 if(!rc.isActionReady()) break;
-                if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
+                if (rc.getResourceAmount(ResourceType.MANA) >= (buildLaunch ? 140 : 60) && rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
                     rc.buildRobot(RobotType.LAUNCHER, loc);
                 }
             }
