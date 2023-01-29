@@ -42,7 +42,7 @@ public class Headquarters {
     static final int MAX_MN_CARRIERS = 12; // per well
     static final double EXPIRED_CARRIER_TOLERANCE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
-    static int turnSpawned = 0;
+    static int turnSpawned = 2000;
     static boolean balling = false;
     static int numAdCarriers = 0;
     static int numMnCarriers = 0;
@@ -75,10 +75,13 @@ public class Headquarters {
         boolean islandCarrier = false;
         for(Integer i : islandCarriers) {
             if (rc.canSenseRobot(i)) {
+                System.out.println("Found friend " + i);
                 islandCarrier = true;
                 break;
             }
         }
+
+        System.out.println("Island Carrier: " + islandCarrier + ", " + readIsland(rc, hqID));
 
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
         else if(readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
@@ -112,8 +115,9 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0  && rc.senseNearbyRobots(-1, opponentTeam).length == 0) {
+        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0  && enemies.length == 0) {
             //Make sure we build anchors
+            System.out.println("Saving");
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
             if (rc.canBuildAnchor(Anchor.STANDARD)) {
                 rc.buildAnchor(Anchor.STANDARD);
@@ -130,27 +134,30 @@ public class Headquarters {
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
 //            carrierCapacityReached = carrierCapacityReached(rc);
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
+                System.out.println("We tryna build a carrier. ");
+                if (!carrierCapacityReached && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
                 if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
                     robotBuildType = RobotType.CARRIER;
                 } else {
                     robotBuildType = RobotType.LAUNCHER;
                 }
             } else {
+                System.out.println("We boutta build a launcher. ");
                 if (rc.getResourceAmount(ResourceType.MANA) >= 60) {
                     robotBuildType = RobotType.LAUNCHER;
                 } else {
                     robotBuildType = RobotType.CARRIER;
                 }
+            }
 
                 switch (robotBuildType) {
                     case CARRIER:
                         buildCarrier(rc);
                         break;
 
-                    case LAUNCHER:
-                        buildLauncher(rc);
-                        break;
-                }
+                case LAUNCHER:
+                    buildLauncher(rc);
+                    break;
             }
         } else {
             rc.setIndicatorString("Max robots reached");
@@ -230,6 +237,7 @@ public class Headquarters {
     }
 
     static void buildCarrier(RobotController rc) throws GameActionException {
+        System.out.println("Trying to build a carrier!");
         if (readIsland(rc, hqID) == 1 && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
             //Build an island carrier adjacent to HQ.
             int rand = rng.nextInt(directions.length);
@@ -297,14 +305,14 @@ public class Headquarters {
 
     // Build launchers closest to middle of the map
     static void buildLauncher(RobotController rc) throws GameActionException {
-        if (turnCount < ANCHOR_MAX_TURN_COUNT && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
+        if (turnCount < ANCHOR_MAX_TURN_COUNT && rc.isActionReady() && rc.getResourceAmount(ResourceType.MANA) >= 60) {
             MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
             MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 
             for (MapLocation loc : spawnLocations) {
+                if(!rc.isActionReady()) break;
                 if (rc.canBuildRobot(RobotType.LAUNCHER, loc)) {
                     rc.buildRobot(RobotType.LAUNCHER, loc);
-                    break;
                 }
             }
         }
