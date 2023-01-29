@@ -3,7 +3,6 @@ package USQualifiers;
 import battlecode.common.*;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 import static USQualifiers.CarrierSync.*;
 import static USQualifiers.HQSync.*;
@@ -23,7 +22,7 @@ public class Headquarters {
     static final double MAX_ROBOTS = 0.2; // ratio of map size
     static int MIN_ROBOTS_FOR_ANCHOR = 0; // min robots to build anchor
     static final double MAX_ANCHORS = 8; // min robots to build anchor
-    static final int START_SAVING_MANA = 1800; //turn at which we go for mana tiebreaker
+    static final int ANCHOR_MAX_TURN_COUNT = 1200; //turn at which we build anchors if we don't have enough bots
     static int MAP_WIDTH;
     static int MAP_HEIGHT;
     static int numAnchors = 0;
@@ -84,19 +83,12 @@ public class Headquarters {
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
         else if(readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
 
-        // TODO: Need more robust island/anchor tracking
-        // Build anchors once we have enough robots
-        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.canBuildAnchor(Anchor.STANDARD) && turnCount > 100) {
-            rc.buildAnchor(Anchor.STANDARD);
-            numAnchors++;
-        }
-
         writeCarrierSpawnID(rc, previousCarrierID, hqID);
 
         // Spawn launchers towards any enemies in vision.
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
         if(enemies.length == 0) balling = false;
-        if (turnCount < START_SAVING_MANA && enemies.length > 0) {
+        if (turnCount < ANCHOR_MAX_TURN_COUNT && enemies.length > 0) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
@@ -120,13 +112,17 @@ public class Headquarters {
         }
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if (rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR && rc.getNumAnchors(Anchor.STANDARD) == 0) {
+        if ((rc.getRobotCount() > MIN_ROBOTS_FOR_ANCHOR || turnCount >= ANCHOR_MAX_TURN_COUNT) && rc.getNumAnchors(Anchor.STANDARD) == 0  && rc.senseNearbyRobots(-1, opponentTeam).length == 0) {
             //Make sure we build anchors
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
+            if (rc.canBuildAnchor(Anchor.STANDARD)) {
+                rc.buildAnchor(Anchor.STANDARD);
+                numAnchors++;
+            }
             return;
         }
 
-        nearbyCarriers = rc.senseNearbyRobots(-1, rc.getTeam());
+        nearbyCarriers = rc.senseNearbyRobots(-1, robotTeam);
 
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
@@ -300,7 +296,7 @@ public class Headquarters {
 
     // Build launchers closest to middle of the map
     static void buildLauncher(RobotController rc) throws GameActionException {
-        if (turnCount < START_SAVING_MANA && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
+        if (turnCount < ANCHOR_MAX_TURN_COUNT && rc.isActionReady() && rc.getResourceAmount(ResourceType.ADAMANTIUM) >= RobotType.CARRIER.buildCostAdamantium) {
             MapLocation middle = new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2);
             MapLocation[] spawnLocations = closestLocationsInActionRadius(rc, hqLocation, middle);
 

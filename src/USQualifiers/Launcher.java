@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static USQualifiers.LauncherSync.*;
-import static USQualifiers.RobotPlayer.rng;
+import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.*;
 
 public class Launcher {
@@ -114,8 +114,8 @@ public class Launcher {
         List<RobotInfo> enemiesL = new ArrayList<>();
 
         for (RobotInfo bot : nearbyRobots) {
-            if (bot.team == rc.getTeam() && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
-            else if (bot.team == rc.getTeam().opponent()) enemiesL.add(bot);
+            if (bot.team == robotTeam && bot.type == RobotType.LAUNCHER) alliesL.add(bot);
+            else if (bot.team == opponentTeam) enemiesL.add(bot);
         }
 
         allies = new RobotInfo[alliesL.size()];
@@ -295,7 +295,7 @@ public class Launcher {
         moveTowardsLocation(rc, target);
 
         if(rc.canSenseLocation(target)) {
-            RobotInfo[] suppressors = rc.senseNearbyRobots(target, 16, rc.getTeam());
+            RobotInfo[] suppressors = rc.senseNearbyRobots(target, 16, robotTeam);
 
             if (distance(pos, target) < 3) lstate = LauncherState.SUPPRESSING;
             if (distance(pos, target) < 4 && suppressors.length - enemies.length > suppressiveForce) {

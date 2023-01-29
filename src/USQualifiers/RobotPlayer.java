@@ -32,6 +32,8 @@ public strictfp class RobotPlayer {
     static int jammedTurns = 0;
     static MapLocation jammedLocation = null;
     static int bytecodeLimit = 0;
+    static Team robotTeam;
+    static Team opponentTeam;
 
     static String[] deathMessages = {
             "Wakanda Forever!",
@@ -91,6 +93,8 @@ public strictfp class RobotPlayer {
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Spawned");
         bytecodeLimit = (int) (rc.getType().bytecodeLimit * 0.98);
+        robotTeam = rc.getTeam();
+        opponentTeam = robotTeam.opponent();
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite

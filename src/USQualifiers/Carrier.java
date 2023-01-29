@@ -39,7 +39,6 @@ public class Carrier {
     static boolean islandCarrier = false;
     static Direction blockedTraverseDirection = null;
     static Direction blockedTargetDirection = null;
-    static Team opponentTeam = null;
     static MapLocation enemyTarget = null;
     static ArrayList<MapLocation> wellsFarmed = new ArrayList<>();
 
@@ -54,7 +53,6 @@ public class Carrier {
                 hqID = getHQNum(rc);
                 hqLocation = readHQLocation(rc, hqID);
                 targetType = readCarrierAssignment(rc, hqID);
-                opponentTeam = rc.getTeam().opponent();
                 scoutDirection = hqLocation.directionTo(rc.getLocation());
 
                 shuffledDir = new ArrayList<>(Arrays.asList(directions));
@@ -153,11 +151,11 @@ public class Carrier {
         int[] islandID = rc.senseNearbyIslands();
         for(int island : islandID) {
             if(islands.get(island) != null) {
-                islands.replace(island, islands.get(island) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
+                islands.replace(island, islands.get(island) + (rc.senseTeamOccupyingIsland(island) == robotTeam ? 10000 : 0));
                 continue;
             }
             MapLocation[] islandLocs = rc.senseNearbyIslandLocations(island);
-            islands.put(island, locToInt(islandLocs[0]) + (rc.senseTeamOccupyingIsland(island) == rc.getTeam() ? 10000 : 0));
+            islands.put(island, locToInt(islandLocs[0]) + (rc.senseTeamOccupyingIsland(island) == robotTeam ? 10000 : 0));
         }
     }
 
