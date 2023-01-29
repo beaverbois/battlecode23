@@ -59,7 +59,12 @@ public strictfp class RobotPlayer {
             "I like jazz",
             "By all known laws of aviation...",
             "Never forget",
-            "Sweet dreams"
+            "Sweet dreams",
+            "The light, it burns!",
+            "'Tis but a flesh wound.",
+            "So dark...",
+            "Honey, where's my super suit?",
+            "Are you going to SawCon?"
     };
 
     /**

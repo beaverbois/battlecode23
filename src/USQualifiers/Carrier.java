@@ -244,6 +244,7 @@ public class Carrier {
         if (reportingEnemy && rc.canWriteSharedArray(0, 0)) {
             reportEnemy(rc, enemyTarget, false);
             reportingEnemy = false;
+            state = CarrierState.SCOUTING;
             return;
         }
 
@@ -565,5 +566,139 @@ public class Carrier {
         }
 
         throw new GameActionException(GameActionExceptionType.OUT_OF_RANGE, "Could not find HQ ID!");
+    }
+
+    private static void bugNavTowards(RobotController rc, MapLocation location) throws GameActionException {
+        pos = rc.getLocation();
+        if(!rc.isMovementReady()) return;
+        if(!pathBlocked) {
+            offWall = false;
+            wallDir = null;
+
+            boolean passable = false;
+            Direction towards = pos.directionTo(location);
+
+            Direction[] dirTowards = {
+                    towards,
+                    towards.rotateRight(),
+                    towards.rotateLeft()
+            };
+
+            for(Direction dir : dirTowards) {
+                if(rc.sensePassability(pos.add(dir))) passable = true;
+                if(rc.canMove(dir)) {
+                    rc.move(dir);
+                    return;
+                }
+            }
+
+            if(!passable) {
+                pathBlocked = true;
+            }
+        } else {
+            if(wallDir == null) wallDir = pos.directionTo(location);
+            MapLocation wall = pos.add(wallDir);
+
+            //If we can sense the target and move towards it, do so.
+            if(rc.canSenseLocation(location) && rc.canMove(pos.directionTo(location))) {
+                rc.move(pos.directionTo(location));
+                pathBlocked = false;
+                wallDir = null;
+                return;
+            }
+
+            if(offWall) {
+                if(rc.canMove(wallDir)) {
+                    rc.move(wallDir);
+                    if(!rc.onTheMap(rc.getLocation().add(wallDir)) || !rc.sensePassability(rc.getLocation().add(wallDir))) offWall = false;
+                    return;
+                }
+                if(rc.canMove(wallDir.rotateLeft())) {
+                    rc.move(wallDir.rotateLeft());
+                    if(!rc.onTheMap(rc.getLocation().add(wallDir)) || !rc.sensePassability(rc.getLocation().add(wallDir))) offWall = false;
+                    return;
+                }
+            }
+
+            if(rc.onTheMap(wall) && rc.sensePassability(wall)) {
+                //We're past the edge of the wall.
+                if(rc.canMove(wallDir)) {
+                    rc.move(wallDir);
+                    if(!offWall) wallDir = wallDir.rotateRight().rotateRight();
+                    return;
+                }
+                //Should only get here if there's a robot blocking the path. If so, check adjacent directions.
+                Direction[] dirTowards = {
+                        wallDir.rotateRight(),
+                        wallDir.rotateLeft()
+                };
+                for(Direction dir : dirTowards) {
+                    if(rc.canMove(dir)) {
+                        rc.move(dir);
+                        if(rc.sensePassability(pos.add(dir))) offWall = true;
+                        return;
+                    }
+                }
+
+                //If our better paths are blocked, just chill for the moment.
+                return;
+            }
+
+            Direction moveDir = wallDir.rotateLeft().rotateLeft();
+
+            if(rc.onTheMap(pos.add(moveDir)) && rc.sensePassability(pos.add(moveDir))) {
+                //Continue moving along the wall
+                if(rc.canMove(moveDir)) {
+                    rc.move(moveDir);
+                    return;
+                }
+
+                //Move along a diagonal
+                Direction[] dirTowards = {
+                        moveDir.rotateRight(),
+                        moveDir.rotateLeft()
+                };
+                for(Direction dir : dirTowards) {
+                    if(rc.canMove(dir)) {
+                        rc.move(dir);
+                        if(rc.sensePassability(pos.add(dir))) offWall = true;
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            //Found a corner.
+            if(!rc.onTheMap(pos.add(moveDir)) || !rc.sensePassability(pos.add(moveDir))) {
+                //First, check if we can sneak through a diagonal.
+                if(rc.onTheMap(pos.add(moveDir.rotateRight())) && rc.sensePassability(pos.add(moveDir.rotateRight()))) {
+                    if(rc.canMove(moveDir.rotateRight())) {
+                        rc.move(moveDir.rotateRight());
+                        wallDir = wallDir.rotateRight().rotateRight();
+                        return;
+                    }
+
+                    //Blocked by a robot, chill for now.
+                    return;
+                }
+
+                //Otherwise, just continue along the new wall if possible.
+                if(!rc.sensePassability(pos.add(wallDir.opposite()))) {
+                    wallDir = moveDir;
+                    bugNavTowards(rc, location);
+                    return;
+                }
+
+                //If not possible, we must be trapped in a corner. Bug nav around the other side of the wall.
+                wallDir = wallDir.opposite();
+                bugNavTowards(rc, location);
+                return;
+            }
+
+            //Should never get here.
+            System.out.println("Somehow got here, just gonna go boom.");
+            perish(rc);
+        }
     }
 }

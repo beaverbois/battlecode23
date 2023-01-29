@@ -82,12 +82,12 @@ public class Headquarters {
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
         if (enemies.length == 0) balling = false;
-        if (turnCount < ANCHOR_MAX_TURN_COUNT && enemies.length > 0) {
+        if (turnCount < ANCHOR_MAX_TURN_COUNT && enemies.length > 3) {
             rc.setIndicatorString("Enemies Detected");
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
 
-            if (rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100) {
+            if (rc.getResourceAmount(ResourceType.MANA) < 60) {
                 balling = false;
             }
 
@@ -176,7 +176,6 @@ public class Headquarters {
                 for (MapLocation loc : farthestLayer) {
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
-
                         buildCarrier(rc, loc);
                         break;
                     }
@@ -190,7 +189,6 @@ public class Headquarters {
                 for (MapLocation loc : spawnLocations) {
                     if (!rc.isLocationOccupied(loc)) {
                         if(!rc.canBuildRobot(RobotType.CARRIER, loc)) continue;
-
                         buildCarrier(rc, loc);
                         break;
                     }
