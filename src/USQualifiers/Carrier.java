@@ -741,6 +741,7 @@ public class Carrier {
         if(rc.canSenseLocation(target)) {
             if(!rc.sensePassability(target)) return null;
             ArrayList<Direction> p = new ArrayList<>();
+            // TODO: possibly increase numSteps for longer paths
             int numSteps = 10;
             p = pathTo(rc, pos, target, p, numSteps);
             if(p != null) return p.get(0);

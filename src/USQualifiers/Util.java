@@ -113,11 +113,18 @@ public class Util {
 
     // returns true if the current position does not have a current pushing against the passed-in direction.
     public static boolean senseCurrent(RobotController rc, Direction direction) throws GameActionException {
+        // This allows carriers with 2 movements ignore currents
+        if (rc.getType() == RobotType.CARRIER && rc.getMovementCooldownTurns() == 0) {
+            return true;
+        }
+
         Direction currentDir = rc.senseMapInfo(rc.getLocation().add(direction)).getCurrentDirection();
 
+
         boolean canPass = currentDir.equals(direction.opposite());
-        if(currentDir.equals(direction.opposite().rotateRight()) || currentDir.equals(direction.opposite().rotateLeft()))
+        if (currentDir.equals(direction.opposite().rotateRight()) || currentDir.equals(direction.opposite().rotateLeft())) {
             canPass = true;
+        }
 
         return currentDir == Direction.CENTER || !canPass;
     }
