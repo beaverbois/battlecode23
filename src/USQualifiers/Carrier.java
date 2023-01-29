@@ -730,8 +730,6 @@ public class Carrier {
         return false;
     }
     private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
-        boolean moved = false;
-
         // check if we cannot move
         if (!rc.isMovementReady()) {
             return;
@@ -753,10 +751,7 @@ public class Carrier {
 
         if (targetDir != null) {
             rc.move(targetDir);
-            moved = true;
         }
-
-        if(rc.isMovementReady() && moved) moveTowards(rc, location);
     }
 
     private static boolean checkIfBlocked2(RobotController rc, MapLocation target) throws GameActionException {
