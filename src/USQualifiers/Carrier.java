@@ -286,7 +286,7 @@ public class Carrier {
         rc.setIndicatorString(state.toString() + " TO " + hqLocation);
         if (wellsFarmed.size() > 0) checkForAuxWellsAndMove(rc);
 
-        if (!moveTowards(rc, hqLocation)) {
+        if (!Util.moveTowards(rc, hqLocation)) {
             if (checkIfBlocked(rc, hqLocation)) {
                 return;
             }
@@ -341,8 +341,8 @@ public class Carrier {
 
         if(target == null) {
             if(corner == null) {
-                int cornerX = rng.nextInt(2) == 1 ? rc.getMapWidth() - 4 : 4;
-                int cornerY = rng.nextInt(2) == 1 ? rc.getMapHeight() - 4 : 4;
+                int cornerX = rng.nextInt(2) == 1 ? (int) (rc.getMapWidth() * 0.85) : (int) (rc.getMapWidth() * 0.15);
+                int cornerY = rng.nextInt(2) == 1 ? (int) (rc.getMapHeight() * 0.85) : (int) (rc.getMapHeight() * 0.15);
 
                 corner = new MapLocation(cornerX, cornerY);
             }
@@ -373,7 +373,7 @@ public class Carrier {
         }
 
         MapLocation closeIsland = closest(pos, islandLocs);
-        if(moveTowards(rc, closeIsland) && rc.canMove(pos.directionTo(closeIsland))) rc.move(pos.directionTo(closeIsland));
+        moveTowards(rc, closeIsland);
 
         pos = rc.getLocation();
 
@@ -383,55 +383,6 @@ public class Carrier {
             islands.replace(id, locToInt(target) + 10000);
             lastCarried = turnCount;
         }
-    }
-
-    private static void fighting(RobotController rc) throws GameActionException {
-        if(rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
-            moveTowards(rc, hqLocation);
-            if(rc.canTransferResource(hqLocation, ResourceType.ADAMANTIUM, -1))
-                rc.transferResource(hqLocation, ResourceType.ADAMANTIUM, -1);
-            else if(rc.getLocation().isAdjacentTo(hqLocation)) state = CarrierState.SCOUTING;
-            return;
-        }
-
-        RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
-
-        if(enemies.length == 0) {
-            if (!rc.canSenseLocation(hqLocation)) {
-                state = CarrierState.SCOUTING;
-                return;
-            }
-            if (rc.canMove(scoutDirection)) {
-                rc.move(scoutDirection);
-                if (rc.canMove(scoutDirection)) {
-                    rc.move(scoutDirection);
-                }
-            } else {
-                // if we can't go that way, randomly pick another direction until one is found
-                Collections.shuffle(shuffledDir);
-                for (Direction dir : shuffledDir) {
-                    if (rc.canMove(dir)) {
-                        scoutDirection = dir;
-                        rc.move(scoutDirection);
-                        break;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        MapLocation[] locs = new MapLocation[enemies.length];
-        for (int i = 0; i < enemies.length; i++) {
-            RobotInfo enemy = enemies[i];
-            locs[i] = enemy.getLocation();
-            if(rc.canAttack(locs[i])) {
-                rc.attack(locs[i]);
-                return;
-            }
-        }
-
-        moveTowards(rc, closest(rc.getLocation(), locs));
     }
 
     private static void senseEnemies(RobotController rc) throws GameActionException {
@@ -776,6 +727,91 @@ public class Carrier {
         if(!rc.onTheMap(target) || !rc.canSenseLocation(target)) return false;
         if(loc.isAdjacentTo(target) && rc.sensePassability(target)
                 && rc.senseMapInfo(target).getCurrentDirection() != target.directionTo(loc)) return true;
+        return false;
+    }
+    private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
+        boolean moved = false;
+
+        // check if we cannot move
+        if (!rc.isMovementReady()) {
+            return;
+        }
+
+        rc.setIndicatorString("Moving towards " + location);
+
+        if (checkIfBlocked2(rc, location)) {
+            return;
+        }
+
+        MapLocation targetLocation = closestAvailableLocationTowardsRobot(rc, location, true);
+        Direction targetDir;
+        if (targetLocation != null) {
+            targetDir = closestAvailableDirectionAroundRobot(rc, targetLocation);
+        } else {
+            targetDir = closestAvailableDirectionAroundRobot(rc, location);
+        }
+
+        if (targetDir != null) {
+            rc.move(targetDir);
+            moved = true;
+        }
+
+        if(rc.isMovementReady() && moved) moveTowards(rc, location);
+    }
+
+    private static boolean checkIfBlocked2(RobotController rc, MapLocation target) throws GameActionException {
+
+        MapLocation pos = rc.getLocation();
+        Direction targetDir = (pathBlocked) ? blockedTargetDirection : pos.directionTo(target);
+        MapLocation front = pos.add(targetDir);
+
+        boolean senseable = rc.canSenseLocation(front);
+
+        //Consider currents that point towards you and adjacent tiles to be impassable.
+        Direction current = senseable ? rc.senseMapInfo(front).getCurrentDirection() : null;
+
+        boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(pos, front.add(current)) > 1);
+
+        if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
+            //rc.setIndicatorString("Blocked!");
+            Direction[] wallFollow = {
+                    targetDir.rotateRight(),
+                    targetDir.rotateLeft(),
+                    targetDir.rotateRight().rotateRight(),
+                    targetDir.rotateLeft().rotateLeft()};
+
+            // Move in the same direction as we previously were when blocked
+            if (pathBlocked) {
+                if(rc.canMove(pos.directionTo(target)) && !pos.directionTo(target).equals(blockedTraverseDirection.opposite())) {
+                    rc.move(pos.directionTo(target));
+                    return true;
+                } else if (rc.canMove(blockedTraverseDirection)) {
+                    rc.move(blockedTraverseDirection);
+                    return true;
+                }
+//                else {
+//                    blockedTraverseDirection = blockedTraverseDirection.opposite();
+//                    if (rc.canMove(blockedTraverseDirection)) {
+//                        rc.move(blockedTraverseDirection);
+//                        return true;
+//                    }
+//                }
+            }
+            for (Direction wallDir : wallFollow) {
+                if (rc.canMove(wallDir)) {
+                    //blockedTargetDirection = pos.directionTo(target);
+                    blockedTraverseDirection = wallDir;
+                    blockedTargetDirection = blockedTraverseDirection;
+                    pathBlocked = true;
+
+                    rc.move(wallDir);
+                    return true;
+                }
+            }
+        } else {
+            pathBlocked = false;
+        }
+
         return false;
     }
 }

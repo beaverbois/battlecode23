@@ -10,6 +10,9 @@ import static Sprint2.LauncherSync.reportEnemy;
 import static Sprint2.RobotPlayer.*;
 import static Sprint2.RobotSync.readIsland;
 import static Sprint2.Util.*;
+import static USQualifiers.Util.closestAvailableDirectionAroundRobot;
+import static USQualifiers.Util.closestAvailableLocationTowardsRobot;
+import static USQualifiers.Util.dist;
 
 public class Carrier {
     enum CarrierState {

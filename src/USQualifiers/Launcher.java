@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 import java.util.*;
 
-import static Sprint2.Util.closestDirections;
 import static USQualifiers.LauncherSync.*;
 import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.*;

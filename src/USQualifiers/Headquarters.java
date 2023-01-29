@@ -38,9 +38,13 @@ public class Headquarters {
     static int previousCarrierID = 0;
     static int numRobotsLastRound = 0;
     static int numRobotsThisRound = 0;
+    static ArrayList<Integer> numRobots = new ArrayList<>();
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
+        numRobots.add(rc.getRobotCount());
+        if(numRobots.size() > 20) numRobots.remove(0);
+
         if (!stateLock) {
             MAP_WIDTH = rc.getMapWidth();
             MAP_HEIGHT = rc.getMapHeight();
@@ -117,7 +121,10 @@ public class Headquarters {
         buildLaunch = false;
 
         //If we need to build anchors and don't have the resources, only build with excess.
-        if (turnCount < SAVING_MANA_TURN_COUNT && (numRobotsThisRound > MIN_ROBOTS_FOR_ANCHOR || (turnCount >= ANCHOR_MIN_TURN_COUNT && (numRobotsThisRound - numRobotsLastRound) > -4)) && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
+        if (turnCount < SAVING_MANA_TURN_COUNT &&
+                (numRobotsThisRound > MIN_ROBOTS_FOR_ANCHOR || (turnCount >= ANCHOR_MIN_TURN_COUNT && (numRobotsThisRound - numRobotsLastRound) > -4)
+                || (turnCount > 100 && numRobotsThisRound - numRobots.get(0) > 5))
+                && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
             System.out.println("Saving");
             buildLaunch = true;
