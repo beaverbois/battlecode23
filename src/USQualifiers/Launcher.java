@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 import java.util.*;
 
+import static Sprint2.Util.closestDirections;
 import static USQualifiers.LauncherSync.*;
 import static USQualifiers.RobotPlayer.*;
 import static USQualifiers.Util.*;
@@ -36,6 +37,8 @@ public class Launcher {
 
     static MapLocation target;
     static int oppHQStatus = 0;
+
+    static int numMoves = 0;
 
     static Direction wallDir = null;
     static boolean offWall = false;
@@ -163,7 +166,7 @@ public class Launcher {
 
             rc.setIndicatorString("GATHERING, " + gatherPoint);
 
-           if (distance(pos, gatherPoint) > 1) bugNavTowards(rc, gatherPoint);
+           if (distance(pos, gatherPoint) > 1) moveTowards(rc, gatherPoint);
         }
 
         MapLocation[] t = closestTargetHQ(rc);
@@ -214,7 +217,7 @@ public class Launcher {
         } else if (rc.isMovementReady()) {
             //Move towards closest headquarters.
             headquarters = closest(pos, allHQ);
-            bugNavTowards(rc, headquarters);
+            moveTowards(rc, headquarters);
         }
 
         attack(rc);
@@ -232,7 +235,7 @@ public class Launcher {
 
         int suppressiveForce = 4;
 
-        bugNavTowards(rc, target);
+        moveTowards(rc, target);
 
         if(rc.canSenseLocation(target)) {
             RobotInfo[] suppressors = rc.senseNearbyRobots(target, 16, robotTeam);
@@ -259,7 +262,7 @@ public class Launcher {
         attack(rc);
 
         if (rc.isMovementReady() && withinSquaredRadius(pos, target, 9)) moveAway(rc, target);
-        else if (rc.isMovementReady() && !withinSquaredRadius(pos, target, 16)) bugNavTowards(rc, target);
+        else if (rc.isMovementReady() && !withinSquaredRadius(pos, target, 16)) moveTowards(rc, target);
 //
 //
 //        Team ally = rc.getTeam();
@@ -306,7 +309,7 @@ public class Launcher {
             return;
         }
 
-        bugNavTowards(rc, target);
+        moveTowards(rc, target);
 
         if(distance(pos, target) < 3 && withinOppHQRange) lstate = LauncherState.SUPPRESSING;
 
@@ -435,7 +438,7 @@ public class Launcher {
                             }
                         }
                     }
-                    else if(robot.type == RobotType.CARRIER && lstate != LauncherState.REPORTING) bugNavTowards(rc, targetLoc);
+                    else if(robot.type == RobotType.CARRIER && lstate != LauncherState.REPORTING) moveTowards(rc, targetLoc);
                 }
             }
         }
@@ -646,7 +649,7 @@ public class Launcher {
         return false;
     }
 
-    private static void moveTowardsLocation(RobotController rc, MapLocation location) throws GameActionException {
+    private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
         // check if we cannot move
         if (!rc.isMovementReady()) {
             return;
@@ -726,4 +729,112 @@ public class Launcher {
 
         return false;
     }
+
+//    private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
+//        boolean moved = false;
+//
+//        // check if we cannot move
+//        if (!rc.isMovementReady()) {
+//            return;
+//        }
+//
+//        pos = rc.getLocation();
+//
+//        numMoves = 0;
+//
+//        if (checkIfBlocked(rc, location)) {
+//            return;
+//        }
+//
+//        for (Direction dir : closestDirections(rc, location, pos)) {
+//            MapLocation closestSquare = location.add(dir);
+//            Direction closestSquareDir = pos.directionTo(closestSquare);
+//
+//            // ensure we do not move towards a wall/impassible square
+//            if (rc.canSenseLocation(closestSquare) && !rc.sensePassability(closestSquare)) {
+//                continue;
+//            }
+//
+//            if (rc.canMove(closestSquareDir)) {
+//                rc.move(closestSquareDir);
+//                moved = true;
+//                rc.setIndicatorString(lstate.toString() + " TO " + closestSquare + " DESTINATION " + location);
+//                numMoves++;
+//                break;
+//            }
+//        }
+//
+//        if (checkIfBlocked(rc, location)) {
+//            return;
+//        }
+//
+//        // robot has not moved, so move to a random square around us closest to well
+//        if (numMoves == 0) {
+//            for (Direction dir : closestDirections(rc, pos, location)) {
+//                if (rc.canMove(dir)) {
+//                    rc.move(dir);
+//                    moved = true;
+//                    rc.setIndicatorString(lstate.toString() + " TO " + pos.add(dir) + " DESTINATION " + location);
+//                    break;
+//                }
+//            }
+//        }
+//
+//        // move a second time if we can
+//        if (rc.isMovementReady() && moved) {
+//            moveTowards(rc, location);
+//        }
+//    }
+//
+//    private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
+//        pos = rc.getLocation();
+//        Direction targetDir = (pathBlocked) ? blockedTargetDirection: pos.directionTo(target);
+//        MapLocation front = pos.add(targetDir);
+//
+//        boolean senseable = rc.canSenseLocation(front);
+//
+//        //Consider currents that point towards you and adjacent tiles to be impassable.
+//        Direction current = senseable ? rc.senseMapInfo(front).getCurrentDirection() : null;
+//
+//        boolean passable = senseable && rc.sensePassability(front) && (current == Direction.CENTER || dist(pos, front.add(current)) > 1);
+//
+//        if (senseable && !passable && !rc.canSenseRobotAtLocation(front)) {
+//            rc.setIndicatorString("Blocked!");
+//            Direction[] wallFollow = {
+//                    targetDir.rotateRight().rotateRight(),
+//                    targetDir.rotateLeft().rotateLeft()};
+//
+//            // Move in the same direction as we previously were when blocked
+//            if (pathBlocked) {
+//                if (rc.canMove(blockedTraverseDirection)) {
+//                    rc.move(blockedTraverseDirection);
+//                    numMoves++;
+//                    return true;
+//                } else {
+//                    blockedTraverseDirection = blockedTraverseDirection.opposite();
+//                    if (rc.canMove(blockedTraverseDirection)) {
+//                        rc.move(blockedTraverseDirection);
+//                        numMoves++;
+//                        return true;
+//                    }
+//                }
+//            } else {
+//                // Call moveTowards again to see if we are near well/still stuck
+//                for (Direction wallDir : wallFollow) {
+//                    if (rc.canMove(wallDir)) {
+//                        pathBlocked = true;
+//                        blockedTargetDirection = pos.directionTo(target);
+//                        blockedTraverseDirection = wallDir;
+//
+//                        rc.move(wallDir);
+//                        numMoves++;
+//                        return true;
+//                    }
+//                }
+//            }
+//        } else {
+//            pathBlocked = false;
+//        }
+//        return false;
+//    }
 }
