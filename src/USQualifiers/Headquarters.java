@@ -27,26 +27,11 @@ public class Headquarters {
     static int MAP_HEIGHT;
     static int numAnchors = 0;
     static RobotType robotBuildType = null;
-    static int previousCarrierID = 0;
-    static double adIncome;
-    static double mnIncome;
-    static ArrayList<Integer> adCarrierIDs = new ArrayList<>();
-    static ArrayList<Integer> adCarriersLastSeen = new ArrayList<>();
-    static double adAvgFarmTime = 0;
-    static int numAdReturns = 0; //Total number of carriers tracked as returning from farming.
-    static ArrayList<Integer> mnCarrierIDs = new ArrayList<>();
-    static ArrayList<Integer> mnCarriersLastSeen = new ArrayList<>();
-    static double mnAvgFarmTime = 0;
-    static int numMnReturns = 0; //Total number of carriers tracked as returning from farming.
-    static final int MAX_AD_CARRIERS = 10; // per well
-    static final int MAX_MN_CARRIERS = 12; // per well
-    static final double EXPIRED_CARRIER_TOLERANCE = 2.5; // multiplied by avg farm time to determine if carrier is expired (dead)
     static ArrayList<Integer> islandCarriers = new ArrayList<>();
     static int turnSpawned = 2000;
     static boolean balling = false;
     static int numAdCarriers = 0;
     static int numMnCarriers = 0;
-    static RobotInfo[] nearbyCarriers;
 
     static void run(RobotController rc) throws GameActionException {
         // runs on hq creation
@@ -56,7 +41,7 @@ public class Headquarters {
             hqLocation = rc.getLocation();
 
             MIN_ROBOTS_FOR_ANCHOR = (int) (0.9 * (Math.log(Math.pow(MAP_WIDTH * MAP_HEIGHT, .75) - 30) / Math.log(1.05) - 48));
-            System.out.println("Anchro: " + MIN_ROBOTS_FOR_ANCHOR);
+            System.out.println("Anchor: " + MIN_ROBOTS_FOR_ANCHOR);
 
             hqID = readNumHQs(rc);
             writeHQLocation(rc, hqLocation, hqID);
@@ -86,8 +71,6 @@ public class Headquarters {
         if (rc.getNumAnchors(Anchor.STANDARD) > 0 && !islandCarrier) assignIsland(rc, hqID, 1);
         else if (readIsland(rc, hqID) == 1 && turnCount - turnSpawned > 1) assignIsland(rc, hqID, 0);
 
-        writeCarrierSpawnID(rc, previousCarrierID, hqID);
-
         // Spawn launchers towards any enemies in vision.
         RobotInfo[] enemies = rc.senseNearbyRobots(-1, opponentTeam);
         if (enemies.length == 0) balling = false;
@@ -96,8 +79,9 @@ public class Headquarters {
             RobotInfo enemy = enemies[0];
             int neededMana = (enemies.length + 1) * 60;
 
-            if (rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100)
+            if (rc.getResourceAmount(ResourceType.MANA) < 60 && rc.getResourceAmount(ResourceType.ADAMANTIUM) < 100) {
                 balling = false;
+            }
 
             // Spawn a robot in the closest spot to the enemy
             if ((rc.getResourceAmount(ResourceType.MANA) > neededMana || (rc.getResourceAmount(ResourceType.MANA) > 60 && balling) && rc.isActionReady())) {
@@ -127,13 +111,11 @@ public class Headquarters {
             return;
         }
 
-        nearbyCarriers = rc.senseNearbyRobots(-1, robotTeam);
         rc.setIndicatorString("Ad: " + numAdCarriers + " Mn: " + numMnCarriers);
 
         //This causes us to never have enough resources to make an anchor, need to apply some limiters.
         // Main robot building if other conditions aren't satisfied
         if (rc.getRobotCount() < MAP_HEIGHT * MAP_WIDTH * MAX_ROBOTS) {
-//            carrierCapacityReached = carrierCapacityReached(rc);
             if (rng.nextDouble() > LAUNCHER_SPAWN_RATE) {
                 System.out.println("We tryna build a carrier. ");
                 if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 50) {
@@ -163,78 +145,6 @@ public class Headquarters {
             } else {
                 rc.setIndicatorString("Max robots reached");
             }
-
-//        rc.setIndicatorString(mnCarrierIDs.size() + "," + adCarrierIDs.size() + " <- Num carriers (mn, ad). Capacity reached? ->"  + carrierCapacityReached(rc));
-//        if (robotBuildType != RobotType.CARRIER) {
-//            // Spawn limits for carriers
-//            int mnCarrierCount = 0, adCarrierCount = 0;
-//            for (RobotInfo carrier : nearbyCarriers) {
-//                if (carrier.getType() != RobotType.CARRIER || carrier.ID == previousCarrierID) {
-//                    continue;
-//                }
-//
-//                int mnIndex = mnCarrierIDs.indexOf(carrier.ID);
-//                int adIndex = adCarrierIDs.indexOf(carrier.ID);
-//
-//                if (mnIndex != -1) {
-//                    if (rc.getResourceAmount(ResourceType.MANA) == 0) {
-//                        continue;
-//                    }
-//
-//                    // set only once
-//                    int turn = turnCount - mnCarriersLastSeen.get(mnIndex);
-//                    if(turn > 10) {
-//                        numMnReturns++;
-//                        mnAvgFarmTime += (turnCount - mnCarriersLastSeen.get(mnIndex)) * EXPIRED_CARRIER_TOLERANCE;
-//                    }
-//
-//                    mnCarriersLastSeen.set(mnIndex, turnCount);
-//
-//                } else if (adIndex != -1) {
-//                    if (rc.getResourceAmount(ResourceType.ADAMANTIUM) == 0) {
-//                        continue;
-//                    }
-//
-//                    // set only once
-//                    int turn = turnCount - adCarriersLastSeen.get(adIndex);
-//                    if(turn > 10) {
-//                        numAdReturns++;
-//                        adAvgFarmTime += (turnCount - adCarriersLastSeen.get(adIndex)) * EXPIRED_CARRIER_TOLERANCE;
-//                    }
-//
-//                    adCarriersLastSeen.set(adIndex, turnCount);
-//                }
-//            }
-//
-//            double avgAdFarm = adAvgFarmTime / numAdReturns;
-//            double avgMnFarm = mnAvgFarmTime / numMnReturns;
-//
-//            //TODO: This really should be a map
-//            ArrayList<Integer> expiredCarrierIDs = new ArrayList<>();
-//            for (int i = 0; i < mnCarriersLastSeen.size(); i++) {
-//                int val = turnCount - mnCarriersLastSeen.get(i);
-//                if ((mnAvgFarmTime != 0 && val > avgMnFarm) || val > 40) {
-//                    expiredCarrierIDs.add(mnCarrierIDs.get(i));
-//                }
-//            }
-//            for(Integer id : expiredCarrierIDs) {
-//                mnCarriersLastSeen.remove(mnCarrierIDs.indexOf(id));
-//                mnCarrierIDs.remove(id);
-//            }
-//
-//            //TODO: This really should be a map
-//            expiredCarrierIDs = new ArrayList<>();
-//            for (int i = 0; i < adCarriersLastSeen.size(); i++) {
-//                int val = turnCount - adCarriersLastSeen.get(i);
-//                if ((adAvgFarmTime != 0 && val > avgAdFarm) || val > 40) {
-//                    expiredCarrierIDs.add(adCarrierIDs.get(i));
-//                }
-//            }
-//            for(Integer id : expiredCarrierIDs) {
-//                adCarriersLastSeen.remove(adCarrierIDs.indexOf(id));
-//                adCarrierIDs.remove(id);
-//            }
-//        }
         }
     }
 
@@ -323,7 +233,6 @@ public class Headquarters {
     static void buildCarrier(RobotController rc, MapLocation loc) throws GameActionException {
         rc.buildRobot(RobotType.CARRIER, loc);
         int rcID = rc.senseRobotAtLocation(loc).getID();
-        previousCarrierID = rcID;
 
         if (readIsland(rc, hqID) != 0) {
             turnSpawned = turnCount;
