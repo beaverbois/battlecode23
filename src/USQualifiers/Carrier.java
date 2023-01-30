@@ -246,7 +246,7 @@ public class Carrier {
             wellsFarmed.add(targetWellLocation);
             numCycles = 0;
 
-            moveTowards(rc, hqLocation);
+            Util.moveTowards(rc, hqLocation);
             rc.setIndicatorString(state.toString() + " TO " + hqLocation);
         }
     }
@@ -729,6 +729,7 @@ public class Carrier {
                 && rc.senseMapInfo(target).getCurrentDirection() != target.directionTo(loc)) return true;
         return false;
     }
+
     private static void moveTowards(RobotController rc, MapLocation location) throws GameActionException {
         // check if we cannot move
         if (!rc.isMovementReady()) {

@@ -126,7 +126,6 @@ public class Headquarters {
                 || (turnCount > 100 && numRobotsThisRound - numRobots.get(0) > 5))
                 && rc.getNumAnchors(Anchor.STANDARD) == 0 && enemies.length == 0) {
             //Make sure we build anchors
-            System.out.println("Saving");
             buildLaunch = true;
 
             rc.setIndicatorString("Saving up for an anchor! Island carrier: " + islandCarrier);
