@@ -7,3 +7,7 @@ We competed in three tournaments, including Sprint 1 (Jan. 17), Sprint 2 (Jan. 2
 
 ## About Us
 Beaver Bois is [@dgorbunov](https://github.com/dgorbunov) and [@JonCoombs](https://github.com/JonCoombs), two freshman studying Computer Science at the University of Massachusetts Amherst. Our team name is a spin-off from the name of our campus library, the DuBois library, and MIT's mascot, Tim the Beaver.
+
+![The Beaver Bois](https://github.com/beaverbois/battlecode23/blob/main/beaverbois/beaverbois.png)
+
+*We du be logging*
