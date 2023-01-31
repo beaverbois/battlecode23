@@ -1,7 +1,6 @@
 package USQualifiers;
 
 import battlecode.common.*;
-import scala.Int;
 
 import java.util.*;
 
@@ -44,6 +43,7 @@ public class Carrier {
     static HashMap<Integer, Integer> islands = new HashMap<>();
 
     static int lastCarried = turnCount;
+    static ResourceType oppositeType = null;
 
     static void run(RobotController rc) throws GameActionException {
         if (state == null) {
@@ -55,6 +55,12 @@ public class Carrier {
                 scoutDirection = hqLocation.directionTo(rc.getLocation());
 
                 shuffledDir = new ArrayList<>(Arrays.asList(directions));
+
+                if (targetType == ResourceType.ADAMANTIUM) {
+                    oppositeType = ResourceType.MANA;
+                } else {
+                    oppositeType = ResourceType.ADAMANTIUM;
+                }
 
                 //Do islands if instructed to.
                 if (readIsland(rc, hqID) == 1) {
@@ -404,7 +410,7 @@ public class Carrier {
     }
 
     private static boolean checkIfBlocked(RobotController rc, MapLocation target) throws GameActionException {
-        rc.setIndicatorString("Blocked!");
+//        rc.setIndicatorString("Blocked!");
         MapLocation rcLocation = rc.getLocation();
         Direction targetDir = (pathBlocked) ? blockedTargetDirection: rcLocation.directionTo(target);
         MapLocation front = rcLocation.add(targetDir);
@@ -507,6 +513,13 @@ public class Carrier {
 
     private static void checkForAuxWellsAndMove(RobotController rc) throws GameActionException {
         WellInfo[] wells = rc.senseNearbyWells();
+//        MapLocation oppositeWell = readWellLocation(rc, oppositeType, hqID);
+//        if (dist(oppositeWell, rc.getLocation()) <= dist(rc.getLocation(), hqLocation)) {
+//            targetWellLocation = oppositeWell;
+//            state = CarrierState.MOVING;
+//            moveTowardsTargetWell(rc);
+//            return;
+//        }
 
         for (WellInfo well : wells) {
             MapLocation wellLocation = well.getMapLocation();
@@ -514,7 +527,7 @@ public class Carrier {
                 targetWellLocation = wellLocation;
                 state = CarrierState.MOVING;
                 moveTowardsTargetWell(rc);
-                return;
+                break;
             }
         }
     }
