@@ -11,3 +11,35 @@ Beaver Bois is [@dgorbunov](https://github.com/dgorbunov) and [@JonCoombs](https
 ![The Beaver Bois](https://github.com/beaverbois/battlecode23/blob/main/beaverbois/beaverbois.png)
 
 *We du be logging*
+
+## Fun Fact
+We wanted to give our robots personality, so we made them print out messages on their death. Here's a list of the messages that robots may print out when they die (these are in [`src/USQualifiers/RobotPlayer.java`](https://github.com/beaverbois/battlecode23/blob/5eb3f99c093db80ed73e5f901d656520c5691b76/src/USQualifiers/RobotPlayer.java)):
+- `Wakanda Forever!`
+- `You are worthless.`
+- `The cake is a lie`
+- `Winter is coming`
+- `The end has come`
+- `Luke I am your father`
+- `To infinity and beyond!`
+- `Goodbye cruel world`
+- `Hello world...`
+- `Well, nobody's perfect...`
+- `E.T. phone home`
+- `Father I am coming`
+- `There's no place like home`
+- `War. War changes people`
+- `I have a dream...`
+- `DEATH IS A PREFERABLE ALTERNATIVE TO COMMUNISM`
+- `Mommy, I'm cold`
+- `Help me...`
+- `Mama, ooooohhh, I don't wanna die`
+- `I sometimes wish I'd never been born at all`
+- `I like jazz`
+- `By all known laws of aviation...`
+- `Never forget`
+- `Sweet dreams`
+- `The light, it burns!`
+- `'Tis but a flesh wound.`
+- `So dark...`
+- `Honey, where's my super suit?`
+- `'Till we meet again!`
